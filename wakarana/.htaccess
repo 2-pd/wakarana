@@ -1,0 +1,7 @@
+<Files ~ "\.ini$">
+  deny from all 
+</Files>
+
+<Files ~ "\.db$">
+  deny from all 
+</Files>
