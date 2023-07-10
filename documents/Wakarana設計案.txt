@@ -9,17 +9,17 @@
 _/_/_/_/ 基本設定ファイル _/_/_/_/
   display_errors　エラー文を出力するかどうか
   
-  dbms_name 使用するデータベースシステム識別名("sqlite"、"pgsql"、"mysql"のいずれか)
+  use_sqlite データベースにSQLiteを使用するかどうか(trueの場合はsqlite、falseの場合はPostgreSQLを使用する)
   
-  db_host データベースサーバーホスト名
-  db_user データベースユーザー名
-  db_pass データベースパスワード
-  db_name データベース名
-  db_port データベースポート番号
+  db_host PostgreSQLのホスト名
+  db_user PostgreSQLのユーザー名
+  db_pass PostgreSQLのパスワード
+  db_db PostgreSQLのデータベース名
+  db_port PostgreSQLのポート番号
   
   sqlite_db_file SQLiteのデータベースファイルのパス
   
-  allow_mail_duplication 同じメールアドレスでの複数のアカウント作成を許すかどうか。(trueまたはfalse、trueの場合はメールアドレスナシ(NULL)は不可)
+  allow_mail_duplication 同じメールアドレスでの複数のアカウント作成を許すかどうか(trueまたはfalse、trueの場合はメールアドレスなし(NULL)を許可しない)
   confirmation_mail_expire メールアドレス確認トークンの有効時間(秒数で指定)
   
   login_tokens_per_user ユーザーごとのトークン保持可能数(超過した場合は、生成日時の古いトークンから順に削除される)
@@ -37,14 +37,14 @@ _/_/_/_/ 基本設定ファイル _/_/_/_/
 <各変数のデフォルト値>
 display_errors=true
 
-dbms_name="sqlite"
+use_sqlite=true
 sqlite_db_file="wakarana.db"
 
-db_host="localhost"
-db_user="root"
-db_pass=""
-db_name="wakarana"
-db_port=5432
+pg_host="localhost"
+pg_user="postgres"
+pg_pass=""
+pg_db="wakarana"
+pg_port=5432
 
 allow_mail_duplication=false
 confirmation_mail_expire=1800
@@ -77,16 +77,16 @@ _/_/_/_/ データベース _/_/_/_/
   is_master boolean [INTEGER] (NOT NULL) rootユーザーかどうか
   totp_key varchar(16) [TEXT] TOTPワンタイムパスワード生成キー
   
-  INDEX idx_1(`mail_address`)
-  INDEX idx_2(`user_name`)
-  INDEX idx_3(`user_created`)
-  INDEX idx_4(`last_updated`)
+  INDEX idx_u1(`mail_address`)
+  INDEX idx_u2(`user_name`)
+  INDEX idx_u3(`user_created`)
+  INDEX idx_u4(`last_updated`)
   
  ※last_accessについては、処理の高速化の観点から、あえてインデックスを指定しない
 
 
 テーブル wakarana_login_tokens
-  token char(43) [TEXT] (NOT NULL PRIMARY KEY) ログイン用トークン(/dev/urandom由来の32バイト乱数バイナリをBase64エンコード(+と/の代わりに-と_)したもの)
+  token varchar(43) [TEXT] (NOT NULL PRIMARY KEY) ログイン用トークン(/dev/urandom由来の32バイト乱数バイナリをBase64エンコード(+と/の代わりに-と_)したもの)
   user_id varchar(63) [TEXT] (NOT NULL) ユーザーID
   token_created timestamp [TEXT] (NOT NULL) そのトークンの生成日時
   expire timestamp [TEXT] (NOT NULL) ユーザーのブラウザに送信したそのトークンの有効期限日時
@@ -95,26 +95,35 @@ _/_/_/_/ データベース _/_/_/_/
   browser_name varchar(31) [TEXT] そのトークンを割り当てられた端末のブラウザ名(「Chrome」、「Firefox」等)
   last_access timestamp [TEXT] (NOT NULL) そのトークンでの最終アクセス日時
   
-  INDEX idx_5(`user_id`,`token_created`)
-  INDEX idx_6(`token_created`)
-  INDEX idx_7(`expire`)
+  INDEX idx_l1(`user_id`,`token_created`)
+  INDEX idx_l2(`token_created`)
+  INDEX idx_l3(`expire`)
 
 
-テーブル wakarana_privileges
+テーブル wakarana_user_roles
   user_id varchar(63) [TEXT] (NOT NULL) ユーザーID
-  permission_id varchar(127) [TEXT] (NOT NULL) アクセス対象のID
+  role_name varchar(63) [TEXT] (NOT NULL) ロール名
   
-  PRIMARY KEY(`user_id`,`permission_id`)
-  INDEX idx_8(`permission_id`,`user_id`)
+  PRIMARY KEY(`user_id`,`role_name`)
+  INDEX idx_r1(`role_name`,`user_id`)
+
+
+テーブル wakarana_permission_values
+  role_name varchar(63) [TEXT] (NOT NULL) ロール名
+  permission_name varchar(127) [TEXT] (NOT NULL) 権限名
+  permission_value integer [INTEGER] 権限の値(真偽値のTRUEとして扱う場合は1。0やNULLは権限なしとみなす)
+  
+  PRIMARY KEY(`role_name`,`permission_name`)
+  INDEX idx_p1(`permission_name`,`permission_value`,`role_name`)
 
 
 テーブル wakarana_one_time_tokens
-  token char(43) [TEXT] (NOT NULL PRIMARY KEY) ワンタイムトークン(上記と同じ)
+  token varchar(43) [TEXT] (NOT NULL PRIMARY KEY) ワンタイムトークン(上記と同じ)
   user_id varchar(63) [TEXT] (NOT NULL) ユーザーID
   token_created timestamp [TEXT] (NOT NULL) そのトークンの生成日時
   
-  INDEX idx_9(`user_id`,`token_created`)
-  INDEX idx_10(`token_created`)
+  INDEX idx_o1(`user_id`,`token_created`)
+  INDEX idx_o2(`token_created`)
 
 
 テーブル wakarana_attempt_logs
@@ -123,25 +132,25 @@ _/_/_/_/ データベース _/_/_/_/
   attempt_datetime timestamp [TEXT] (NOT NULL) ログイン試行が行われた日時
   ip_address varchar(15) [TEXT] (NOT NULL) 利用者のIPアドレス
   
-  INDEX idx_11(`user_id`,`attempt_datetime`)
-  INDEX idx_12(`ip_address`,`attempt_datetime`)
+  INDEX idx_a1(`user_id`,`attempt_datetime`)
+  INDEX idx_a2(`ip_address`,`attempt_datetime`)
 
 
 テーブル wakarana_mail_confirmation
-  token char(43) [TEXT] (NOT NULL PRIMARY KEY) メールアドレス確認用トークン(上記と同じ)
+  token varchar(43) [TEXT] (NOT NULL PRIMARY KEY) メールアドレス確認用トークン(上記と同じ)
   user_id varchar(63) [TEXT] (UNIQUE)ユーザーID(NULLの場合は、ユーザーID登録前のメールアドレス確認)
   mail_address varchar(255) (NOT NULL) [TEXT] メールアドレス(上記と同じ)
   purpose smallint [INTEGER] (NOT NULL) トークンが発行された目的(0:新規アカウント登録 1:既存アカウントのメールアドレス変更)
   token_created timestamp [TEXT] (NOT NULL) そのトークンの生成日時
   
-  INDEX idx_13(`mail_address`,`user_id`)
-  INDEX idx_14(`token_created`)
+  INDEX idx_m1(`mail_address`,`user_id`)
+  INDEX idx_m2(`token_created`)
 
 
 テーブル wakarana_totp_temporary_tokens
-  token char(43) [TEXT] (NOT NULL PRIMARY KEY) 仮トークン(上記と同じ)
+  token varchar(43) [TEXT] (NOT NULL PRIMARY KEY) 仮トークン(上記と同じ)
   user_id varchar(63) [TEXT] (NOT NULL) ユーザーID
   token_created timestamp [TEXT] (NOT NULL) そのトークンの生成日時
   
-  INDEX idx_15(`user_id`,`token_created`)
-  INDEX idx_16(`token_created`)
+  INDEX idx_t1(`user_id`,`token_created`)
+  INDEX idx_t2(`token_created`)
