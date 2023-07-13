@@ -1,8 +1,8 @@
-----------------------------------------------------------------
+--------------------------------------------------------------------------------
 
-  PHPユーザーマネージャライブラリ「Wakarana」設計案
+  PHPユーザーマネージャライブラリ「Wakarana」設計案　ページ(1)
 
-----------------------------------------------------------------
+--------------------------------------------------------------------------------
 システム条件 : PHP7以降
 
 
@@ -17,7 +17,7 @@ _/_/_/_/ 基本設定ファイル _/_/_/_/
   db_db PostgreSQLのデータベース名
   db_port PostgreSQLのポート番号
   
-  sqlite_db_file SQLiteのデータベースファイルのパス
+  sqlite_db_file SQLiteのデータベースファイルのパス(この設定ファルからの相対パス)
   
   allow_mail_duplication 同じメールアドレスでの複数のアカウント作成を許すかどうか(trueまたはfalse、trueの場合はメールアドレスなし(NULL)を許可しない)
   confirmation_mail_expire メールアドレス確認トークンの有効時間(秒数で指定)
@@ -32,7 +32,7 @@ _/_/_/_/ 基本設定ファイル _/_/_/_/
   attempt_log_retention_time ログイン試行ログの保持期間
   
   totp_pin_expire TOTPワンタイムパスワードの有効時間(分)
-  totp_temporary_token_expire TOTP認証待ち仮トークンの有効期間(秒)
+  totp_temporary_token_expire 2段階認証用一時トークンの有効期間(秒)
 
 <各変数のデフォルト値>
 display_errors=true
@@ -74,7 +74,6 @@ _/_/_/_/ データベース _/_/_/_/
   last_updated timestamp [TEXT] (NOT NULL) アカウント情報の最終更新日時
   last_access timestamp [TEXT] (NOT NULL) そのアカウントの最終利用日時
   status smallint [INTEGER] (NOT NULL) アカウントが使用可能か停止されているか(0:停止, 1:有効, 2:ロックアウト(このバージョンでは実装見送り), 3:メールアドレス未認証)
-  is_master boolean [INTEGER] (NOT NULL) rootユーザーかどうか
   totp_key varchar(16) [TEXT] TOTPワンタイムパスワード生成キー
   
   INDEX idx_u1(`mail_address`)
@@ -111,7 +110,7 @@ _/_/_/_/ データベース _/_/_/_/
 テーブル wakarana_permission_values
   role_name varchar(63) [TEXT] (NOT NULL) ロール名
   permission_name varchar(127) [TEXT] (NOT NULL) 権限名
-  permission_value integer [INTEGER] 権限の値(真偽値のTRUEとして扱う場合は1。0やNULLは権限なしとみなす)
+  permission_value integer [INTEGER] (NOT NULL) 権限の値(真偽値のTRUEとして扱う場合は1。0は権限なしとみなす)
   
   PRIMARY KEY(`role_name`,`permission_name`)
   INDEX idx_p1(`permission_name`,`permission_value`,`role_name`)
@@ -140,7 +139,6 @@ _/_/_/_/ データベース _/_/_/_/
   token varchar(43) [TEXT] (NOT NULL PRIMARY KEY) メールアドレス確認用トークン(上記と同じ)
   user_id varchar(63) [TEXT] (UNIQUE)ユーザーID(NULLの場合は、ユーザーID登録前のメールアドレス確認)
   mail_address varchar(255) (NOT NULL) [TEXT] メールアドレス(上記と同じ)
-  purpose smallint [INTEGER] (NOT NULL) トークンが発行された目的(0:新規アカウント登録 1:既存アカウントのメールアドレス変更)
   token_created timestamp [TEXT] (NOT NULL) そのトークンの生成日時
   
   INDEX idx_m1(`mail_address`,`user_id`)
