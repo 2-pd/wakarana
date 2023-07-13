@@ -20,9 +20,9 @@ Wakaranaのバージョン番号文字列
 wakaranaクラスとwakarana_configクラスの親クラス。このクラスの関数は全てwakaranaクラスとwakarana_configクラスで使用できる。
 
 #### wakarana_common::__construct($base_dir=NULL)
-config.iniをロードする。  
+指定したフォルダにある設定ファイルをロードする。  
   
-**$base_dir** : コンフィグファイルのあるフォルダのパス(common.phpのある階層からの相対パス)
+**$base_dir** : config.iniのあるフォルダのパス。省略時はcommon.phpのあるフォルダを使用する。
 
 
 #### ◆ wakarana_common::connect_db()

@@ -1,56 +1,73 @@
 <?php
-/*Wakarana-21.11-1 common.php*/
-
-define("WAKARANA_DBMS_SQLITE", "sqlite");
-define("WAKARANA_DBMS_POSTGRES", "pgsql");
-define("WAKARANA_DBMS_MYSQL", "mysql");
+/*_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ *
+ *  Wakarana
+*/
+    define("WAKARANA_VERSION", "23.07-1");
+/*
+ *_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ *
+ *  LICENSE
+ *
+ *   このソフトウェアは、無権利創作宣言に基づき著作権放棄されています。
+ *   営利・非営利を問わず、自由にご利用いただくことが可能です。
+ *
+ *    https://www.2pd.jp/license/
+ *
+*/
 
 class wakarana_common {
+    protected $base_path;
+    
     protected $config;
     protected $db_obj;
     
     private $last_error_text;
     
-    function __construct () {
-        $this->config = parse_ini_file(dirname(__FILE__)."/config.ini");
+    
+    function __construct ($base_dir = NULL) {
+        if (empty($base_dir)) {
+            $this->base_path = __DIR__;
+        } else {
+            $this->base_path = realpath($base_dir);
+        }
+        
+        $this->config = parse_ini_file($this->base_path."/config.ini");
     }
     
-    function connect_db ($select_db = TRUE) {
-        if ($this->config["use_sqlite"]) {
-            if (!extension_loaded("sqlite3")) {
-                $this->print_error("このPHP実行環境にはSQLite3モジュールがインストールされていない、または、SQLite3モジュールが有効化されていません。");
-                return FALSE;
+    
+    protected function connect_db () {
+        try {
+            if ($this->config["use_sqlite"]) {
+                $this->db_obj = new PDO("sqlite:".$this->base_path."/".$this->config["sqlite_db_file"]);
+                
+                $this->db_obj->setAttribute(PDO::ATTR_TIMEOUT, 5);
+            } else {
+                $this->db_obj = new PDO("pgsql:dbname=".$this->config["pg_db"].";host=".$this->config["pg_host"]." options='--client_encoding=UTF8';port=".$this->config["pg_port"].";user=".$this->config["pg_user"].";password=".$this->config["pg_pass"]);
             }
             
-            $this->db_obj = new SQLite3(dirname(__FILE__)."/".$this->config["sqlite_db_file"]);
+            return TRUE;
+        } catch (PDOException $err) {
+            $this->print_error("データベース接続に失敗しました。".$err->getMessage());
             
-            $this->db_obj->busyTimeout(5000);
-        } else {
-            $this->db_obj = new mysqli($this->config["mysql_server"], $this->config["mysql_user"], $this->config["mysql_pass"]);
-            if ($this->db_obj->connect_errno) {
-                $this->print_error("データベース接続に失敗しました。".$this->db_obj->connect_error);
-                return FALSE;
-            }
-            
-            $this->db_obj->set_charset("utf8");
-            
-            if ($select_db) {
-                $this->db_obj->select_db($this->config["mysql_db"]);
-            }
+            return FALSE;
         }
     }
     
-    function disconnect_db () {
-        $this->db_obj->close();
+    
+    protected function disconnect_db () {
+        $this->db_obj = NULL;
     }
     
-    function print_error ($error_text) {
+    
+    protected function print_error ($error_text) {
         $this->last_error_text = $error_text;
         
         if ($this->config["display_errors"]) {
             print "An error occurred in Wakarana : ".$error_text;
         }
     }
+    
     
     function get_last_error_text () {
         return $this->last_error_text;
