@@ -594,3 +594,45 @@ TOTP生成鍵と現在時刻からワンタイムコードを生成する。
 **$past_30s** : 負でない整数値。この値に30をかけた秒数過去のタイムスタンプを現在時刻とみなす。  
   
 **返り値** ： ワンタイムコードを返す。
+
+
+
+## config.php
+
+
+### 定数
+
+#### WAKARANA_CONFIG_ORIGINAL
+config.iniの既定値一覧。
+
+
+### class wakarana_config
+wakarana_commonの派生クラス。
+
+
+#### ◆ wakarana_config::save()
+現在の設定値でconfig.iniを上書きする。  
+◆クラス内呼び出し専用。  
+
+
+#### wakarana_config::set_config_value($key, $value, $save_now=TRUE)
+config.iniの設定値を変更する。  
+  
+**$key** : config.iniの変数名  
+**$value** : 設定する値  
+**$save_now** : FALSEならconfig.iniへの上書きは保留する。  
+  
+**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
+#### wakarana_config::reset_config()
+config.iniの設定値を全て既定値に戻す。  
+  
+**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
+#### wakarana_config::setup_db()
+データベースにテーブルを作成する。  
+SQLiteを使用する設定の場合、データベースファイルの作成も行われる。  
+  
+**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
