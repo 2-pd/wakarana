@@ -32,7 +32,12 @@ class wakarana_common {
             $this->base_path = realpath($base_dir);
         }
         
-        $this->config = parse_ini_file($this->base_path."/config.ini");
+        $config_path = $this->base_path."/config.ini";
+        $this->config = @parse_ini_file($config_path);
+        
+        if (empty($this->config)) {
+            $this->print_error("設定ファイル ".$config_path." の読み込みに失敗しました。");
+        }
     }
     
     
@@ -63,7 +68,7 @@ class wakarana_common {
     protected function print_error ($error_text) {
         $this->last_error_text = $error_text;
         
-        if ($this->config["display_errors"]) {
+        if (empty($this->config) || $this->config["display_errors"]) {
             print "An error occurred in Wakarana : ".$error_text;
         }
     }
