@@ -22,11 +22,11 @@ wakaranaクラスとwakarana_configクラスの親クラス。このクラスの
 #### wakarana_common::__construct($base_dir=NULL)
 指定したフォルダにある設定ファイルをロードする。  
   
-**$base_dir** : config.iniのあるフォルダのパス。省略時はcommon.phpのあるフォルダを使用する。
+**$base_dir** : wakarana_config.iniのあるフォルダのパス。省略時はcommon.phpのあるフォルダを使用する。
 
 
 #### ◆ wakarana_common::connect_db()
-config.iniの設定に基づき、データベースに接続する。  
+wakarana_config.iniの設定に基づき、データベースに接続する。  
 ◆クラス内呼び出し専用であり、wakaranaクラスとwakarana_configクラスはこの関数を自動的に実行する。  
   
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
@@ -39,7 +39,7 @@ config.iniの設定に基づき、データベースに接続する。
 
 #### ◆ wakarana_common::print_error($error_text)
 エラーメッセージを出力する。  
-ただし、config.iniにおいてdisplay_errors=trueが設定されていなければ出力しない。  
+ただし、wakarana_config.iniにおいてdisplay_errors=trueが設定されていなければ出力しない。  
 ◆クラス内呼び出し専用であり、wakaranaクラスとwakarana_configクラスではエラー時にこの関数を実行する。  
   
 **$error_text** : エラーメッセージ
@@ -63,7 +63,7 @@ wakarana_common::print_errorにて直近に入力されたエラーメッセー�
 #### WAKARANA_STATUS_NORMAL
 「**1**」。wakarana_users.statusにおける有効なアカウント識別用。
 
-#### WAKARANA_STATUS_MAIL_UNCONFIRMED
+#### WAKARANA_STATUS_EMAIL_UNVERIFIED
 「**3**」。wakarana_users.statusにおけるメールアドレス未確認アカウント識別用。
 
 #### WAKARANA_ORDER_USER_ID
@@ -96,7 +96,7 @@ wakarana_common::__constructとwakarana_common::connect_dbを順に実行する�
 ユーザーIDやロール名、権限名などの識別名として使用できない文字を除去する。  
   
 **$id** : 変換前の文字列  
-**$len** : 文字列の長さの上限  
+**$len** : 文字列の長さの上限   
   
 **返り値** ： 変換後の文字列
 
@@ -112,10 +112,10 @@ wakarana_common::__constructとwakarana_common::connect_dbを順に実行する�
 **返り値** ： 成功した場合は、ユーザーIDを配列で返す。失敗した場合はFALSEを返す。
 
 
-#### wakarana::mail_exists($mail_address)
+#### wakarana::email_address_exists($email_address)
 あるメールアドレスを使用しているユーザーがいるかを調る。  
   
-**$mail_address** ： 調べるメールアドレス  
+**$email_address** ： 調べるメールアドレス  
   
 **返り値** ： 指定したメールアドレスを登録しているユーザーがいればそのユーザーID、そうでない場合はFALSE、エラーの場合はNULLを返す。
 
@@ -128,19 +128,19 @@ wakarana_common::__constructとwakarana_common::connect_dbを順に実行する�
 **返り値** ： 成功した場合は、ユーザーの各種情報を連想配列で返す。失敗した場合はFALSEを返す。
 
 
-#### wakarana::add_user($user_id, $password, $user_name="", $mail_address=NULL, $status=WAKARANA_STATUS_NORMAL)
+#### wakarana::add_user($user_id, $password, $user_name="", $email_address=NULL, $status=WAKARANA_STATUS_NORMAL)
 新しいユーザーを追加する。  
   
-**$user_id** ： 追加するユーザーのID  
+**$user_id** ： 追加するユーザーのID。半角英数字及びアンダーバーが使用可能。  
 **$password** ： 追加するユーザーのパスワード  
 **$user_name** ： 追加するユーザーのハンドルネーム  
-**$mail_address** ： 追加するユーザーのメールアドレス。省略可。  
+**$email_address** ： 追加するユーザーのメールアドレス。省略可。  
 **$status** ： WAKARANA_STATUS_DISABLEを指定すると一時的に使用できないユーザーとして作成することができる。  
   
 **返り値** ： 成功した場合はユーザーIDを返す。失敗した場合はFALSEを返す。
 
 
-#### wakarana::change_user_data($user_id, $password=NULL, $user_name=NULL, $mail_address=NULL, $is_master=NULL, $status=NULL)
+#### wakarana::change_user_data($user_id, $password=NULL, $user_name=NULL, $email_address=NULL, $is_master=NULL, $status=NULL)
 指定したIDのユーザーの各種情報を変更する。  
   
 **引数については「add_user」と同様。** NULLを指定したものは変更しない。  
@@ -185,7 +185,7 @@ wakarana_common::__constructとwakarana_common::connect_dbを順に実行する�
 ユーザーにロールを付与する。  
   
 **$user_id** ： ユーザーID  
-**$role_name** ： ロール名  
+**$role_name** ： ロール名。半角英数字及びアンダーバーが使用可能。アルファベット大文字は小文字に変換される。  
   
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
@@ -220,8 +220,8 @@ wakarana_common::__constructとwakarana_common::connect_dbを順に実行する�
 存在しないロール名を指定した場合は新しくロールが作成される。  
 ロール名に定数WAKARANA_BASE_ROLEを指定するとベースロールを設定できる。  
   
-**$role_name** ： ロール名  
-**$permission_name** ： 権限名  
+**$role_name** ： ロール名。半角英数字及びアンダーバーが使用可能。アルファベット大文字は小文字に変換される。  
+**$permission_name** ： 権限名。半角英数字及びアンダーバーが使用可能。アルファベット大文字は小文字に変換される。  
 **$permission_value** : 設定値。TRUEは「1」、FALSEは「0」に変換される。  
   
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
@@ -282,7 +282,7 @@ wakarana_common::__constructとwakarana_common::connect_dbを順に実行する�
   
 **$user_id** ： ユーザーID  
   
-**返り値** ： config.iniで指定した期間が経過していればTRUE、そうでない場合はFALSEを返す。
+**返り値** ： wakarana_config.iniで指定した期間が経過していればTRUE、そうでない場合はFALSEを返す。
 
 
 #### ◆ wakarana::add_attempt_log($user_id, $succeeded)
@@ -306,7 +306,7 @@ wakarana_common::__constructとwakarana_common::connect_dbを順に実行する�
 #### wakarana::delete_old_attempt_logs($expire=-1)
 指定した期間より前のログイン試行履歴を全て削除する。  
   
-**$expire** ： 経過時間の秒数。-1を指定した場合はconfig.iniで指定した履歴の保持秒数が代わりに使用される。  
+**$expire** ： 経過時間の秒数。-1を指定した場合はwakarana_config.iniで指定した履歴の保持秒数が代わりに使用される。  
   
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
@@ -382,31 +382,31 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
 #### wakarana::delete_old_login_tokens($expire=-1)
 指定した経過時間より前に生成されたログイントークンを無効化する。  
   
-**$expire** ： 経過時間の秒数。-1を指定した場合はconfig.iniで指定したログイントークンの有効秒数が代わりに使用される。  
+**$expire** ： 経過時間の秒数。-1を指定した場合はwakarana_config.iniで指定したログイントークンの有効秒数が代わりに使用される。  
   
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
-#### wakarana::create_mail_confirmation_token($mail_address,$user_id=NULL)
+#### wakarana::create_email_address_verification_token($email_address,$user_id=NULL)
 メールアドレス確認トークンを生成し、データベースに登録する。  
 この関数によりメールが送信されるわけではない。  
   
-**$mail_address** : トークンの送信先メールアドレス。  
+**$email_address** : トークンの送信先メールアドレス。  
 **$user_id** : ユーザーID。登録前の新規ユーザーに対してトークンを発行する場合はNULLを指定する。  
   
 **返り値** ： 成功した場合はメールアドレス確認トークン、失敗した場合はFALSEを返す。
 
 
-#### wakarana::mail_confirm($token, $delete_token=TRUE)
+#### wakarana::email_address_verify($token, $delete_token=TRUE)
 メールアドレス確認トークンを照合し、トークン生成時に紐付けられたメールアドレスとユーザーID(NULLの場合もある)を取得する。  
   
 **$token** : メールアドレス確認トークン  
 **$delete_token** : TRUEの場合、使用済みのメールアドレス確認トークンを削除する。  
   
-**返り値** ： 認証された場合はキー"user_id"(ユーザーID)と"mail_address"(メールアドレス)が含まれる連想配列を返し、それ以外の場合はFALSEを返す。
+**返り値** ： 認証された場合はキー"user_id"(ユーザーID)と"email_address"(メールアドレス)が含まれる連想配列を返し、それ以外の場合はFALSEを返す。
 
 
-#### wakarana::save_user_mail_address($token)
+#### wakarana::save_user_email_address($token)
 メールアドレス確認トークンを照合すし、トークンに紐付けられていたユーザーIDのユーザーのメールアドレスをトークンに紐付けられたメールアドレスで上書きする。  
   
 **$token** : メールアドレス確認トークン  
@@ -414,7 +414,7 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
-#### wakarana::delete_mail_confirmation_tokens($user_id=NULL)
+#### wakarana::delete_email_address_verification_tokens($user_id=NULL)
 指定したユーザーのメールアドレス確認トークンを全て削除する。  
   
 **$user_id** ： ユーザーID。NULLの場合は全ユーザーのメールアドレス確認トークンを削除する。  
@@ -422,10 +422,10 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
-#### wakarana::delete_old_mail_confirmation_tokens($expire=-1)
+#### wakarana::delete_old_email_address_verification_tokens($expire=-1)
 指定した経過時間より前に生成されたメールアドレス確認トークンを無効化する。  
   
-**$expire** ： 経過時間の秒数。-1を指定した場合はconfig.iniで指定したメールアドレス確認トークンの有効秒数が代わりに使用される。  
+**$expire** ： 経過時間の秒数。-1を指定した場合はwakarana_config.iniで指定したメールアドレス確認トークンの有効秒数が代わりに使用される。  
   
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
@@ -450,7 +450,7 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
 #### wakarana::delete_old_totp_tokens($expire=-1)
 指定した経過時間より前に生成された2段階認証用一時トークンを無効化する。  
   
-**$expire** ： 経過時間の秒数。-1を指定した場合はconfig.iniで指定した2段階認証用一時トークンの有効秒数が代わりに使用される。  
+**$expire** ： 経過時間の秒数。-1を指定した場合はwakarana_config.iniで指定した2段階認証用一時トークンの有効秒数が代わりに使用される。  
   
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
@@ -480,7 +480,7 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
   
 **$token** ： 文字列を指定した場合、クライアント端末のcookieではなくその文字列をログイントークンとみなして照合処理を行う。  
   
-**返り値** ： 正しいログイントークンでログインしていた場合はそのトークンに対応するユーザーID、それ以外の場合はFALSEを返す。
+**返り値** ： 正しいログイントークンでログインしており、かつ、停止中のアカウントでない場合はそのトークンに対応するユーザーID、それ以外の場合はFALSEを返す。
 
 
 #### wakarana::delete_login_token($token)
@@ -527,7 +527,7 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
 #### wakarana::delete_old_one_time_tokens($expire=-1)
 指定した経過時間より前に生成されたワンタイムトークンを無効化する。  
   
-**$expire** ： 経過時間の秒数。-1を指定した場合はconfig.iniで指定したトークンの有効秒数が代わりに使用される。  
+**$expire** ： 経過時間の秒数。-1を指定した場合はwakarana_config.iniで指定したトークンの有効秒数が代わりに使用される。  
   
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
@@ -603,7 +603,7 @@ TOTP生成鍵と現在時刻からワンタイムコードを生成する。
 ### 定数
 
 #### WAKARANA_CONFIG_ORIGINAL
-config.iniの既定値一覧。
+wakarana_config.iniの既定値一覧。
 
 
 ### class wakarana_config
@@ -611,22 +611,24 @@ wakarana_commonの派生クラス。
 
 
 #### ◆ wakarana_config::save()
-現在の設定値でconfig.iniを上書きする。  
+現在の設定値でwakarana_config.iniを上書きする。  
 ◆クラス内呼び出し専用。  
+  
+**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
 #### wakarana_config::set_config_value($key, $value, $save_now=TRUE)
-config.iniの設定値を変更する。  
+wakarana_config.iniの設定値を変更する。  
   
-**$key** : config.iniの変数名  
+**$key** : wakarana_config.iniの変数名  
 **$value** : 設定する値  
-**$save_now** : FALSEならconfig.iniへの上書きは保留する。  
+**$save_now** : FALSEならwakarana_config.iniへの上書きは保留する。  
   
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
 #### wakarana_config::reset_config()
-config.iniの設定値を全て既定値に戻す。  
+wakarana_config.iniの設定値を全て既定値に戻す。  
   
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
 

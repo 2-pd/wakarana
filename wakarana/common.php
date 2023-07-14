@@ -32,7 +32,7 @@ class wakarana_common {
             $this->base_path = realpath($base_dir);
         }
         
-        $config_path = $this->base_path."/config.ini";
+        $config_path = $this->base_path."/wakarana_config.ini";
         $this->config = @parse_ini_file($config_path);
         
         if (empty($this->config)) {

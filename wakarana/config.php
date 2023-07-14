@@ -1,5 +1,5 @@
 <?php
-/*Wakarana-21.11-1 config.php*/
+/*Wakarana config.php*/
 require_once(dirname(__FILE__)."/common.php");
 
 define("WAKARANA_CONFIG_ORIGINAL",
@@ -9,20 +9,21 @@ define("WAKARANA_CONFIG_ORIGINAL",
             "use_sqlite" => TRUE,
             "sqlite_db_file" => "wakarana.db",
             
-            "mysql_server" => "localhost",
-            "mysql_user" => "root",
-            "mysql_pass" => "",
-            "mysql_db" => "wakarana",
+            "pg_host" => "localhost",
+            "pg_user" => "postgres",
+            "pg_pass" => "",
+            "pg_db" => "wakarana",
+            "pg_port" => 5432,
             
-            "allow_mail_duplication" => FALSE,
-            "confirmation_mail_expire" => 1800,
+            "allow_duplicate_email_address" => FALSE,
+            "verification_email_expire" => 1800,
             
             "login_tokens_per_user" => 4,
             "login_token_expire" => 2592000,
             "one_time_tokens_per_user" => 8,
             "one_time_token_expire" => 43200,
             
-            "attempt_interval" => 5,
+            "min_attempt_interval" => 5,
             "attempt_logs_per_user" => 20,
             "attempt_log_retention_time" => 1209600,
             
@@ -34,7 +35,12 @@ define("WAKARANA_CONFIG_ORIGINAL",
 
 class wakarana_config extends wakarana_common {
     function save () {
-        $file_h = fopen(dirname(__FILE__)."/config.ini","w");
+        $file_h = @fopen($this->base_path."/wakarana_config.ini","w");
+        
+        if (empty($file_h)) {
+            $this->print_error("設定ファイルを書き込みモードで開くことができませんでした。");
+            return FALSE;
+        }
         
         if ($this->config["display_errors"]) {
             fwrite($file_h,"display_errors=true\n");
@@ -51,18 +57,19 @@ class wakarana_config extends wakarana_common {
         fwrite($file_h,"sqlite_db_file=\"".$this->config["sqlite_db_file"]."\"\n");
         fwrite($file_h,"\n");
         
-        fwrite($file_h,"mysql_server=\"".$this->config["mysql_server"]."\"\n");
-        fwrite($file_h,"mysql_user=\"".$this->config["mysql_user"]."\"\n");
-        fwrite($file_h,"mysql_pass=\"".$this->config["mysql_pass"]."\"\n");
-        fwrite($file_h,"mysql_db=\"".$this->config["mysql_db"]."\"\n");
+        fwrite($file_h,"pg_host=\"".$this->config["pg_host"]."\"\n");
+        fwrite($file_h,"pg_user=\"".$this->config["pg_user"]."\"\n");
+        fwrite($file_h,"pg_pass=\"".$this->config["pg_pass"]."\"\n");
+        fwrite($file_h,"pg_db=\"".$this->config["pg_db"]."\"\n");
+        fwrite($file_h,"pg_port=".$this->config["pg_port"]."\n");
         fwrite($file_h,"\n");
         
-        if ($this->config["allow_mail_duplication"]) {
-            fwrite($file_h,"allow_mail_duplication=true\n");
+        if ($this->config["allow_duplicate_email_address"]) {
+            fwrite($file_h,"allow_duplicate_email_address=true\n");
         } else {
-            fwrite($file_h,"allow_mail_duplication=false\n");
+            fwrite($file_h,"allow_duplicate_email_address=false\n");
         }
-        fwrite($file_h,"confirmation_mail_expire=".$this->config["confirmation_mail_expire"]."\n");
+        fwrite($file_h,"verification_email_expire=".$this->config["verification_email_expire"]."\n");
         fwrite($file_h,"\n");
         
         fwrite($file_h,"login_tokens_per_user=".$this->config["login_tokens_per_user"]."\n");
@@ -71,7 +78,7 @@ class wakarana_config extends wakarana_common {
         fwrite($file_h,"one_time_token_expire=".$this->config["one_time_token_expire"]."\n");
         fwrite($file_h,"\n");
         
-        fwrite($file_h,"attempt_interval=".$this->config["attempt_interval"]."\n");
+        fwrite($file_h,"min_attempt_interval=".$this->config["min_attempt_interval"]."\n");
         fwrite($file_h,"attempt_logs_per_user=".$this->config["attempt_logs_per_user"]."\n");
         fwrite($file_h,"attempt_log_retention_time=".$this->config["attempt_log_retention_time"]."\n");
         fwrite($file_h,"\n");
@@ -80,12 +87,14 @@ class wakarana_config extends wakarana_common {
         fwrite($file_h,"totp_temporary_token_expire=".$this->config["totp_temporary_token_expire"]."\n");
         
         fclose($file_h);
+        
+        return TRUE;
     }
     
     
-    function set_config_value($key, $value, $save_now = TRUE) {
+    function set_config_value ($key, $value, $save_now = TRUE) {
         if (!isset($value) || gettype(WAKARANA_CONFIG_ORIGINAL[$key]) !== gettype($value)) {
-            $this->print_error("入力値が誤っています。");
+            $this->print_error("設定ファイルの変数値を変更できません。変数型が不正です。");
             return FALSE;
         }
         
@@ -99,7 +108,7 @@ class wakarana_config extends wakarana_common {
     }
     
     
-    function reset_config() {
+    function reset_config () {
         $this->config = WAKARANA_CONFIG_ORIGINAL;
         
         $this->save();
@@ -109,329 +118,164 @@ class wakarana_config extends wakarana_common {
     function setup_db () {
         $this->connect_db();
         
-        if ($this->config["use_sqlite"]) {
-            $sqlite_r1 = $this->db_obj->query("SELECT `name` FROM `sqlite_master` WHERE `type` = 'table' AND `name` = 'wakarana_users'");
-            if($sqlite_r1 == FALSE){
-                $this->print_error("テーブルの確認に失敗しました。".$this->db_obj->lastErrorMsg());
-                return FALSE;
+        try {
+            if ($this->config["use_sqlite"]) {
+                $this->db_obj->exec("CREATE TABLE IF NOT EXISTS `wakarana_users`(`user_id` TEXT COLLATE NOCASE NOT NULL PRIMARY KEY, `password` TEXT NOT NULL, `user_name` TEXT COLLATE NOCASE, `email_address` TEXT, `user_created` TEXT NOT NULL, `last_updated` TEXT NOT NULL, `last_access` TEXT NOT NULL, `status` INTEGER NOT NULL, `totp_key` TEXT)");
+            } else {
+                $this->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_users"("user_id" varchar(63) NOT NULL PRIMARY KEY, "password" varchar(128) NOT NULL, "user_name" varchar(255), "email_address" varchar(255), "user_created" timestamp NOT NULL, "last_updated" timestamp NOT NULL, "last_access" timestamp NOT NULL, "status" smallint NOT NULL, "totp_key" varchar(16))');
             }
-            
-            $q_kekka = $sqlite_r1->fetchArray(SQLITE3_ASSOC);
-            if (!$q_kekka) {
-                $sqlite_r1_2 = $this->db_obj->query("CREATE TABLE `wakarana_users`(`user_id` TEXT NOT NULL PRIMARY KEY, `password` TEXT NOT NULL, `user_name` TEXT, `mail_address` TEXT, `user_created` TEXT NOT NULL, `last_updated` TEXT NOT NULL, `last_access` TEXT NOT NULL, `status` INTEGER NOT NULL, `is_master` INTEGER NOT NULL, `totp_key` TEXT)");
-                if ($sqlite_r1_2 == FALSE) {
-                    $this->print_error("テーブル wakarana_users の作成に失敗しました。".$this->db_obj->lastErrorMsg());
-                    return FALSE;
-                }
-                
-                $sqlite_r1_3 = $this->db_obj->query("CREATE INDEX `idx_1` ON `wakarana_users`(`mail_address`)");
-                if ($sqlite_r1_3 == FALSE) {
-                    $this->print_error("テーブル wakarana_users のインデックスの作成に失敗しました。".$this->db_obj->lastErrorMsg());
-                    return FALSE;
-                }
-                
-                $sqlite_r1_4 = $this->db_obj->query("CREATE INDEX `idx_2` ON `wakarana_users`(`user_name`)");
-                if ($sqlite_r1_4 == FALSE) {
-                    $this->print_error("テーブル wakarana_users のインデックスの作成に失敗しました。".$this->db_obj->lastErrorMsg());
-                    return FALSE;
-                }
-                
-                $sqlite_r1_5 = $this->db_obj->query("CREATE INDEX `idx_3` ON `wakarana_users`(`user_created`)");
-                if ($sqlite_r1_5 == FALSE) {
-                    $this->print_error("テーブル wakarana_users のインデックスの作成に失敗しました。".$this->db_obj->lastErrorMsg());
-                    return FALSE;
-                }
-                
-                $sqlite_r1_6 = $this->db_obj->query("CREATE INDEX `idx_4` ON `wakarana_users`(`last_updated`)");
-                if ($sqlite_r1_6 == FALSE) {
-                    $this->print_error("テーブル wakarana_users のインデックスの作成に失敗しました。".$this->db_obj->lastErrorMsg());
-                    return FALSE;
-                }
-            }
-            
-            
-            $sqlite_r2 = $this->db_obj->query("SELECT `name` FROM `sqlite_master` WHERE `type` = 'table' AND `name` = 'wakarana_login_tokens'");
-            if ($sqlite_r2 == FALSE) {
-                $this->print_error("テーブルの確認に失敗しました。".$this->db_obj->lastErrorMsg());
-                return FALSE;
-            }
-            
-            $q_kekka = $sqlite_r2->fetchArray(SQLITE3_ASSOC);
-            if (!$q_kekka) {
-                $sqlite_r2_2 = $this->db_obj->query("CREATE TABLE `wakarana_login_tokens`(`token` TEXT NOT NULL PRIMARY KEY, `user_id` TEXT NOT NULL, `token_created` TEXT NOT NULL, `expire` TEXT NOT NULL, `ip_address` TEXT NOT NULL, `operating_system` TEXT, `browser_name` TEXT, `last_access` TEXT NOT NULL)");
-                if ($sqlite_r2_2 == FALSE) {
-                    $this->print_error("テーブル wakarana_login_tokens の作成に失敗しました。".$this->db_obj->lastErrorMsg());
-                    return FALSE;
-                }
-                
-                $sqlite_r2_3 = $this->db_obj->query("CREATE INDEX `idx_5` ON `wakarana_login_tokens`(`user_id`,`token_created`)");
-                if ($sqlite_r2_3 == FALSE) {
-                    $this->print_error("テーブル wakarana_login_tokens のインデックスの作成に失敗しました。".$this->db_obj->lastErrorMsg());
-                    return FALSE;
-                }
-                
-                $sqlite_r2_4 = $this->db_obj->query("CREATE INDEX `idx_6` ON `wakarana_login_tokens`(`token_created`)");
-                if ($sqlite_r2_4 == FALSE) {
-                    $this->print_error("テーブル wakarana_login_tokens のインデックスの作成に失敗しました。".$this->db_obj->lastErrorMsg());
-                    return FALSE;
-                }
-                
-                $sqlite_r2_5 = $this->db_obj->query("CREATE INDEX `idx_7` ON `wakarana_login_tokens`(`expire`)");
-                if ($sqlite_r2_5 == FALSE) {
-                    $this->print_error("テーブル wakarana_login_tokens のインデックスの作成に失敗しました。".$this->db_obj->lastErrorMsg());
-                    return FALSE;
-                }
-            }
-            
-            
-            $sqlite_r3 = $this->db_obj->query("SELECT `name` FROM `sqlite_master` WHERE `type` = 'table' AND `name` = 'wakarana_privileges'");
-            if ($sqlite_r3 == FALSE) {
-                $this->print_error("テーブルの確認に失敗しました。".$this->db_obj->lastErrorMsg());
-                return FALSE;
-            }
-            
-            $q_kekka = $sqlite_r3->fetchArray(SQLITE3_ASSOC);
-            if (!$q_kekka) {
-                $sqlite_r3_2 = $this->db_obj->query("CREATE TABLE `wakarana_privileges`(`user_id` TEXT NOT NULL, `permission_id` TEXT NOT NULL, PRIMARY KEY(`user_id`,`permission_id`))");
-                if ($sqlite_r3_2 == FALSE) {
-                    $this->print_error("テーブル wakarana_privileges の作成に失敗しました。".$this->db_obj->lastErrorMsg());
-                    return FALSE;
-                }
-                
-                $sqlite_r3_3 = $this->db_obj->query("CREATE INDEX `idx_8` ON `wakarana_privileges`(`permission_id`,`user_id`)");
-                if ($sqlite_r3_3 == FALSE) {
-                    $this->print_error("テーブル wakarana_privileges のインデックスの作成に失敗しました。".$this->db_obj->lastErrorMsg());
-                    return FALSE;
-                }
-            }
-            
-            
-            $sqlite_r4 = $this->db_obj->query("SELECT `name` FROM `sqlite_master` WHERE `type` = 'table' AND `name` = 'wakarana_one_time_tokens'");
-            if ($sqlite_r4 == FALSE) {
-                $this->print_error("テーブルの確認に失敗しました。".$this->db_obj->lastErrorMsg());
-                return FALSE;
-            }
-            
-            $q_kekka = $sqlite_r4->fetchArray(SQLITE3_ASSOC);
-            if (!$q_kekka) {
-                $sqlite_r4_2 = $this->db_obj->query("CREATE TABLE `wakarana_one_time_tokens`(`token` TEXT NOT NULL PRIMARY KEY, `user_id` TEXT NOT NULL, `token_created` TEXT NOT NULL)");
-                if ($sqlite_r4_2 == FALSE) {
-                    $this->print_error("テーブル wakarana_one_time_tokens の作成に失敗しました。".$this->db_obj->lastErrorMsg());
-                    return FALSE;
-                }
-                
-                $sqlite_r4_3 = $this->db_obj->query("CREATE INDEX `idx_9` ON `wakarana_one_time_tokens`(`user_id`,`token_created`)");
-                if ($sqlite_r4_3 == FALSE) {
-                    $this->print_error("テーブル wakarana_one_time_tokens のインデックスの作成に失敗しました。".$this->db_obj->lastErrorMsg());
-                    return FALSE;
-                }
-                
-                $sqlite_r4_4 = $this->db_obj->query("CREATE INDEX `idx_10` ON `wakarana_one_time_tokens`(`token_created`)");
-                if ($sqlite_r4_4 == FALSE) {
-                    $this->print_error("テーブル wakarana_one_time_tokens のインデックスの作成に失敗しました。".$this->db_obj->lastErrorMsg());
-                    return FALSE;
-                }
-            }
-            
-            
-            $sqlite_r5 = $this->db_obj->query("SELECT `name` FROM `sqlite_master` WHERE `type` = 'table' AND `name` = 'wakarana_attempt_logs'");
-            if ($sqlite_r5 == FALSE) {
-                $this->print_error("テーブルの確認に失敗しました。".$this->db_obj->lastErrorMsg());
-                return FALSE;
-            }
-            
-            $q_kekka = $sqlite_r5->fetchArray(SQLITE3_ASSOC);
-            if (!$q_kekka) {
-                $sqlite_r5_2 = $this->db_obj->query("CREATE TABLE `wakarana_attempt_logs`(`user_id` TEXT NOT NULL, `succeeded` INTEGER NOT NULL, `attempt_datetime` TEXT NOT NULL, `ip_address` TEXT NOT NULL)");
-                if ($sqlite_r5_2 == FALSE) {
-                    $this->print_error("テーブル wakarana_login_tokens の作成に失敗しました。".$this->db_obj->lastErrorMsg());
-                    return FALSE;
-                }
-                
-                $sqlite_r5_3 = $this->db_obj->query("CREATE INDEX `idx_11` ON `wakarana_attempt_logs`(`user_id`,`attempt_datetime`)");
-                if ($sqlite_r5_3 == FALSE) {
-                    $this->print_error("テーブル wakarana_login_tokens のインデックスの作成に失敗しました。".$this->db_obj->lastErrorMsg());
-                    return FALSE;
-                }
-                
-                $sqlite_r5_4 = $this->db_obj->query("CREATE INDEX `idx_12` ON `wakarana_attempt_logs`(`ip_address`,`attempt_datetime`)");
-                if ($sqlite_r5_4 == FALSE) {
-                    $this->print_error("テーブル wakarana_login_tokens のインデックスの作成に失敗しました。".$this->db_obj->lastErrorMsg());
-                    return FALSE;
-                }
-            }
-            
-            
-            $sqlite_r6 = $this->db_obj->query("SELECT `name` FROM `sqlite_master` WHERE `type` = 'table' AND `name` = 'wakarana_mail_confirmation'");
-            if ($sqlite_r6 == FALSE) {
-                $this->print_error("テーブルの確認に失敗しました。".$this->db_obj->lastErrorMsg());
-                return FALSE;
-            }
-            
-            $q_kekka = $sqlite_r6->fetchArray(SQLITE3_ASSOC);
-            if (!$q_kekka) {
-                $sqlite_r6_2 = $this->db_obj->query("CREATE TABLE `wakarana_mail_confirmation`(`token` TEXT NOT NULL PRIMARY KEY, `user_id` TEXT UNIQUE, `mail_address` TEXT NOT NULL, `purpose` INTEGER NOT NULL, `token_created` TEXT NOT NULL)");
-                if ($sqlite_r6_2 == FALSE) {
-                    $this->print_error("テーブル wakarana_mail_confirmation の作成に失敗しました。".$this->db_obj->lastErrorMsg());
-                    return FALSE;
-                }
-                
-                $sqlite_r6_3 = $this->db_obj->query("CREATE INDEX `idx_13` ON `wakarana_mail_confirmation`(`mail_address`,`user_id`)");
-                if ($sqlite_r6_3 == FALSE) {
-                    $this->print_error("テーブル wakarana_mail_confirmation のインデックスの作成に失敗しました。".$this->db_obj->lastErrorMsg());
-                    return FALSE;
-                }
-                
-                $sqlite_r6_4 = $this->db_obj->query("CREATE INDEX `idx_14` ON `wakarana_mail_confirmation`(`token_created`)");
-                if ($sqlite_r6_4 == FALSE) {
-                    $this->print_error("テーブル wakarana_mail_confirmation のインデックスの作成に失敗しました。".$this->db_obj->lastErrorMsg());
-                    return FALSE;
-                }
-            }
-            
-            $sqlite_r7 = $this->db_obj->query("SELECT `name` FROM `sqlite_master` WHERE `type` = 'table' AND `name` = 'wakarana_totp_temporary_tokens'");
-            if ($sqlite_r7 == FALSE) {
-                $this->print_error("テーブルの確認に失敗しました。".$this->db_obj->lastErrorMsg());
-                return FALSE;
-            }
-            
-            $q_kekka = $sqlite_r7->fetchArray(SQLITE3_ASSOC);
-            if (!$q_kekka) {
-                $sqlite_r7_2 = $this->db_obj->query("CREATE TABLE `wakarana_totp_temporary_tokens`(`token` TEXT NOT NULL PRIMARY KEY, `user_id` TEXT NOT NULL, `token_created` TEXT NOT NULL)");
-                if ($sqlite_r7_2 == FALSE) {
-                    $this->print_error("テーブル wakarana_totp_temporary_tokens の作成に失敗しました。".$this->db_obj->lastErrorMsg());
-                    return FALSE;
-                }
-                
-                $sqlite_r7_3 = $this->db_obj->query("CREATE INDEX `idx_15` ON `wakarana_totp_temporary_tokens`(`user_id`,`token_created`)");
-                if ($sqlite_r7_3 == FALSE) {
-                    $this->print_error("テーブル wakarana_totp_temporary_tokens のインデックスの作成に失敗しました。".$this->db_obj->lastErrorMsg());
-                    return FALSE;
-                }
-                
-                $sqlite_r7_4 = $this->db_obj->query("CREATE INDEX `idx_16` ON `wakarana_totp_temporary_tokens`(`token_created`)");
-                if ($sqlite_r7_4 == FALSE) {
-                    $this->print_error("テーブル wakarana_totp_temporary_tokens のインデックスの作成に失敗しました。".$this->db_obj->lastErrorMsg());
-                    return FALSE;
-                }
-            }
-            
-            $this->disconnect_db();
-            
-            return TRUE;
-        } else {
-            $mysql_r1 = $this->db_obj->query("SHOW DATABASES LIKE '".$this->config["mysql_db"]."'");
-            if ($mysql_r1 == FALSE) {
-                $this->print_error("データベースの確認に失敗しました。".$this->db_obj->error);
-                return FALSE;
-            }
-            
-            $q_kekka = $mysql_r1->fetch_assoc();
-            if (!$q_kekka) {
-                $mysql_r1_2 = $this->db_obj->query("CREATE DATABASE `".$this->config["mysql_db"]."` default character set utf8");
-                if ($mysql_r1_2 == FALSE) {
-                    $this->print_error("データベースの作成に失敗しました。".$this->db_obj->error."データベース作成権限をご確認ください。");
-                    return FALSE;
-                }
-            }
-            
-            $this->db_obj->select_db($this->config["mysql_db"]);
-            
-            $mysql_r2 = $this->db_obj->query("SHOW TABLES FROM `".$this->config["mysql_db"]."` LIKE 'wakarana_users'");
-            if ($mysql_r2 == FALSE) {
-                $this->print_error("テーブルの確認に失敗しました。".$this->db_obj->error);
-                return FALSE;
-            }
-        
-            if ($mysql_r2->fetch_assoc() == NULL) {
-                $mysql_r2_2 = $this->db_obj->query("CREATE TABLE `wakarana_users`(`user_id` char(63) NOT NULL PRIMARY KEY, `password` varchar(128) NOT NULL, `user_name` char(63), `mail_address` varchar(255), `user_created` datetime NOT NULL, `last_updated` datetime NOT NULL, `last_access` datetime NOT NULL, `status` tinyint NOT NULL, `is_master` tinyint NOT NULL, `totp_key` varchar(16), INDEX idx_1(`mail_address`), INDEX idx_2(`user_name`), INDEX idx_3(`user_created`), INDEX idx_4(`last_updated`))");
-                if ($mysql_r2_2 == FALSE) {
-                    $this->print_error("テーブル wakarana_users の作成に失敗しました。".$this->db_obj->error);
-                    return FALSE;
-                }
-            }
-            
-            $mysql_r3 = $this->db_obj->query("SHOW TABLES FROM `".$this->config["mysql_db"]."` LIKE 'wakarana_login_tokens'");
-            if ($mysql_r3 == FALSE) {
-                $this->print_error("テーブルの確認に失敗しました。".$this->db_obj->error);
-                return FALSE;
-            }
-            
-            if ($mysql_r3->fetch_assoc() == NULL) {
-                $mysql_r3_2 = $this->db_obj->query("CREATE TABLE `wakarana_login_tokens`(`token` char(43) NOT NULL PRIMARY KEY, `user_id` char(63) NOT NULL, `token_created` datetime NOT NULL, `expire` datetime NOT NULL, `ip_address` char(15) NOT NULL, `operating_system` varchar(31), `browser_name` varchar(31) ,`last_access` datetime NOT NULL, INDEX idx_5(`user_id`,`token_created`), INDEX idx_6(`token_created`), INDEX idx_7(`expire`))");
-                if ($mysql_r3_2 == FALSE) {
-                    $this->print_error("テーブル wakarana_login_tokens の作成に失敗しました。".$this->db_obj->error);
-                    return FALSE;
-                }
-            }
-            
-            $mysql_r4 = $this->db_obj->query("SHOW TABLES FROM `".$this->config["mysql_db"]."` LIKE 'wakarana_privileges'");
-            if ($mysql_r4 == FALSE) {
-                $this->print_error("テーブルの確認に失敗しました。".$this->db_obj->error);
-            }
-            
-            if ($mysql_r4->fetch_assoc() == NULL) {
-                $mysql_r4_2 = $this->db_obj->query("CREATE TABLE `wakarana_privileges`(`user_id` char(63) NOT NULL, `permission_id` char(127) NOT NULL, PRIMARY KEY(`user_id`,`permission_id`), INDEX idx_8(`permission_id`,`user_id`))");
-                if ($mysql_r4_2 == FALSE) {
-                    $this->print_error("テーブル wakarana_privileges の作成に失敗しました。".$this->db_obj->error);
-                    return FALSE;
-                }
-            }
-            
-            $mysql_r5 = $this->db_obj->query("SHOW TABLES FROM `".$this->config["mysql_db"]."` LIKE 'wakarana_one_time_tokens'");
-            if ($mysql_r5 == FALSE) {
-                $this->print_error("テーブルの確認に失敗しました。".$this->db_obj->error);
-            }
-            
-            if ($mysql_r5->fetch_assoc() == NULL) {
-                $mysql_r5_2 = $this->db_obj->query("CREATE TABLE `wakarana_one_time_tokens`(`token` char(43) NOT NULL PRIMARY KEY, `user_id` char(63) NOT NULL, `token_created` datetime NOT NULL, INDEX idx_9(`user_id`,`token_created`), INDEX idx_10(`token_created`))");
-                if ($mysql_r5_2 == FALSE) {
-                    $this->print_error("テーブル wakarana_privileges の作成に失敗しました。".$this->db_obj->error);
-                    return FALSE;
-                }
-            }
-            
-            $mysql_r6 = $this->db_obj->query("SHOW TABLES FROM `".$this->config["mysql_db"]."` LIKE 'wakarana_attempt_logs'");
-            if ($mysql_r6 == FALSE) {
-                $this->print_error("テーブルの確認に失敗しました。".$this->db_obj->error);
-            }
-            
-            if ($mysql_r6->fetch_assoc() == NULL) {
-                $mysql_r6_2 = $this->db_obj->query("CREATE TABLE `wakarana_attempt_logs`(`user_id` char(63) NOT NULL, `succeeded` tinyint NOT NULL, `attempt_datetime` datetime NOT NULL, ip_address char(15), INDEX idx_11(`user_id`,`attempt_datetime`), INDEX idx_12(`ip_address`,`attempt_datetime`))");
-                if ($mysql_r6_2 == FALSE) {
-                    $this->print_error("テーブル wakarana_privileges の作成に失敗しました。".$this->db_obj->error);
-                    return FALSE;
-                }
-            }
-            
-            $mysql_r7 = $this->db_obj->query("SHOW TABLES FROM `".$this->config["mysql_db"]."` LIKE 'wakarana_mail_confirmation'");
-            if ($mysql_r7 == FALSE) {
-                $this->print_error("テーブルの確認に失敗しました。".$this->db_obj->error);
-            }
-            
-            if ($mysql_r7->fetch_assoc() == NULL) {
-                $mysql_r7_2 = $this->db_obj->query("CREATE TABLE `wakarana_mail_confirmation`(`token` char(43) NOT NULL PRIMARY KEY, `user_id` char(63) UNIQUE, `mail_address` varchar(255) NOT NULL, `purpose` tinyint NOT NULL, `token_created` datetime NOT NULL, INDEX idx_13(`mail_address`,`user_id`), INDEX idx_14(`token_created`))");
-                if ($mysql_r7_2 == FALSE) {
-                    $this->print_error("テーブル wakarana_privileges の作成に失敗しました。".$this->db_obj->error);
-                    return FALSE;
-                }
-            }
-            
-            $mysql_r8 = $this->db_obj->query("SHOW TABLES FROM `".$this->config["mysql_db"]."` LIKE 'wakarana_totp_temporary_tokens'");
-            if ($mysql_r8 == FALSE) {
-                $this->print_error("テーブルの確認に失敗しました。".$this->db_obj->error);
-            }
-            
-            if ($mysql_r8->fetch_assoc() == NULL) {
-                $mysql_r8_2 = $this->db_obj->query("CREATE TABLE `wakarana_totp_temporary_tokens`(`token` char(43) NOT NULL PRIMARY KEY, `user_id` char(63) NOT NULL, `token_created` datetime NOT NULL, INDEX idx_15(`user_id`,`token_created`), INDEX idx_16(`token_created`))");
-                if ($mysql_r8_2 == FALSE) {
-                    $this->print_error("テーブル wakarana_privileges の作成に失敗しました。".$this->db_obj->error);
-                    return FALSE;
-                }
-            }
-            
-            $this->disconnect_db();
-            return TRUE;
+        } catch (PDOException $err) {
+            $this->print_error("テーブル wakarana_users の作成処理に失敗しました。".$err->getMessage());
+            return FALSE;
         }
+        
+        try {
+            if ($this->config["use_sqlite"]) {
+                $this->db_obj->exec("CREATE INDEX IF NOT EXISTS `wakarana_idx_u1` ON `wakarana_users`(`user_name`)");
+            } else {
+                $this->db_obj->exec('CREATE UNIQUE INDEX IF NOT EXISTS "wakarana_idx_u0" ON "wakarana_users"((LOWER("user_id")))');
+                $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_u1" ON "wakarana_users"(LOWER("user_name"))');
+            }
+            
+            $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_u2" ON "wakarana_users"("email_address")');
+            $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_u3" ON "wakarana_users"("user_created")');
+        } catch (PDOException $err) {
+            $this->print_error("テーブル wakarana_users のインデックス作成処理に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        try {
+            if ($this->config["use_sqlite"]) {
+                $this->db_obj->exec("CREATE TABLE IF NOT EXISTS `wakarana_login_tokens`(`token` TEXT NOT NULL PRIMARY KEY, `user_id` TEXT COLLATE NOCASE NOT NULL, `token_created` TEXT NOT NULL, `ip_address` TEXT NOT NULL, `operating_system` TEXT, `browser_name` TEXT, `last_access` TEXT NOT NULL)");
+            } else {
+                $this->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_login_tokens"("token" varchar(43) NOT NULL PRIMARY KEY, "user_id" varchar(63) NOT NULL, "token_created" timestamp NOT NULL, "ip_address" varchar(39) NOT NULL, "operating_system" varchar(31), "browser_name" varchar(31), "last_access" timestamp NOT NULL)');
+            }
+        } catch (PDOException $err) {
+            $this->print_error("テーブル wakarana_login_tokens の作成処理に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        try {
+            $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_l1" ON "wakarana_login_tokens"("user_id", "token_created")');
+            $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_l2" ON "wakarana_login_tokens"("token_created")');
+        } catch (PDOException $err) {
+            $this->print_error("テーブル wakarana_login_tokens のインデックス作成処理に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        try {
+            if ($this->config["use_sqlite"]) {
+                $this->db_obj->exec("CREATE TABLE IF NOT EXISTS `wakarana_user_roles`(`user_id` TEXT COLLATE NOCASE NOT NULL, `role_name` TEXT NOT NULL, PRIMARY KEY(`user_id`, `role_name`))");
+            } else {
+                $this->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_user_roles"("user_id" varchar(63) NOT NULL, "role_name" varchar(63) NOT NULL, PRIMARY KEY("user_id", "role_name"))');
+            }
+        } catch (PDOException $err) {
+            $this->print_error("テーブル wakarana_user_roles の作成処理に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        try {
+            $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_r1" ON "wakarana_user_roles"("role_name", "user_id")');
+        } catch (PDOException $err) {
+            $this->print_error("テーブル wakarana_user_roles のインデックス作成処理に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        try {
+            if ($this->config["use_sqlite"]) {
+                $this->db_obj->exec("CREATE TABLE IF NOT EXISTS `wakarana_permission_values`(`role_name` TEXT NOT NULL, `permission_name` TEXT NOT NULL, `permission_value` INTEGER NOT NULL, PRIMARY KEY(`role_name`, `permission_name`))");
+            } else {
+                $this->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_permission_values"("role_name" varchar(63) NOT NULL, "permission_name" varchar(127) NOT NULL, "permission_value" integer NOT NULL, PRIMARY KEY("role_name", "permission_name"))');
+            }
+        } catch (PDOException $err) {
+            $this->print_error("テーブル wakarana_permission_values の作成処理に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        try {
+            $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_p1" ON "wakarana_permission_values"("permission_name", "permission_value", "role_name")');
+        } catch (PDOException $err) {
+            $this->print_error("テーブル wakarana_permission_values のインデックス作成処理に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        try {
+            if ($this->config["use_sqlite"]) {
+                $this->db_obj->exec("CREATE TABLE IF NOT EXISTS `wakarana_one_time_tokens`(`token` TEXT NOT NULL PRIMARY KEY, `user_id` TEXT COLLATE NOCASE NOT NULL, `token_created` TEXT NOT NULL)");
+            } else {
+                $this->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_one_time_tokens"("token" varchar(43) NOT NULL PRIMARY KEY, "user_id" varchar(63) NOT NULL, "token_created" timestamp NOT NULL)');
+            }
+        } catch (PDOException $err) {
+            $this->print_error("テーブル wakarana_one_time_tokens の作成処理に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        try {
+            $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_o1" ON "wakarana_one_time_tokens"("user_id", "token_created")');
+            $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_o2" ON "wakarana_one_time_tokens"("token_created")');
+        } catch (PDOException $err) {
+            $this->print_error("テーブル wakarana_one_time_tokens のインデックス作成処理に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        try {
+            if ($this->config["use_sqlite"]) {
+                $this->db_obj->exec("CREATE TABLE IF NOT EXISTS `wakarana_attempt_logs`(`user_id` TEXT COLLATE NOCASE NOT NULL, `succeeded` INTEGER NOT NULL, `attempt_datetime` TEXT NOT NULL, `ip_address` TEXT NOT NULL)");
+            } else {
+                $this->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_attempt_logs"("user_id" varchar(63) NOT NULL, "succeeded" boolean NOT NULL, "attempt_datetime" timestamp NOT NULL, "ip_address" varchar(15) NOT NULL)');
+            }
+        } catch (PDOException $err) {
+            $this->print_error("テーブル wakarana_attempt_logs の作成処理に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        try {
+            $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_a1" ON "wakarana_attempt_logs"("user_id", "succeeded", "attempt_datetime")');
+            $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_a2" ON "wakarana_attempt_logs"("ip_address", "succeeded", "attempt_datetime")');
+            $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_a3" ON "wakarana_attempt_logs"("attempt_datetime")');
+        } catch (PDOException $err) {
+            $this->print_error("テーブル wakarana_attempt_logs のインデックス作成処理に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        try {
+            if ($this->config["use_sqlite"]) {
+                $this->db_obj->exec("CREATE TABLE IF NOT EXISTS `wakarana_email_address_verification`(`token` TEXT NOT NULL PRIMARY KEY, `user_id` TEXT COLLATE NOCASE UNIQUE, `email_address` TEXT NOT NULL, `token_created` TEXT NOT NULL)");
+            } else {
+                $this->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_email_address_verification"("token" varchar(43) NOT NULL PRIMARY KEY, "user_id" varchar(63) UNIQUE, "email_address" varchar(255) NOT NULL, "token_created" timestamp NOT NULL)');
+            }
+        } catch (PDOException $err) {
+            $this->print_error("テーブル wakarana_email_address_verification の作成処理に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        try {
+            $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_e1" ON "wakarana_email_address_verification"("email_address", "user_id")');
+            $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_e2" ON "wakarana_email_address_verification"("token_created")');
+        } catch (PDOException $err) {
+            $this->print_error("テーブル wakarana_email_address_verification のインデックス作成処理に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        try {
+            if ($this->config["use_sqlite"]) {
+                $this->db_obj->exec("CREATE TABLE IF NOT EXISTS `wakarana_totp_temporary_tokens`(`token` TEXT NOT NULL PRIMARY KEY, `user_id` TEXT COLLATE NOCASE UNIQUE NOT NULL, `token_created` TEXT NOT NULL)");
+            } else {
+                $this->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_totp_temporary_tokens"("token" varchar(43) NOT NULL PRIMARY KEY, "user_id" varchar(63) UNIQUE NOT NULL, "token_created" timestamp NOT NULL)');
+            }
+        } catch (PDOException $err) {
+            $this->print_error("テーブル wakarana_totp_temporary_tokens の作成処理に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        try {
+            $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_t1" ON "wakarana_totp_temporary_tokens"("token_created")');
+        } catch (PDOException $err) {
+            $this->print_error("テーブル wakarana_totp_temporary_tokens のインデックス作成処理に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        $this->disconnect_db();
+        return TRUE;
     }
 }
