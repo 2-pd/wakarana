@@ -88,8 +88,10 @@ Base32エンコード用の変換対応表。
 ### class wakarana
 wakarana_commonの派生クラス。
 
-#### wakarana::construct()
-wakarana_common::__constructとwakarana_common::connect_dbを順に実行する。
+#### wakarana::construct($base_dir=NULL)
+wakarana_common::__constructとwakarana_common::connect_dbを順に実行する。  
+  
+**$base_dir** : wakarana_config.iniのあるフォルダのパス。省略時はcommon.phpのあるフォルダを使用する。
 
 
 #### wakarana::escape_id($id, $len=60)
