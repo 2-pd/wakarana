@@ -41,6 +41,18 @@ class wakarana_common {
     }
     
     
+    function __get ($name) {
+        switch ($name) {
+            case "base_path":
+                return $this->base_path;
+            case "config":
+                return $this->config;
+            case "db_obj":
+                return $this->db_obj;
+        }
+    }
+    
+    
     protected function connect_db () {
         try {
             if ($this->config["use_sqlite"]) {

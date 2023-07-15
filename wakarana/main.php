@@ -23,8 +23,43 @@ class wakarana extends wakarana_common {
     }
     
     
-    function escape_id ($id, $len = 60) {
+    static function escape_id ($id, $len = 60) {
         return substr(preg_replace("/[^0-9A-Za-z_]/", "", $id), 0, $len);
+    }
+    
+    
+    
+    
+    
+    static function create_token () {
+        return rtrim(strtr(base64_encode(random_bytes(32)), "+/", "-_"), "=");
+    }
+    
+    
+    
+    
+    
+    static function get_user_environment () {
+        $os_names = array("Android", "iPhone", "iPad", "Windows", "Macintosh", "CrOS", "Linux", "BSD", "Nintendo", "PlayStation", "Xbox");
+        $browser_names = array("Firefox", "Edg", "OPR", "Sleipnir", "Chrome", "Safari", "Trident");
+        
+        $environment = array("os_name" => NULL, "browser_name" => NULL);
+        
+        foreach ($os_names as $os_name) {
+            if (strpos($_SERVER["HTTP_USER_AGENT"], $os_name) !== FALSE){
+                $environment["os_name"] = $os_name;
+                break;
+            }
+        }
+        
+        foreach ($browser_names as $browser_name) {
+            if (strpos($_SERVER["HTTP_USER_AGENT"], $browser_name) !== FALSE){
+                $environment["browser_name"] = $browser_name;
+                break;
+            }
+        }
+        
+        return $environment;
     }
     
     
@@ -35,7 +70,7 @@ class wakarana extends wakarana_common {
         $pin_expire = $this->config["totp_pin_expire"] * 2;
         
         for ($cnt = 0; $cnt <= $pin_expire; $cnt++) {
-            if ($totp_pin === $this->get_totp_pin($totp_key, $cnt)) {
+            if ($totp_pin === self::get_totp_pin($totp_key, $cnt)) {
                 return TRUE;
             }
         }
@@ -44,10 +79,7 @@ class wakarana extends wakarana_common {
     }
     
     
-    
-    
-    
-    protected function bin_to_int ($bin, $start, $length) {
+    protected static function bin_to_int ($bin, $start, $length) {
         if ($length > PHP_INT_SIZE * 8 - 1) {
             return FALSE;
         }
@@ -72,7 +104,7 @@ class wakarana extends wakarana_common {
     }
     
     
-    protected function int_to_bin ($int, $digits_start) {
+    protected static function int_to_bin ($int, $digits_start) {
         if ($digits_start < 8) {
             $int = $int << (8 - $digits_start);
         } elseif ($digits_start > 8) {
@@ -83,19 +115,19 @@ class wakarana extends wakarana_common {
     }
     
     
-    function create_totp_key () {
+    static function create_totp_key () {
         $key_bin = random_bytes(10);
         
         $totp_key = "";
         for ($cnt = 0; $cnt < 16; $cnt++) {
-            $totp_key .= WAKARANA_BASE32_TABLE[$this->bin_to_int($key_bin, $cnt * 5, 5)];
+            $totp_key .= WAKARANA_BASE32_TABLE[self::bin_to_int($key_bin, $cnt * 5, 5)];
         }
         
         return $totp_key;
     }
     
     
-    protected function base32_decode ($base32_str) {
+    protected static function base32_decode ($base32_str) {
         $len = strlen($base32_str);
         
         $bin = "";
@@ -111,23 +143,23 @@ class wakarana extends wakarana_common {
             $buf_head += 5;
             
             if ($buf_head >= 8) {
-                $bin .= $this->int_to_bin($bin_buf, $buf_head);
+                $bin .= self::int_to_bin($bin_buf, $buf_head);
                 $buf_head -= 8;
             }
         }
         
         if ($buf_head >= 1) {
-            $bin .= $this->int_to_bin($bin_buf, $buf_head);
+            $bin .= self::int_to_bin($bin_buf, $buf_head);
         }
         
         return $bin;
     }
     
     
-    protected function get_totp_pin ($key_base32, $past_30s = 0) {
-        $mac = hash_hmac("sha1", pack("J", floor(time() / 30) - $past_30s), $this->base32_decode($key_base32), TRUE);
+    protected static function get_totp_pin ($key_base32, $past_30s = 0) {
+        $mac = hash_hmac("sha1", pack("J", floor(time() / 30) - $past_30s), self::base32_decode($key_base32), TRUE);
         
-        $bin_code = unpack("N", $mac, $this->bin_to_int($mac, 156, 4));
+        $bin_code = unpack("N", $mac, self::bin_to_int($mac, 156, 4));
         
         return str_pad((strval($bin_code[1] & 0x7FFFFFFF) % 1000000), 6, "0", STR_PAD_LEFT);
     }

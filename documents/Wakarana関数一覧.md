@@ -25,6 +25,13 @@ wakaranaクラスとwakarana_configクラスの親クラス。このクラスの
 **$base_dir** : wakarana_config.iniのあるフォルダのパス。省略時はcommon.phpのあるフォルダを使用する。
 
 
+#### wakarana_common::__get($name)
+クラス内呼び出し用変数にクラス外からアクセスされた場合の処理。
+ベースディレクトリ、設定ファイル変数値、DB接続については読み出しを許可する。  
+  
+**$name** : クラス内変数名。
+
+
 #### ◆ wakarana_common::connect_db()
 wakarana_config.iniの設定に基づき、データベースに接続する。  
 ◆クラス内呼び出し専用であり、wakaranaクラスとwakarana_configクラスはこの関数を自動的に実行する。  
@@ -94,13 +101,22 @@ wakarana_common::__constructとwakarana_common::connect_dbを順に実行する�
 **$base_dir** : wakarana_config.iniのあるフォルダのパス。省略時はcommon.phpのあるフォルダを使用する。
 
 
-#### wakarana::escape_id($id, $len=60)
+#### ☆ wakarana::escape_id($id, $len=60)
 ユーザーIDやロール名、権限名などの識別名として使用できない文字を除去する。  
+☆staticメソッド。  
   
 **$id** : 変換前の文字列  
 **$len** : 文字列の長さの上限   
   
 **返り値** ： 変換後の文字列
+
+
+#### wakarana::get_user($user_id)
+ユーザーIDで指定したユーザーのwakarana_userインスタンスを生成する。  
+  
+**$user_id** ： ユーザーID  
+  
+**返り値** ： ユーザーが存在する場合はwakarana_userクラスのインスタンス、存在しない場合はFALSEを返す。
 
 
 #### wakarana::get_all_users($start=0, $limit=100, $order_by=WAKARANA_ORDER_USER_CREATED, $asc=TRUE)
@@ -111,23 +127,7 @@ wakarana_common::__constructとwakarana_common::connect_dbを順に実行する�
 **$order_by** : 並び替え基準。WAKARANA_ORDER_USER_CREATEDまたはWAKARANA_ORDER_USER_IDまたはWAKARANA_ORDER_USER_NAMEのいずれか。  
 **$asc** : 昇順で取得する場合はTRUE、降順ならFALSE。  
   
-**返り値** ： 成功した場合は、ユーザーIDを配列で返す。失敗した場合はFALSEを返す。
-
-
-#### wakarana::email_address_exists($email_address)
-あるメールアドレスを使用しているユーザーがいるかを調る。  
-  
-**$email_address** ： 調べるメールアドレス  
-  
-**返り値** ： 指定したメールアドレスを登録しているユーザーがいればそのユーザーID、そうでない場合はFALSE、エラーの場合はNULLを返す。
-
-
-#### wakarana::get_user_info($user_id)
-ユーザーIDで指定したユーザーの各種情報を取得する。  
-  
-**$user_id** ： ユーザーID  
-  
-**返り値** ： 成功した場合は、ユーザーの各種情報を連想配列で返す。失敗した場合はFALSEを返す。
+**返り値** ： 成功した場合は、wakarana_userインスタンスを配列で返す。失敗した場合はFALSEを返す。
 
 
 #### wakarana::add_user($user_id, $password, $user_name="", $email_address=NULL, $status=WAKARANA_STATUS_NORMAL)
@@ -139,70 +139,17 @@ wakarana_common::__constructとwakarana_common::connect_dbを順に実行する�
 **$email_address** ： 追加するユーザーのメールアドレス。省略可。  
 **$status** ： WAKARANA_STATUS_DISABLEを指定すると一時的に使用できないユーザーとして作成することができる。  
   
-**返り値** ： 成功した場合はユーザーIDを返す。失敗した場合はFALSEを返す。
+**返り値** ： 成功した場合は追加したユーザーのwakarana_userインスタンスを返す。失敗した場合はFALSEを返す。
 
 
-#### wakarana::change_user_data($user_id, $password=NULL, $user_name=NULL, $email_address=NULL, $is_master=NULL, $status=NULL)
-指定したIDのユーザーの各種情報を変更する。  
-  
-**引数については「add_user」と同様。** NULLを指定したものは変更しない。  
-  
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
-
-
-#### wakarana::delete_user($user_id)
-ユーザーを削除する。  
-  
-**$user_id** ： 削除するユーザーのID
-  
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
-
-
-#### wakarana::enable_2_factor_auth($user_id, $totp_key=NULL)
-指定したIDのユーザーのログイン時に2段階認証を要求するように設定する。  
-  
-**$user_id** ： ユーザーID  
-**$totp_key** ： TOTP生成鍵。省略したときは自動で生成される。  
-  
-**返り値** ： 成功した場合はTOTP生成鍵、失敗した場合はFALSEを返す。
-
-
-#### wakarana::disable_2_factor_auth($user_id)
-指定したIDのユーザーのログイン時に2段階認証を要求しないように設定する。    
-  
-**$user_id** ： ユーザーID  
-  
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
-
-
-#### wakarana::get_roles($user_id=NULL)
-ロール名の一覧を取得する。  
-  
-**$user_id** ： ユーザーID。NULLの場合はどのユーザーにも紐付けられていないものも含め、存在する全てのロールを返す。  
+#### wakarana::get_roles()
+存在するロール名の一覧を取得する。    
   
 **返り値** ： ロール名をアルファベット順に格納した配列を返す。ロールが存在しない場合は空配列を返す。
 
 
-#### wakarana::add_role($user_id, $role_name)
-ユーザーにロールを付与する。  
-  
-**$user_id** ： ユーザーID  
-**$role_name** ： ロール名。半角英数字及びアンダーバーが使用可能。アルファベット大文字は小文字に変換される。  
-  
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
-
-
-#### wakarana::remove_role($user_id=NULL, $role_name=NULL)
-ユーザーからロールを剥奪する。  
-  
-**$user_id** ： ユーザーID。NULLまたは省略した場合、全てのユーザーからロールを剥奪する。  
-**$role_name** ： ロール名。NULLまたは省略した場合、全てのロールを削除する。  
-  
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
-
-
 #### wakarana::delete_role($role_name)
-ロールを完全に削除する。  
+指定したロールを完全に削除する。  
   
 **$role_name** ： ロール名  
   
@@ -239,97 +186,32 @@ wakarana_common::__constructとwakarana_common::connect_dbを順に実行する�
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
-#### wakarana::check_permission($user_id, $permission_name)
-ユーザーに権限があるかを確認する。  
-特権管理者ロール(WAKARANA_ADMIN_ROLE)を持つユーザーの場合、割り当てられていないか「0」が割り当てられている権限の権限値を全て「-1」とみなす。  
-  
-**$user_id** ： ユーザーID  
-**$permission_name** ： そのユーザーが持っているかどうかを確認する権限の名前  
-  
-**返り値** ： そのユーザーが持っている各ロールの権限値のうち最大のものを返す。どのロールにも権限がない場合は「0」とみなす。
-
-
-#### ◆ wakarana::create_token()
+#### ☆ wakarana::create_token()
 トークンとして使用可能な文字列をランダムに生成する。  
-◆クラス内呼び出し専用。  
+☆staticメソッド。  
   
 **返り値** ： 英数字と記号(-と_)からなるランダムな文字列を返す。
 
 
-#### wakarana::delete_all_tokens($user_id=NULL)
-指定したユーザーの全トークン(ログイントークン、ワンタイムトークン、メールアドレス確認トークン、2段階認証用一時トークン)を全て削除する。  
-  
-**$user_id** ： ユーザーID。NULLの場合は全ユーザーのトークンを削除する。  
+#### wakarana::delete_all_tokens()
+データベースに存在する各種トークン(ログイントークン、ワンタイムトークン、メールアドレス確認トークン、2段階認証用一時トークン)を全て削除する。  
   
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
-#### wakarana::get_user_environment()
+#### ☆ wakarana::get_user_environment()
 アクセス中のクライアント端末の情報を連想配列で返す。  
+☆staticメソッド。  
   
 **返り値** ： キー"os_name"(OS名)と"browser_name"(ブラウザ名)が含まれる連想配列。
 
 
-#### wakarana::get_attempt_logs($user_id)
-指定したユーザーのログイン試行履歴を取得する。  
-  
-**$user_id** ： ユーザーID  
-  
-**返り値** ： 成功した場合はそのユーザーの各試行履歴が格納された連想配列("user_id"(ユーザーID)、"succeeded"(正しいパスワードを入力したか否か)、"attempt_datetime"(試行日時))を、配列に入れて返す。失敗した場合はFALSEを返す。
-
-
-#### ◆ wakarana::check_attempt_interval($user_id)
-前回のログイン試行から次に試行できるようになるまでの期間が経過しているかを調べる。  
-◆クラス内呼び出し専用。  
-  
-**$user_id** ： ユーザーID  
-  
-**返り値** ： wakarana_config.iniで指定した期間が経過していればTRUE、そうでない場合はFALSEを返す。
-
-
-#### ◆ wakarana::add_attempt_log($user_id, $succeeded)
-ログイン試行ログを登録する。  
-◆クラス内呼び出し専用。  
-  
-**$user_id** ： ユーザーID  
-**$succeeded** : ログインが成功した場合はTRUE、失敗した場合はFALSEを指定する。  
-  
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
-
-
-#### wakarana::delete_attempt_logs($user_id=NULL)
-指定したユーザーのログイン試行履歴を全て削除する。  
-  
-**$user_id** ： ユーザーID。NULLを指定した場合は全ユーザーが対象となる。  
-  
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
-
-
-#### wakarana::delete_old_attempt_logs($expire=-1)
+#### wakarana::delete_attempt_logs($expire=-1)
 指定した期間より前のログイン試行履歴を全て削除する。  
   
 **$expire** ： 経過時間の秒数。-1を指定した場合はwakarana_config.iniで指定した履歴の保持秒数が代わりに使用される。  
   
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
-
-
-#### wakarana::update_last_access($user_id)
-現在の時刻を指定したユーザーの最終アクセス日時として記録する。  
-ログイントークン発行処理とログアウト処理ではこの関数が自動的に実行される。  
-  
-**$user_id** ： ユーザーID  
-  
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
-
-
-#### wakarana::check_password($user_id, $password)
-ユーザーIDとそのユーザーのパスワードが正しいかどうかを確認する。  
-この関数は2段階認証を無視するため、ログイン認証に使用するべきではない。  
-  
-**$user_id** ： ユーザーID  
-**$password** ： パスワード  
-  
-**返り値** ： 正しいパスワードだった場合はTRUE、それ以外の場合はFALSEを返す。
 
 
 #### wakarana::authenticate($user_id, $password, $totp_pin=NULL)
@@ -340,25 +222,7 @@ wakarana_common::__constructとwakarana_common::connect_dbを順に実行する�
 **$password** ： パスワード  
 **$totp_pin** ： 6桁のTOTPコード。2要素認証を使用しない場合と2要素認証の入力画面を分ける場合は省略。  
   
-**返り値** ： 認証された場合はTRUE、ユーザーIDが2段階認証の対象ユーザーでTOTPコードがNULLだった場合は仮トークン、それ以外の場合はFALSEを返す。
-
-
-#### wakarana::create_login_token($user_id)
-ログイントークンを生成とデータベース登録処理を行うが、クライアント端末への送信は行わない。  
-wakarana::loginとは別のトークン送信処理を実装する必要がある環境向け。  
-  
-**$user_id** ： ユーザーID  
-  
-**返り値** ： 成功した場合は登録されたログイントークン、失敗した場合はFALSEを返す。
-
-
-#### ◆ wakarana::set_login_token($user_id)
-ユーザーにトークンを割り当て、クライアント端末に送信する。  
-◆クラス内呼び出し専用。  
-  
-**$user_id** ： ユーザーID  
-  
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** ： 認証された場合はユーザーのwakarana_userインスタンス、ユーザーIDが2段階認証の対象ユーザーでTOTPコードがNULLだった場合は仮トークン、それ以外の場合はFALSEを返す。
 
 
 #### wakarana::login($user_id, $password, $totp_pin=NULL)
@@ -370,18 +234,10 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
 **$password** ： パスワード  
 **$totp_pin** ： 6桁のTOTPコード。2要素認証を使用しない場合と2要素認証の入力画面を分ける場合は省略。  
   
-**返り値** ： ログインが完了した場合はTRUE、ユーザーIDが2要素認証の対象ユーザーでTOTPコードがNULLだった場合は仮トークン、それ以外の場合はFALSEを返す。
+**返り値** ： ログインが完了した場合はwakarana_userインスタンス、ユーザーIDが2要素認証の対象ユーザーでTOTPコードがNULLだった場合は仮トークン、それ以外の場合はFALSEを返す。
 
 
-#### wakarana::delete_login_tokens($user_id=NULL)
-指定したユーザーのログイントークンを全て削除する。  
-  
-**$user_id** ： ユーザーID。NULLの場合は全ユーザーのログイントークンを削除する。  
-  
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。  
-
-
-#### wakarana::delete_old_login_tokens($expire=-1)
+#### wakarana::delete_login_tokens($expire=-1)
 指定した経過時間より前に生成されたログイントークンを無効化する。  
   
 **$expire** ： 経過時間の秒数。-1を指定した場合はwakarana_config.iniで指定したログイントークンの有効秒数が代わりに使用される。  
@@ -389,42 +245,34 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
-#### wakarana::create_email_address_verification_token($email_address,$user_id=NULL)
-メールアドレス確認トークンを生成し、データベースに登録する。  
+#### wakarana::email_address_exists($email_address)
+あるメールアドレスを使用しているユーザーがいるかを調る。  
+  
+**$email_address** ： 調べるメールアドレス  
+  
+**返り値** ： 指定したメールアドレスを登録しているユーザーがいればそのユーザーID、そうでない場合はFALSE、エラーの場合はNULLを返す。
+
+
+#### wakarana::create_email_address_verification_token($email_address)
+アカウント登録前の新規ユーザーに対してメールアドレス確認トークンを生成し、データベースに登録する。  
 この関数によりメールが送信されるわけではない。  
   
-**$email_address** : トークンの送信先メールアドレス。  
-**$user_id** : ユーザーID。登録前の新規ユーザーに対してトークンを発行する場合はNULLを指定する。  
+**$email_address** : トークンの送信先メールアドレス。   
   
 **返り値** ： 成功した場合はメールアドレス確認トークン、失敗した場合はFALSEを返す。
 
 
 #### wakarana::email_address_verify($token, $delete_token=TRUE)
-メールアドレス確認トークンを照合し、トークン生成時に紐付けられたメールアドレスとユーザーID(NULLの場合もある)を取得する。  
+メールアドレス確認トークンを照合し、トークン生成時に紐付けられたメールアドレスとユーザーを取得する。 
+トークンがアカウント登録前の新規ユーザーに対して生成されたものだった場合、メールアドレスのみを取得する。  
   
 **$token** : メールアドレス確認トークン  
 **$delete_token** : TRUEの場合、使用済みのメールアドレス確認トークンを削除する。  
   
-**返り値** ： 認証された場合はキー"user_id"(ユーザーID)と"email_address"(メールアドレス)が含まれる連想配列を返し、それ以外の場合はFALSEを返す。
+**返り値** ： 認証された場合はキー"wakarana_user"(wakarana_userインスタンス)と"email_address"(メールアドレス)が含まれる連想配列を返し、それ以外の場合はFALSEを返す。
 
 
-#### wakarana::save_user_email_address($token)
-メールアドレス確認トークンを照合すし、トークンに紐付けられていたユーザーIDのユーザーのメールアドレスをトークンに紐付けられたメールアドレスで上書きする。  
-  
-**$token** : メールアドレス確認トークン  
-  
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
-
-
-#### wakarana::delete_email_address_verification_tokens($user_id=NULL)
-指定したユーザーのメールアドレス確認トークンを全て削除する。  
-  
-**$user_id** ： ユーザーID。NULLの場合は全ユーザーのメールアドレス確認トークンを削除する。  
-  
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
-
-
-#### wakarana::delete_old_email_address_verification_tokens($expire=-1)
+#### wakarana::delete_email_address_verification_tokens($expire=-1)
 指定した経過時間より前に生成されたメールアドレス確認トークンを無効化する。  
   
 **$expire** ： 経過時間の秒数。-1を指定した場合はwakarana_config.iniで指定したメールアドレス確認トークンの有効秒数が代わりに使用される。  
@@ -432,24 +280,7 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
-#### ◆ wakarana::create_totp_temporary_token($user_id)
-指定したユーザーに対して2段階認証用の一時トークンを発行する。  
-◆クラス内呼び出し専用。  
-  
-**$user_id** : ユーザーID  
-  
-**返り値** ： 成功した場合は一時トークン、失敗した場合はFALSEを返す。
-
-
-#### wakarana::delete_totp_tokens($user_id=NULL)
-指定したユーザーの2段階認証用の一時トークンを全て削除する。  
-  
-**$user_id** ： ユーザーID。NULLの場合は全ユーザーの一時トークンを削除する。  
-  
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
-
-
-#### wakarana::delete_old_totp_tokens($expire=-1)
+#### wakarana::delete_totp_tokens($expire=-1)
 指定した経過時間より前に生成された2段階認証用一時トークンを無効化する。  
   
 **$expire** ： 経過時間の秒数。-1を指定した場合はwakarana_config.iniで指定した2段階認証用一時トークンの有効秒数が代わりに使用される。  
@@ -463,7 +294,7 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
 **tmp_token** ： wakarana::authenticateにより発行される仮トークン  
 **$totp_pin** ： 6桁のTOTPコード  
   
-**返り値** ： 認証された場合はTRUE、それ以外の場合はFALSEを返す。
+**返り値** ： 認証された場合はユーザーのwakarana_userインスタンス、それ以外の場合はFALSEを返す。
 
 
 #### wakarana::totp_login($tmp_token, $totp_pin)
@@ -474,7 +305,7 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
 **tmp_token** ： wakarana::loginにより発行される仮トークン  
 **$totp_pin** ： 6桁のTOTPコード  
   
-**返り値** ： ログインが完了した場合はTRUE、それ以外の場合はFALSEを返す。
+**返り値** ： ログインが完了した場合はユーザーのwakarana_userインスタンス、それ以外の場合はFALSEを返す。
 
 
 #### wakarana::check($token=NULL)
@@ -482,7 +313,7 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
   
 **$token** ： 文字列を指定した場合、クライアント端末のcookieではなくその文字列をログイントークンとみなして照合処理を行う。  
   
-**返り値** ： 正しいログイントークンでログインしており、かつ、停止中のアカウントでない場合はそのトークンに対応するユーザーID、それ以外の場合はFALSEを返す。
+**返り値** ： 正しいログイントークンでログインしており、かつ、停止中のアカウントでない場合はそのトークンに対応するユーザーのwakarana_userインスタンス、それ以外の場合はFALSEを返す。
 
 
 #### wakarana::delete_login_token($token)
@@ -501,32 +332,7 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
-#### wakarana::create_one_time_token($user_id)
-指定したユーザーが利用可能なワンタイムトークンを発行する。  
-  
-**$user_id** ： ユーザーID  
-  
-**返り値** ： 成功した場合はワンタイムトークンを、エラーの場合はFALSEを返す。
-
-
-#### wakarana::check_one_time_token($user_id, $token)
-ワンタイムトークンを照合する。照合が終わったワンタイムトークンは自動的にデータベースから削除される。  
-  
-**$user_id** ： ユーザーID  
-**$token** ： ワンタイムトークン  
-  
-**返り値** ： 正しいワンタイムトークンだった場合はTRUEを、それ以外の場合はFALSEを返す。
-
-
-#### wakarana::delete_one_time_tokens($user_id=NULL)
-指定したユーザーのワンタイムトークンを全て削除する。  
-  
-**$user_id** ： ユーザーID。NULLの場合は全ユーザーのワンタイムトークンを削除する。  
-  
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
-
-
-#### wakarana::delete_old_one_time_tokens($expire=-1)
+#### wakarana::delete_one_time_tokens($expire=-1)
 指定した経過時間より前に生成されたワンタイムトークンを無効化する。  
   
 **$expire** ： 経過時間の秒数。-1を指定した場合はwakarana_config.iniで指定したトークンの有効秒数が代わりに使用される。  
@@ -535,7 +341,7 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
 
 
 #### wakarana::totp_compare($totp_key, $totp_pin)
-TOTPの規格に基づいて生成鍵とワンタイムコードを照合する。  
+TOTPの規格に基づいて現在時刻のタイムスタンプで生成鍵とワンタイムコードを照合する。  
   
 **$totp_key** ： TOTP生成鍵  
 **$totp_pin** ： 6桁のTOTPコード  
@@ -543,18 +349,10 @@ TOTPの規格に基づいて生成鍵とワンタイムコードを照合する�
 **返り値** ： 生成鍵に対して正しいTOTPコードだった場合はTRUEを、それ以外の場合はFALSEを返す。
 
 
-#### wakarana::totp_check($user_id, $totp_pin)
-ユーザーに割り当てられたTOTP生成鍵とワンタイムコードを照合する。  
-  
-**$user_id** ： ユーザーID  
-**$totp_pin** ： 6桁のTOTPコード  
-  
-**返り値** ： ユーザーに割り当てられた生成鍵に対して正しいTOTPコードだった場合はTRUEを、それ以外の場合はFALSEを返す。
-
-
-#### ◆ wakarana::bin_to_int($bin, $start, $length)
+#### ◆☆ wakarana::bin_to_int($bin, $start, $length)
 バイナリデータをビット単位で切り出し、整数に変換する。  
 ◆クラス内呼び出し専用。  
+☆staticメソッド。  
   
 **$bin** : バイナリデータを格納した文字列  
 **$start** : 切り出し開始ビット  
@@ -563,9 +361,10 @@ TOTPの規格に基づいて生成鍵とワンタイムコードを照合する�
 **返り値** ： 切り出したビット列を2進数として解釈した整数値を返す。
 
 
-#### ◆ wakarana::int_to_bin($int, $digits_start)
+#### ◆☆ wakarana::int_to_bin($int, $digits_start)
 整数値型のデータから2進数で8桁分のビットを切り出して1バイトのバイナリに変換する。  
 ◆クラス内呼び出し専用。  
+☆staticメソッド。  
   
 **$int** : 整数値型データ  
 **$digits_start** : データを2進数に変換したときの下から何番目の位から切り出すか。  
@@ -573,29 +372,289 @@ TOTPの規格に基づいて生成鍵とワンタイムコードを照合する�
 **返り値** ： 1バイトの文字列に格納されたバイナリを返す。
 
 
-#### wakarana::create_totp_key()
-ランダムなTOTP生成鍵を作成する。この関数は作成したTOTP生成鍵をデータベースに保存しない。   
+#### ☆ wakarana::create_totp_key()
+ランダムなTOTP生成鍵を作成する。この関数は作成したTOTP生成鍵をデータベースに保存しない。  
+☆staticメソッド。  
   
 **返り値** ： 16桁のTOTP生成鍵を返す。
 
 
-#### ◆ wakarana::base32_decode($base32_str)
+#### ◆☆ wakarana::base32_decode($base32_str)
 Base32エンコードされた文字列をバイナリにデコードする。  
 ◆クラス内呼び出し専用。  
+☆staticメソッド。  
   
 **$base32_str** : Base32エンコードされた文字列  
   
 **返り値** ： バイナリデータを格納した文字列を返す。
 
 
-#### ◆ wakarana::get_totp_pin($key_base32, $past_30s=0)
+#### ◆☆ wakarana::get_totp_pin($key_base32, $past_30s=0)
 TOTP生成鍵と現在時刻からワンタイムコードを生成する。  
 ◆クラス内呼び出し専用。  
+☆staticメソッド。  
   
 **$key_base32** : TOTP生成鍵  
 **$past_30s** : 負でない整数値。この値に30をかけた秒数過去のタイムスタンプを現在時刻とみなす。  
   
 **返り値** ： ワンタイムコードを返す。
+
+
+### class wakarana_user
+ユーザーの情報を読み書きするためのクラス。1インスタンスごとに1ユーザーの情報が割り当てられる。
+
+#### wakarana_user::__construct($wakarana, $user_info)
+コンストラクタ。wakarana::get_user実行時に呼び出されるものであり、直接インスタンス化するべきではない。  
+  
+**$wakarana** : 呼び出し元のwakaranaインスタンス  
+**$user_info** : ユーザー情報("user_id"(ユーザーID)、"user_name"(ユーザー名)、"password"(ハッシュ化されたパスワード)、"email_addres"(メールアドレス)、"user_created"(アカウント作成日時)、"last_updated"(アカウント情報更新日時)、"last_access"(最終アクセス日時)、"status"(アカウントが使用可能か停止されているか)、"totp_key"(TOTPワンタイムパスワード生成キー))を格納した連想配列。
+
+
+#### wakarana_user::get_id()
+ユーザーのIDを取得する。  
+  
+**返り値** ： ユーザーIDを返す。
+
+
+#### wakarana_user::get_name()
+ユーザー名を取得する。  
+  
+**返り値** ： ユーザー名が登録されていればユーザー名を、なければNULLを返す。
+
+
+#### wakarana_user::check_password($password)
+入力したパスワードとそのユーザーのパスワードが一致するかどうかを確認する。  
+この関数は2段階認証を無視するため、ログイン認証に使用するべきではない。  
+  
+**$password** ： パスワード  
+  
+**返り値** ： 正しいパスワードだった場合はTRUE、それ以外の場合はFALSEを返す。
+
+
+#### wakarana_user::get_email_addres()
+ユーザーのメールアドレスを取得する。  
+  
+**返り値** ： メールアドレスが登録されていればメールアドレスを、なければNULLを返す。
+
+
+#### wakarana_user::get_created()
+ユーザーの登録日時を取得する。  
+  
+**返り値** ： YYYY-MM-DD hh:mm:ss形式の文字列。
+
+
+#### wakarana_user::get_last_updated()
+ユーザー情報の更新日時を取得する。  
+  
+**返り値** ： YYYY-MM-DD hh:mm:ss形式の文字列。
+
+
+#### wakarana_user::get_last_access()
+ユーザーの最終アクセス日時を取得する。  
+  
+**返り値** ： YYYY-MM-DD hh:mm:ss形式の文字列。
+
+
+#### wakarana_user::get_status()
+ユーザーの状態(アカウントが有効か停止されているか、等)を取得する。  
+  
+**返り値** ： WAKARANA_STATUS_NORMALまたはWAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_EMAIL_UNVERIFIED。
+
+
+#### wakarana_user::get_totp_enabled()
+ユーザーの2要素認証が有効になっているかを取得する。  
+  
+**返り値** ： 2要素認証が有効ならばTRUE、そうでない場合はFALSEを返す。
+
+
+#### wakarana_user::change_password($password)
+ユーザーのパスワードを変更する。  
+  
+**$password** ： パスワード  
+  
+**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
+#### wakarana_user::set_name($user_name)
+ユーザー名を変更する。  
+  
+**$user_name** ： ユーザー名  
+  
+**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
+#### wakarana_user::set_email_address($email_address)
+ユーザーのメールアドレスを変更する。  
+  
+**$email_address** ： メールアドレス  
+  
+**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
+#### wakarana_user::set_status($status)
+ユーザーアカウントの状態(有効、停止、等)を切り替える。  
+  
+**$status** : WAKARANA_STATUS_NORMALまたはWAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_EMAIL_UNVERIFIED。  
+  
+**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
+#### wakarana_user::enable_2_factor_auth($totp_key=NULL)
+ユーザーのログイン時に2段階認証を要求するように設定する。  
+  
+**$totp_key** ： TOTP生成鍵。省略したときは自動で生成される。  
+  
+**返り値** ： 成功した場合はTOTP生成鍵、失敗した場合はFALSEを返す。
+
+
+#### wakarana_user::disable_2_factor_auth()
+ユーザーのログイン時に2段階認証を要求しないように設定する。  
+  
+**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
+#### wakarana_user::get_roles()
+ユーザーに割り当てられたロール名の一覧を取得する。  
+  
+**返り値** ： ロール名をアルファベット順に格納した配列を返す。ロールが存在しない場合は空配列を返す。
+
+
+#### wakarana_user::add_role($role_name)
+ユーザーにロールを付与する。  
+  
+**$user_id** ： ユーザーID  
+**$role_name** ： ロール名。半角英数字及びアンダーバーが使用可能。アルファベット大文字は小文字に変換される。  
+  
+**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
+#### wakarana_user::remove_role($role_name=NULL)
+ユーザーからロールを剥奪する。  
+  
+**$role_name** ： ロール名。NULLまたは省略した場合、全てのロールを削除する。  
+  
+**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
+#### wakarana_user::check_permission($permission_name)
+ユーザーに権限があるかを確認する。  
+特権管理者ロール(WAKARANA_ADMIN_ROLE)を持つユーザーの場合、割り当てられていないか「0」が割り当てられている権限の権限値を全て「-1」とみなす。  
+  
+**$permission_name** ： 権限の名前  
+  
+**返り値** ： ユーザーが持っている各ロールの権限値のうち最大のものを返す。どのロールにも権限がない場合は「0」とみなす。
+
+
+#### wakarana_user::delete_all_tokens($user_id=NULL)
+ユーザーの各種トークン(ログイントークン、ワンタイムトークン、メールアドレス確認トークン、2段階認証用一時トークン)を全て削除する。  
+  
+**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
+#### wakarana_user::get_attempt_logs()
+ユーザーのログイン試行履歴を取得する。  
+  
+**$user_id** ： ユーザーID  
+  
+**返り値** ： 成功した場合はそのユーザーの各試行履歴が格納された連想配列("user_id"(ユーザーID)、"succeeded"(正しいパスワードを入力したか否か)、"attempt_datetime"(試行日時))を、配列に入れて返す。失敗した場合はFALSEを返す。
+
+
+#### wakarana_user::check_attempt_interval()
+ユーザーが前回のログイン試行から次に試行できるようになるまでの期間が経過しているかを調べる。  
+  
+**返り値** ： wakarana_config.iniで指定した期間が経過していればTRUE、そうでない場合はFALSEを返す。
+
+
+#### wakarana_user::add_attempt_log($succeeded)
+ユーザーのログイン試行ログを登録する。  
+  
+**$succeeded** : ログインが成功した場合はTRUE、失敗した場合はFALSEを指定する。  
+  
+**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
+#### wakarana_user::delete_attempt_logs()
+ユーザーのログイン試行履歴を全て削除する。  
+  
+**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
+#### wakarana_user::update_last_access()
+現在の時刻をユーザーの最終アクセス日時として記録する。  
+ログイントークン発行処理とログアウト処理ではこの関数が自動的に実行される。  
+  
+**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
+#### wakarana_user::create_login_token()
+ログイントークンを生成とデータベース登録処理を行うが、クライアント端末への送信は行わない。  
+wakarana::loginとは別のトークン送信処理を実装する必要がある環境向け。  
+  
+**返り値** ： 成功した場合は登録されたログイントークン、失敗した場合はFALSEを返す。
+
+
+#### wakarana_user::set_login_token()
+ユーザーにトークンを割り当て、クライアント端末に送信する。  
+  
+**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
+#### wakarana_user::delete_login_tokens()
+ユーザーのログイントークンを全て削除する。  
+  
+**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。  
+
+
+#### wakarana_user::create_email_address_verification_token($email_address)
+メールアドレス確認トークンを生成し、ユーザーに割り当てる。  
+前に同じユーザーに対して生成されたメールアドレス確認トークンがデータベースに残っていた場合、古いトークンは削除される。  
+この関数によりメールが送信されるわけではない。  
+  
+**$email_address** : トークンの送信先メールアドレス。    
+  
+**返り値** ： 成功した場合はメールアドレス確認トークン、失敗した場合はFALSEを返す。
+
+
+#### wakarana_user::create_totp_temporary_token()
+ユーザーに対して2段階認証用の一時トークンを発行する。  
+  
+**返り値** ： 成功した場合は一時トークン、失敗した場合はFALSEを返す。
+
+
+#### wakarana_user::create_one_time_token()
+ユーザーが利用可能なワンタイムトークンを発行する。  
+  
+**$user_id** ： ユーザーID  
+  
+**返り値** ： 成功した場合はワンタイムトークンを、エラーの場合はFALSEを返す。
+
+
+#### wakarana_user::check_one_time_token($token)
+ワンタイムトークンを照合する。照合が終わったワンタイムトークンは自動的にデータベースから削除される。  
+  
+**$token** ： ワンタイムトークン  
+  
+**返り値** ： 正しいワンタイムトークンだった場合はTRUEを、それ以外の場合はFALSEを返す。
+
+
+#### wakarana_user::delete_one_time_tokens()
+ユーザーのワンタイムトークンを全て削除する。   
+  
+**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
+#### wakarana_user::totp_check($totp_pin)
+ユーザーに割り当てられたTOTP生成鍵とワンタイムコードを照合する。  
+  
+**$totp_pin** ： 6桁のTOTPコード  
+  
+**返り値** ： ユーザーに割り当てられた生成鍵に対して正しいTOTPコードだった場合はTRUEを、それ以外の場合はFALSEを返す。
+
+
+#### wakarana_user::delete()
+ユーザーアカウントをデータベースから完全に削除する。このとき、現在のwakarana_userインスタンスも開放される。  
+  
+**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
 
