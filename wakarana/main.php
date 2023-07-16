@@ -28,6 +28,66 @@ class wakarana extends wakarana_common {
     }
     
     
+    static function hash_password ($user_id, $password) {
+        return hash("sha512", $password.hash("sha512", $user_id));
+    }
+    
+    
+    function get_user ($user_id) {
+        try {
+            $stmt = $this->db_obj->query('SELECT * FROM "wakarana_users" WHERE "user_id"=\''.self::escape_id($user_id).'\'');
+        } catch (PDOException $err) {
+            $this->print_error("ユーザー情報の取得に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        $user_data = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!empty($user_data)) {
+            return new wakarana_user($this, $user_data);
+        } else {
+            return FALSE;
+        }
+    }
+    
+    
+    
+    
+    function add_user ($user_id, $password, $user_name = "", $email_address = NULL, $status = WAKARANA_STATUS_NORMAL) {
+        $user_id = self::escape_id($user_id);
+        $password_hash = self::hash_password($user_id, $password);
+        $date_time = date("Y-m-d H:i:s");
+        
+        if (empty($user_id)) {
+            $this->print_error("無効なユーザーIDです。");
+            return FALSE;
+        }
+        
+        if (!$this->config["allow_duplicate_email_address"] && !empty($this->email_address_exists($email_address))) {
+            $this->print_error("既に使用されているメールアドレスです。現在の設定では同一メールアドレスでの復数アカウント作成は許可されていません。");
+            return FALSE;
+        }
+        
+        try {
+            $stmt = $this->db_obj->prepare('INSERT INTO "wakarana_users"("user_id", "password", "user_name", "email_address", "user_created", "last_updated", "last_access", "status", "totp_key") VALUES (\''.$user_id.'\', \''.$password_hash.'\', :user_name, :email_address, \''.$date_time.'\', \''.$date_time.'\', \''.$date_time.'\', '.intval($status).', NULL)');
+            
+            $stmt->bindValue(":user_name", $user_name, PDO::PARAM_STR);
+            
+            if (!empty($email_address)) {
+                $stmt->bindValue(":email_address", $email_address, PDO::PARAM_STR);
+            } else {
+                $stmt->bindValue(":email_address", NULL, PDO::PARAM_NULL);
+            }
+            
+            $stmt->execute();
+        } catch (PDOException $err) {
+            $this->print_error("ユーザーの作成に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        return $this->get_user($user_id);
+    }
+    
     
     
     
@@ -39,7 +99,7 @@ class wakarana extends wakarana_common {
     
     
     
-    static function get_user_environment () {
+    static function get_client_environment () {
         $os_names = array("Android", "iPhone", "iPad", "Windows", "Macintosh", "CrOS", "Linux", "BSD", "Nintendo", "PlayStation", "Xbox");
         $browser_names = array("Firefox", "Edg", "OPR", "Sleipnir", "Chrome", "Safari", "Trident");
         
@@ -162,5 +222,16 @@ class wakarana extends wakarana_common {
         $bin_code = unpack("N", $mac, self::bin_to_int($mac, 156, 4));
         
         return str_pad((strval($bin_code[1] & 0x7FFFFFFF) % 1000000), 6, "0", STR_PAD_LEFT);
+    }
+}
+
+
+class wakarana_user {
+    protected $wakarana;
+    protected $user_info;
+    
+    function __construct ($wakarana, $user_info) {
+        $this->wakarana = $wakarana;
+        $this->user_info = $user_info;
     }
 }
