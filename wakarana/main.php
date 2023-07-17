@@ -314,7 +314,7 @@ class wakarana_user {
     
     
     function check_password ($password) {
-        if (wakarana::hash_password($this->get_id(), $password) === $this->user_info["password"]) {
+        if (wakarana::hash_password($this->user_info["user_id"], $password) === $this->user_info["password"]) {
             return TRUE;
         } else {
             return FALSE;
@@ -357,5 +357,21 @@ class wakarana_user {
         } else {
             return FALSE;
         }
+    }
+    
+    
+    function change_password ($password) {
+        $password_hash = wakarana::hash_password($this->user_info["user_id"], $password);
+        
+        try {
+            $this->wakarana->db_obj->exec('UPDATE "wakarana_users" SET "password"=\''.$password_hash.'\' WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
+        } catch (PDOException $err) {
+            $this->print_error("パスワードの変更に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        $this->user_info["password"] = $password_hash;
+        
+        return TRUE;
     }
 }
