@@ -292,8 +292,70 @@ class wakarana_user {
     protected $wakarana;
     protected $user_info;
     
+    
     function __construct ($wakarana, $user_info) {
         $this->wakarana = $wakarana;
         $this->user_info = $user_info;
+    }
+    
+    
+    function get_id () {
+        return $this->user_info["user_id"];
+    }
+    
+    
+    function get_name () {
+        if (!empty($this->user_info["user_name"])){
+            return $this->user_info["user_name"];
+        } else {
+            return "";
+        }
+    }
+    
+    
+    function check_password ($password) {
+        if (wakarana::hash_password($this->get_id(), $password) === $this->user_info["password"]) {
+            return TRUE;
+        } else {
+            return FALSE;
+        }
+    }
+    
+    
+    function get_email_addres () {
+        if (!empty($this->user_info["email_addres"])){
+            return $this->user_info["email_addres"];
+        } else {
+            return NULL;
+        }
+    }
+    
+    
+    function get_created () {
+        return $this->user_info["user_created"];
+    }
+    
+    
+    function get_last_updated () {
+        return $this->user_info["last_updated"];
+    }
+    
+    
+    function get_last_access () {
+        return $this->user_info["last_access"];
+    }
+    
+    
+    function get_status () {
+        return $this->user_info["status"];
+    }
+    
+    
+    function get_totp_enabled () {
+        if (!empty($this->user_info["totp_key"])) {
+            return TRUE;
+        } else {
+            return FALSE;
+        }
     }
 }
