@@ -108,7 +108,7 @@ wakarana_common::__constructとwakarana_common::connect_dbを順に実行する�
 **$id** : 変換前の文字列  
 **$len** : 文字列の長さの上限   
   
-**返り値** ： 変換後の文字列を返す。
+**返り値** ： 入力値が正常ならば変換後の文字列を、異常な入力値ならばFALSEを返す。
 
 
 #### ☆ wakarana::hash_password($user_id, $password)

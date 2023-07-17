@@ -24,7 +24,11 @@ class wakarana extends wakarana_common {
     
     
     static function escape_id ($id, $len = 60) {
-        return substr(preg_replace("/[^0-9A-Za-z_]/", "", $id), 0, $len);
+        if (gettype($id) === "string") {
+            return substr(preg_replace("/[^0-9A-Za-z_]/", "", $id), 0, $len);
+        } else {
+            return FALSE;
+        }
     }
     
     
@@ -34,23 +38,81 @@ class wakarana extends wakarana_common {
     
     
     function get_user ($user_id) {
+        $user_id = self::escape_id($user_id);
+        
         try {
-            $stmt = $this->db_obj->query('SELECT * FROM "wakarana_users" WHERE "user_id"=\''.self::escape_id($user_id).'\'');
+            if ($this->config["use_sqlite"]) {
+                $stmt = $this->db_obj->query("SELECT * FROM `wakarana_users` WHERE `user_id`='".$user_id."'");
+            } else {
+                $stmt = $this->db_obj->query('SELECT * FROM "wakarana_users" WHERE LOWER("user_id")=\''.strtolower($user_id).'\'');
+            }
         } catch (PDOException $err) {
             $this->print_error("ユーザー情報の取得に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
-        $user_data = $stmt->fetch(PDO::FETCH_ASSOC);
+        $user_info = $stmt->fetch(PDO::FETCH_ASSOC);
         
-        if (!empty($user_data)) {
-            return new wakarana_user($this, $user_data);
+        if (!empty($user_info)) {
+            return new wakarana_user($this, $user_info);
         } else {
             return FALSE;
         }
     }
     
     
+    function get_all_users ($start = 0, $limit = 100, $order_by = WAKARANA_ORDER_USER_CREATED, $asc = TRUE) {
+        $start = intval($start);
+        $limit = intval($limit);
+        
+        switch ($order_by) {
+            case WAKARANA_ORDER_USER_ID:
+                if ($this->config["use_sqlite"]) {
+                    $order_by_q = "`user_id`";
+                } else {
+                    $order_by_q = 'LOWER("user_id")';
+                }
+                break;
+                
+            case WAKARANA_ORDER_USER_NAME:
+                if ($this->config["use_sqlite"]) {
+                    $order_by_q = "`user_name`";
+                } else {
+                    $order_by_q = 'LOWER("user_name")';
+                }
+                break;
+                
+            case WAKARANA_ORDER_USER_CREATED:
+                $order_by_q = '"user_created"';
+                break;
+                
+            default:
+                $this->print_error("対応していない並び替え基準です。");
+                return FALSE;
+        }
+        
+        if ($asc) {
+            $asc_q = "ASC";
+        } else {
+            $asc_q = "DESC";
+        }
+        
+        try {
+            $stmt = $this->db_obj->query('SELECT * FROM "wakarana_users" ORDER BY '.$order_by_q.' '.$asc_q.' LIMIT '.$limit.' OFFSET '.$start);
+        } catch (PDOException $err) {
+            $this->print_error("ユーザー一覧の取得に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        $users_info = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        $users = array();
+        foreach ($users_info as $user_info) {
+            $users[] = new wakarana_user($this, $user_info);
+        }
+        
+        return $users;
+    }
     
     
     function add_user ($user_id, $password, $user_name = "", $email_address = NULL, $status = WAKARANA_STATUS_NORMAL) {
