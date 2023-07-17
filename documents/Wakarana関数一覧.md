@@ -418,7 +418,7 @@ TOTP生成鍵と現在時刻からワンタイムコードを生成する。
 コンストラクタ。wakarana::get_user実行時に呼び出されるものであり、直接インスタンス化するべきではない。  
   
 **$wakarana** : 呼び出し元のwakaranaインスタンス  
-**$user_info** : ユーザー情報("user_id"(ユーザーID)、"user_name"(ユーザー名)、"password"(ハッシュ化されたパスワード)、"email_addres"(メールアドレス)、"user_created"(アカウント作成日時)、"last_updated"(アカウント情報更新日時)、"last_access"(最終アクセス日時)、"status"(アカウントが使用可能か停止されているか)、"totp_key"(TOTPワンタイムパスワード生成キー))を格納した連想配列。
+**$user_info** : ユーザー情報("user_id"(ユーザーID)、"user_name"(ユーザー名)、"password"(ハッシュ化されたパスワード)、"email_address"(メールアドレス)、"user_created"(アカウント作成日時)、"last_updated"(アカウント情報更新日時)、"last_access"(最終アクセス日時)、"status"(アカウントが使用可能か停止されているか)、"totp_key"(TOTPワンタイムパスワード生成キー))を格納した連想配列。
 
 
 #### wakarana_user::get_id()
@@ -430,7 +430,7 @@ TOTP生成鍵と現在時刻からワンタイムコードを生成する。
 #### wakarana_user::get_name()
 ユーザー名を取得する。  
   
-**返り値** ： ユーザー名が登録されていればユーザー名を、なければ空文字列を返す。
+**返り値** ： ユーザー名が登録されていればユーザー名を、なければNULLを返す。
 
 
 #### wakarana_user::check_password($password)
@@ -442,7 +442,7 @@ TOTP生成鍵と現在時刻からワンタイムコードを生成する。
 **返り値** ： 正しいパスワードだった場合はTRUE、それ以外の場合はFALSEを返す。
 
 
-#### wakarana_user::get_email_addres()
+#### wakarana_user::get_email_address()
 ユーザーのメールアドレスを取得する。  
   
 **返り値** ： メールアドレスが登録されていればメールアドレスを、なければNULLを返す。

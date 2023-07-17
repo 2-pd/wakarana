@@ -133,10 +133,14 @@ class wakarana extends wakarana_common {
         try {
             $stmt = $this->db_obj->prepare('INSERT INTO "wakarana_users"("user_id", "password", "user_name", "email_address", "user_created", "last_updated", "last_access", "status", "totp_key") VALUES (\''.$user_id.'\', \''.$password_hash.'\', :user_name, :email_address, \''.$date_time.'\', \''.$date_time.'\', \''.$date_time.'\', '.intval($status).', NULL)');
             
-            $stmt->bindValue(":user_name", $user_name, PDO::PARAM_STR);
+            if (!empty($user_name)) {
+                $stmt->bindValue(":user_name", mb_substr($user_name, 0, 255), PDO::PARAM_STR);
+            } else {
+                $stmt->bindValue(":user_name", NULL, PDO::PARAM_NULL);
+            }
             
             if (!empty($email_address)) {
-                $stmt->bindValue(":email_address", $email_address, PDO::PARAM_STR);
+                $stmt->bindValue(":email_address", mb_substr($email_address, 0, 255), PDO::PARAM_STR);
             } else {
                 $stmt->bindValue(":email_address", NULL, PDO::PARAM_NULL);
             }
@@ -305,11 +309,7 @@ class wakarana_user {
     
     
     function get_name () {
-        if (!empty($this->user_info["user_name"])){
-            return $this->user_info["user_name"];
-        } else {
-            return "";
-        }
+        return $this->user_info["user_name"];
     }
     
     
@@ -322,12 +322,8 @@ class wakarana_user {
     }
     
     
-    function get_email_addres () {
-        if (!empty($this->user_info["email_addres"])){
-            return $this->user_info["email_addres"];
-        } else {
-            return NULL;
-        }
+    function get_email_address () {
+        return $this->user_info["email_address"];
     }
     
     
@@ -364,13 +360,73 @@ class wakarana_user {
         $password_hash = wakarana::hash_password($this->user_info["user_id"], $password);
         
         try {
-            $this->wakarana->db_obj->exec('UPDATE "wakarana_users" SET "password"=\''.$password_hash.'\' WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
+            $this->wakarana->db_obj->exec('UPDATE "wakarana_users" SET "password"=\''.$password_hash.'\', "last_updated"=\''.date("Y-m-d H:i:s").'\'  WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
         } catch (PDOException $err) {
             $this->print_error("パスワードの変更に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
         $this->user_info["password"] = $password_hash;
+        
+        return TRUE;
+    }
+    
+    
+    function set_name ($user_name) {
+        try {
+            $stmt = $this->wakarana->db_obj->prepare('UPDATE "wakarana_users" SET "user_name"= :user_name, "last_updated"=\''.date("Y-m-d H:i:s").'\' WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
+            
+            if (!empty($user_name)) {
+                $stmt->bindValue(":user_name", mb_substr($user_name, 0, 255), PDO::PARAM_STR);
+            } else {
+                $stmt->bindValue(":user_name", NULL, PDO::PARAM_NULL);
+            }
+            
+            $stmt->execute();
+        } catch (PDOException $err) {
+            $this->print_error("ユーザー名の変更に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        $this->user_info["user_name"] = $user_name;
+        
+        return TRUE;
+    }
+    
+    
+    function set_email_address ($email_address) {
+        try {
+            $stmt = $this->wakarana->db_obj->prepare('UPDATE "wakarana_users" SET "email_address"= :email_address, "last_updated"=\''.date("Y-m-d H:i:s").'\' WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
+            
+            if (!empty($email_address)) {
+                $stmt->bindValue(":email_address", mb_substr($email_address, 0, 255), PDO::PARAM_STR);
+            } else {
+                $stmt->bindValue(":email_address", NULL, PDO::PARAM_NULL);
+            }
+            
+            $stmt->execute();
+        } catch (PDOException $err) {
+            $this->print_error("メールアドレスの変更に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        $this->user_info["email_address"] = $email_address;
+        
+        return TRUE;
+    }
+    
+    
+    function set_status ($status) {
+        $status = intval($status);
+        
+        try {
+            $this->wakarana->db_obj->exec('UPDATE "wakarana_users" SET "status"=\''.$status.'\', "last_updated"=\''.date("Y-m-d H:i:s").'\'  WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
+        } catch (PDOException $err) {
+            $this->print_error("ユーザーアカウントの状態の変更に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        $this->user_info["status"] = $status;
         
         return TRUE;
     }
