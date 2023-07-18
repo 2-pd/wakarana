@@ -362,7 +362,7 @@ class wakarana_user {
         try {
             $this->wakarana->db_obj->exec('UPDATE "wakarana_users" SET "password"=\''.$password_hash.'\', "last_updated"=\''.date("Y-m-d H:i:s").'\'  WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
         } catch (PDOException $err) {
-            $this->print_error("パスワードの変更に失敗しました。".$err->getMessage());
+            $this->wakarana->print_error("パスワードの変更に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -384,7 +384,7 @@ class wakarana_user {
             
             $stmt->execute();
         } catch (PDOException $err) {
-            $this->print_error("ユーザー名の変更に失敗しました。".$err->getMessage());
+            $this->wakarana->print_error("ユーザー名の変更に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -406,7 +406,7 @@ class wakarana_user {
             
             $stmt->execute();
         } catch (PDOException $err) {
-            $this->print_error("メールアドレスの変更に失敗しました。".$err->getMessage());
+            $this->wakarana->print_error("メールアドレスの変更に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -422,11 +422,46 @@ class wakarana_user {
         try {
             $this->wakarana->db_obj->exec('UPDATE "wakarana_users" SET "status"=\''.$status.'\', "last_updated"=\''.date("Y-m-d H:i:s").'\'  WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
         } catch (PDOException $err) {
-            $this->print_error("ユーザーアカウントの状態の変更に失敗しました。".$err->getMessage());
+            $this->wakarana->print_error("ユーザーアカウントの状態の変更に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
         $this->user_info["status"] = $status;
+        
+        return TRUE;
+    }
+    
+    
+    function enable_2_factor_auth ($totp_key = NULL) {
+        if (empty($totp_key)) {
+            $totp_key = wakarana::create_totp_key();
+        } elseif (preg_match("/^[A-Z2-7]{16}$/", $totp_key) !== 1) {
+            $this->wakarana->print_error("TOTP生成鍵が不正です。");
+            return FALSE;
+        }
+        
+        try {
+            $stmt = $this->wakarana->db_obj->prepare('UPDATE "wakarana_users" SET "totp_key" = :totp_key WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
+            
+            $stmt->bindValue(":totp_key", $totp_key, PDO::PARAM_STR);
+            
+            $stmt->execute();
+        } catch (PDOException $err) {
+            $this->wakarana->print_error("2要素認証の有効化に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        return $totp_key;
+    }
+    
+    
+    function disable_2_factor_auth () {
+        try {
+            $this->wakarana->db_obj->exec('UPDATE "wakarana_users" SET "totp_key" = NULL WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
+        } catch (PDOException $err) {
+            $this->wakarana->print_error("2要素認証の無効化に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
         
         return TRUE;
     }

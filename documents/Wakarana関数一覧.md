@@ -44,10 +44,10 @@ wakarana_config.iniの設定に基づき、データベースに接続する。
 ◆クラス内呼び出し専用。
 
 
-#### ◆ wakarana_common::print_error($error_text)
+#### wakarana_common::print_error($error_text)
 エラーメッセージを出力する。  
 ただし、wakarana_config.iniにおいてdisplay_errors=trueが設定されていなければ出力しない。  
-◆クラス内呼び出し専用であり、wakaranaクラスとwakarana_configクラスではエラー時にこの関数を実行する。  
+wakaranaクラスインスタンスとwakarana_configクラスインスタンス、及び、wakaranaクラスインスタンスにより生成されたwakarana_userクラスインスタンスではエラー時にこの関数を実行する。  
   
 **$error_text** : エラーメッセージ
 

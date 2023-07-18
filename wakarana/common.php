@@ -77,7 +77,7 @@ class wakarana_common {
     }
     
     
-    protected function print_error ($error_text) {
+    function print_error ($error_text) {
         $this->last_error_text = $error_text;
         
         if (empty($this->config) || $this->config["display_errors"]) {
