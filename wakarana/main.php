@@ -465,4 +465,56 @@ class wakarana_user {
         
         return TRUE;
     }
+    
+    
+    function get_roles () {
+        try {
+            $stmt = $this->wakarana->db_obj->query('SELECT "role_name" FROM "wakarana_user_roles" WHERE "user_id"=\''.$this->user_info["user_id"].'\' ORDER BY "role_name" ASC');
+        } catch (PDOException $err) {
+            $this->wakarana->print_error("ロールの取得に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        return $stmt->fetchAll(PDO::FETCH_COLUMN);
+    }
+    
+    
+    function add_role ($role_name) {
+        if ($role_name === WAKARANA_BASE_ROLE) {
+            $this->wakarana->print_error("ベースロールは追加する必要がありません。");
+            return FALSE;
+        }
+        
+        try {
+            $this->wakarana->db_obj->exec('INSERT INTO "wakarana_user_roles"("user_id", "role_name") VALUES (\''.$this->user_info["user_id"].'\', \''.strtolower(wakarana::escape_id($role_name)).'\')');
+        } catch (PDOException $err) {
+            $this->wakarana->print_error("ロールの付与に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        return TRUE;
+    }
+    
+    
+    function remove_role($role_name = NULL) {
+        if (!empty($role_name)) {
+            if ($role_name === WAKARANA_BASE_ROLE) {
+                $this->wakarana->print_error("ベースロールを剥奪することはできません。");
+                return FALSE;
+            }
+            
+            $role_name_q = ' AND "role_name" = \''.strtolower(wakarana::escape_id($role_name)).'\'';
+        } else {
+            $role_name_q = '';
+        }
+        
+        try {
+            $this->wakarana->db_obj->exec('DELETE FROM "wakarana_user_roles" WHERE "user_id" = \''.$this->user_info["user_id"].'\''.$role_name_q);
+        } catch (PDOException $err) {
+            $this->wakarana->print_error("ロールの剥奪に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        return TRUE;
+    }
 }
