@@ -142,7 +142,7 @@ wakarana_common::__constructとwakarana_common::connect_dbを順に実行する�
 
 #### wakarana::add_user($user_id, $password, $user_name="", $email_address=NULL, $status=WAKARANA_STATUS_NORMAL)
 新しいユーザーを追加する。  
-既に存在するユーザーIDを指定した場合はエラーとなる。
+既に存在するユーザーIDを指定した場合はエラーとなる。  
   
 **$user_id** ： 追加するユーザーのID。半角英数字及びアンダーバーが使用可能。  
 **$password** ： 追加するユーザーのパスワード  
@@ -154,13 +154,13 @@ wakarana_common::__constructとwakarana_common::connect_dbを順に実行する�
 
 
 #### wakarana::get_roles()
-存在するロール名の一覧を取得する。    
+存在するロール名の一覧を取得する。  
   
 **返り値** ： ロール名をアルファベット順に格納した配列を返す。ロールが存在しない場合は空配列を返す。
 
 
 #### wakarana::delete_role($role_name)
-指定したロールを完全に削除する。  
+指定したロールを完全に削除する。ただし、ベースロールは削除できない。  
   
 **$role_name** ： ロール名  
   
@@ -188,11 +188,11 @@ wakarana_common::__constructとwakarana_common::connect_dbを順に実行する�
 
 
 #### wakarana::remove_permission_value($role_name=NULL, $permission_name=NULL)
-指定したロールの権限を削除する。  
-ロール名に定数WAKARANA_BASE_ROLEを指定するとベースロールを設定できる。  
+指定したロールの権限を剥奪する。  
+ロール名に定数WAKARANA_BASE_ROLEを指定するとベースロールを初期化できる。  
   
 **$role_name** ： ロール名。NULLまたは省略した場合、全てのロールから権限を剥奪する。  
-**$permission_name** ： 権限名。NULLまたは省略した場合、全ての権限を削除する。  
+**$permission_name** ： 権限名。NULLまたは省略した場合、全ての権限を剥奪する。  
   
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
 

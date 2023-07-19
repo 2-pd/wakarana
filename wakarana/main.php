@@ -134,13 +134,13 @@ class wakarana extends wakarana_common {
             $stmt = $this->db_obj->prepare('INSERT INTO "wakarana_users"("user_id", "password", "user_name", "email_address", "user_created", "last_updated", "last_access", "status", "totp_key") VALUES (\''.$user_id.'\', \''.$password_hash.'\', :user_name, :email_address, \''.$date_time.'\', \''.$date_time.'\', \''.$date_time.'\', '.intval($status).', NULL)');
             
             if (!empty($user_name)) {
-                $stmt->bindValue(":user_name", mb_substr($user_name, 0, 255), PDO::PARAM_STR);
+                $stmt->bindValue(":user_name", mb_substr($user_name, 0, 240), PDO::PARAM_STR);
             } else {
                 $stmt->bindValue(":user_name", NULL, PDO::PARAM_NULL);
             }
             
             if (!empty($email_address)) {
-                $stmt->bindValue(":email_address", mb_substr($email_address, 0, 255), PDO::PARAM_STR);
+                $stmt->bindValue(":email_address", mb_substr($email_address, 0, 254), PDO::PARAM_STR);
             } else {
                 $stmt->bindValue(":email_address", NULL, PDO::PARAM_NULL);
             }
@@ -155,6 +155,97 @@ class wakarana extends wakarana_common {
     }
     
     
+    function get_roles () {
+        try {
+            $stmt = $this->db_obj->query('SELECT DISTINCT "role_name" FROM "wakarana_permission_values" ORDER BY "role_name" ASC');
+        } catch (PDOException $err) {
+            $this->print_error("ロールの取得に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        return $stmt->fetchAll(PDO::FETCH_COLUMN);
+    }
+    
+    
+    function delete_role ($role_name) {
+        if ($role_name === WAKARANA_BASE_ROLE) {
+            $this->print_error("ベースロールを削除することはできません。");
+            return FALSE;
+        }
+        
+        $role_name = strtolower(self::escape_id($role_name));
+        
+        try {
+            $this->db_obj->exec('DELETE FROM "wakarana_user_roles" WHERE "role_name" = \''.$role_name.'\'');
+        } catch (PDOException $err) {
+            $this->print_error("ロールの削除に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        $this->remove_permission_value($role_name);
+        
+        return TRUE;
+    }
+    
+    
+    function get_permission_values ($role_name) {
+        try {
+            $stmt = $this->db_obj->query('SELECT "permission_name", "permission_value" FROM "wakarana_permission_values" WHERE "role_name" = \''.strtolower(self::escape_id($role_name)).'\' ORDER BY "permission_name" ASC');
+        } catch (PDOException $err) {
+            $this->print_error("権限値の一覧の取得に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        return $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
+    }
+    
+    
+    function set_permission_value ($role_name, $permission_name, $permission_value = TRUE) {
+        $role_name = strtolower(self::escape_id($role_name));
+        $permission_name = strtolower(self::escape_id($permission_name, 120));
+        $permission_value = intval($permission_value);
+        
+        try {
+            $this->db_obj->exec('INSERT INTO "wakarana_permission_values"("role_name", "permission_name", "permission_value") VALUES (\''.$role_name.'\', \''.$permission_name.'\',\''.$permission_value.'\') ON CONFLICT ("role_name", "permission_name") DO UPDATE SET "role_name" = \''.$role_name.'\', "permission_name" = \''.$permission_name.'\', "permission_value" = \''.$permission_value.'\'');
+        } catch (PDOException $err) {
+            $this->print_error("権限値の設定に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        return TRUE;
+    }
+    
+    
+    function remove_permission_value ($role_name = NULL, $permission_name = NULL) {
+        if (!empty($role_name)) {
+            $role_name_q = '"role_name" = \''.strtolower(self::escape_id($role_name)).'\'';
+        } else {
+            $role_name_q = '';
+        }
+        
+        if (!empty($permission_name)) {
+            $permission_name_q = '"permission_name" = \''.strtolower(self::escape_id($permission_name, 120)).'\'';
+        } else {
+            $permission_name_q = '';
+        }
+        
+        if (!empty($role_name) && !empty($permission_name)) {
+            $q = ' WHERE '.$role_name_q.' AND '.$permission_name_q;
+        } elseif (empty($role_name) && empty($permission_name)) {
+            $q = '';
+        } else {
+            $q = ' WHERE '.$role_name_q.$permission_name_q;
+        }
+        
+        try {
+            $this->db_obj->exec('DELETE FROM "wakarana_permission_values"'.$q);
+        } catch (PDOException $err) {
+            $this->print_error("権限の削除に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        return TRUE;
+    }
     
     
     static function create_token () {
@@ -377,7 +468,7 @@ class wakarana_user {
             $stmt = $this->wakarana->db_obj->prepare('UPDATE "wakarana_users" SET "user_name"= :user_name, "last_updated"=\''.date("Y-m-d H:i:s").'\' WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
             
             if (!empty($user_name)) {
-                $stmt->bindValue(":user_name", mb_substr($user_name, 0, 255), PDO::PARAM_STR);
+                $stmt->bindValue(":user_name", mb_substr($user_name, 0, 240), PDO::PARAM_STR);
             } else {
                 $stmt->bindValue(":user_name", NULL, PDO::PARAM_NULL);
             }
@@ -399,7 +490,7 @@ class wakarana_user {
             $stmt = $this->wakarana->db_obj->prepare('UPDATE "wakarana_users" SET "email_address"= :email_address, "last_updated"=\''.date("Y-m-d H:i:s").'\' WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
             
             if (!empty($email_address)) {
-                $stmt->bindValue(":email_address", mb_substr($email_address, 0, 255), PDO::PARAM_STR);
+                $stmt->bindValue(":email_address", mb_substr($email_address, 0, 254), PDO::PARAM_STR);
             } else {
                 $stmt->bindValue(":email_address", NULL, PDO::PARAM_NULL);
             }
