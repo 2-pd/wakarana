@@ -122,7 +122,7 @@ class wakarana_config extends wakarana_common {
             if ($this->config["use_sqlite"]) {
                 $this->db_obj->exec("CREATE TABLE IF NOT EXISTS `wakarana_users`(`user_id` TEXT COLLATE NOCASE NOT NULL PRIMARY KEY, `password` TEXT NOT NULL, `user_name` TEXT COLLATE NOCASE, `email_address` TEXT, `user_created` TEXT NOT NULL, `last_updated` TEXT NOT NULL, `last_access` TEXT NOT NULL, `status` INTEGER NOT NULL, `totp_key` TEXT)");
             } else {
-                $this->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_users"("user_id" varchar(63) NOT NULL PRIMARY KEY, "password" varchar(128) NOT NULL, "user_name" varchar(255), "email_address" varchar(255), "user_created" timestamp NOT NULL, "last_updated" timestamp NOT NULL, "last_access" timestamp NOT NULL, "status" smallint NOT NULL, "totp_key" varchar(16))');
+                $this->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_users"("user_id" varchar(60) NOT NULL PRIMARY KEY, "password" varchar(128) NOT NULL, "user_name" varchar(240), "email_address" varchar(254), "user_created" timestamp NOT NULL, "last_updated" timestamp NOT NULL, "last_access" timestamp NOT NULL, "status" smallint NOT NULL, "totp_key" varchar(16))');
             }
         } catch (PDOException $err) {
             $this->print_error("テーブル wakarana_users の作成処理に失敗しました。".$err->getMessage());
@@ -148,7 +148,7 @@ class wakarana_config extends wakarana_common {
             if ($this->config["use_sqlite"]) {
                 $this->db_obj->exec("CREATE TABLE IF NOT EXISTS `wakarana_login_tokens`(`token` TEXT NOT NULL PRIMARY KEY, `user_id` TEXT COLLATE NOCASE NOT NULL, `token_created` TEXT NOT NULL, `ip_address` TEXT NOT NULL, `operating_system` TEXT, `browser_name` TEXT, `last_access` TEXT NOT NULL)");
             } else {
-                $this->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_login_tokens"("token" varchar(43) NOT NULL PRIMARY KEY, "user_id" varchar(63) NOT NULL, "token_created" timestamp NOT NULL, "ip_address" varchar(39) NOT NULL, "operating_system" varchar(31), "browser_name" varchar(31), "last_access" timestamp NOT NULL)');
+                $this->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_login_tokens"("token" varchar(43) NOT NULL PRIMARY KEY, "user_id" varchar(60) NOT NULL, "token_created" timestamp NOT NULL, "ip_address" varchar(39) NOT NULL, "operating_system" varchar(30), "browser_name" varchar(30), "last_access" timestamp NOT NULL)');
             }
         } catch (PDOException $err) {
             $this->print_error("テーブル wakarana_login_tokens の作成処理に失敗しました。".$err->getMessage());
@@ -167,7 +167,7 @@ class wakarana_config extends wakarana_common {
             if ($this->config["use_sqlite"]) {
                 $this->db_obj->exec("CREATE TABLE IF NOT EXISTS `wakarana_user_roles`(`user_id` TEXT COLLATE NOCASE NOT NULL, `role_name` TEXT NOT NULL, PRIMARY KEY(`user_id`, `role_name`))");
             } else {
-                $this->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_user_roles"("user_id" varchar(63) NOT NULL, "role_name" varchar(63) NOT NULL, PRIMARY KEY("user_id", "role_name"))');
+                $this->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_user_roles"("user_id" varchar(60) NOT NULL, "role_name" varchar(60) NOT NULL, PRIMARY KEY("user_id", "role_name"))');
             }
         } catch (PDOException $err) {
             $this->print_error("テーブル wakarana_user_roles の作成処理に失敗しました。".$err->getMessage());
@@ -185,7 +185,7 @@ class wakarana_config extends wakarana_common {
             if ($this->config["use_sqlite"]) {
                 $this->db_obj->exec("CREATE TABLE IF NOT EXISTS `wakarana_permission_values`(`role_name` TEXT NOT NULL, `permission_name` TEXT NOT NULL, `permission_value` INTEGER NOT NULL, PRIMARY KEY(`role_name`, `permission_name`))");
             } else {
-                $this->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_permission_values"("role_name" varchar(63) NOT NULL, "permission_name" varchar(127) NOT NULL, "permission_value" integer NOT NULL, PRIMARY KEY("role_name", "permission_name"))');
+                $this->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_permission_values"("role_name" varchar(60) NOT NULL, "permission_name" varchar(120) NOT NULL, "permission_value" integer NOT NULL, PRIMARY KEY("role_name", "permission_name"))');
             }
         } catch (PDOException $err) {
             $this->print_error("テーブル wakarana_permission_values の作成処理に失敗しました。".$err->getMessage());
@@ -203,7 +203,7 @@ class wakarana_config extends wakarana_common {
             if ($this->config["use_sqlite"]) {
                 $this->db_obj->exec("CREATE TABLE IF NOT EXISTS `wakarana_one_time_tokens`(`token` TEXT NOT NULL PRIMARY KEY, `user_id` TEXT COLLATE NOCASE NOT NULL, `token_created` TEXT NOT NULL)");
             } else {
-                $this->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_one_time_tokens"("token" varchar(43) NOT NULL PRIMARY KEY, "user_id" varchar(63) NOT NULL, "token_created" timestamp NOT NULL)');
+                $this->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_one_time_tokens"("token" varchar(43) NOT NULL PRIMARY KEY, "user_id" varchar(60) NOT NULL, "token_created" timestamp NOT NULL)');
             }
         } catch (PDOException $err) {
             $this->print_error("テーブル wakarana_one_time_tokens の作成処理に失敗しました。".$err->getMessage());
@@ -222,7 +222,7 @@ class wakarana_config extends wakarana_common {
             if ($this->config["use_sqlite"]) {
                 $this->db_obj->exec("CREATE TABLE IF NOT EXISTS `wakarana_attempt_logs`(`user_id` TEXT COLLATE NOCASE NOT NULL, `succeeded` INTEGER NOT NULL, `attempt_datetime` TEXT NOT NULL, `ip_address` TEXT NOT NULL)");
             } else {
-                $this->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_attempt_logs"("user_id" varchar(63) NOT NULL, "succeeded" boolean NOT NULL, "attempt_datetime" timestamp NOT NULL, "ip_address" varchar(15) NOT NULL)');
+                $this->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_attempt_logs"("user_id" varchar(60) NOT NULL, "succeeded" boolean NOT NULL, "attempt_datetime" timestamp NOT NULL, "ip_address" varchar(39) NOT NULL)');
             }
         } catch (PDOException $err) {
             $this->print_error("テーブル wakarana_attempt_logs の作成処理に失敗しました。".$err->getMessage());
@@ -242,7 +242,7 @@ class wakarana_config extends wakarana_common {
             if ($this->config["use_sqlite"]) {
                 $this->db_obj->exec("CREATE TABLE IF NOT EXISTS `wakarana_email_address_verification`(`token` TEXT NOT NULL PRIMARY KEY, `user_id` TEXT COLLATE NOCASE UNIQUE, `email_address` TEXT NOT NULL, `token_created` TEXT NOT NULL)");
             } else {
-                $this->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_email_address_verification"("token" varchar(43) NOT NULL PRIMARY KEY, "user_id" varchar(63) UNIQUE, "email_address" varchar(255) NOT NULL, "token_created" timestamp NOT NULL)');
+                $this->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_email_address_verification"("token" varchar(43) NOT NULL PRIMARY KEY, "user_id" varchar(60) UNIQUE, "email_address" varchar(254) NOT NULL, "token_created" timestamp NOT NULL)');
             }
         } catch (PDOException $err) {
             $this->print_error("テーブル wakarana_email_address_verification の作成処理に失敗しました。".$err->getMessage());
@@ -261,7 +261,7 @@ class wakarana_config extends wakarana_common {
             if ($this->config["use_sqlite"]) {
                 $this->db_obj->exec("CREATE TABLE IF NOT EXISTS `wakarana_totp_temporary_tokens`(`token` TEXT NOT NULL PRIMARY KEY, `user_id` TEXT COLLATE NOCASE UNIQUE NOT NULL, `token_created` TEXT NOT NULL)");
             } else {
-                $this->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_totp_temporary_tokens"("token" varchar(43) NOT NULL PRIMARY KEY, "user_id" varchar(63) UNIQUE NOT NULL, "token_created" timestamp NOT NULL)');
+                $this->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_totp_temporary_tokens"("token" varchar(43) NOT NULL PRIMARY KEY, "user_id" varchar(60) UNIQUE NOT NULL, "token_created" timestamp NOT NULL)');
             }
         } catch (PDOException $err) {
             $this->print_error("テーブル wakarana_totp_temporary_tokens の作成処理に失敗しました。".$err->getMessage());
