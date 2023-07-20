@@ -101,12 +101,12 @@ wakarana_common::__constructとwakarana_common::connect_dbを順に実行する�
 **$base_dir** : wakarana_config.iniのあるフォルダのパス。省略時はcommon.phpのあるフォルダを使用する。
 
 
-#### ☆ wakarana::check_id_string($id, $len=60)
+#### ☆ wakarana::check_id_string($id, $length=60)
 文字列にユーザーIDやロール名、権限名などの識別名として使用できない文字が含まれないかどうかを検査する。  
 ☆staticメソッド。  
   
 **$id** : 検査する文字列  
-**$len** : 文字列の長さの上限。検査する文字列がこれより長い場合は使用できない文字列とみなす。   
+**$length** : 文字列の長さの上限。検査する文字列がこれより長い場合は使用できない文字列とみなす。   
   
 **返り値** ： 識別名として使用可能な文字列ならTRUEを、それ以外の場合はFALSEを返す。
 
@@ -119,6 +119,16 @@ wakarana_common::__constructとwakarana_common::connect_dbを順に実行する�
 **$password** : パスワード   
   
 **返り値** ： ハッシュ化されたパスワードを返す。
+
+
+#### ☆ wakarana::check_password_strength($password, $min_length=10)
+パスワードの強度を確認する。  
+☆staticメソッド。  
+  
+**$password** : パスワード   
+**$min_length** : 強いパスワードとみなす最小の文字数  
+  
+**返り値** ： パスワードが指定した文字数以上かつ大文字・小文字・数字の全てを含むならTRUE、そうでないならFALSEを返す。
 
 
 #### wakarana::get_user($user_id)
@@ -195,6 +205,15 @@ wakarana_common::__constructとwakarana_common::connect_dbを順に実行する�
 **$permission_name** ： 権限名。NULLまたは省略した場合、全ての権限を剥奪する。  
   
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
+#### ☆ wakarana::create_random_password($length=14)
+パスワードとして使用可能な文字列をランダムに生成する。  
+☆staticメソッド。  
+  
+**$length** ： 生成するパスワードの文字数。3以上の数値を指定した場合、大文字・小文字・数字の全てを含むパスワードを生成する。  
+  
+**返り値** ： 英数字と記号(-と.)からなるランダムな文字列を返す。
 
 
 #### ☆ wakarana::create_token()
@@ -287,6 +306,23 @@ wakarana_common::__constructとwakarana_common::connect_dbを順に実行する�
 指定した経過時間より前に生成されたメールアドレス確認トークンを無効化する。  
   
 **$expire** ： 経過時間の秒数。-1を指定した場合はwakarana_config.iniで指定したメールアドレス確認トークンの有効秒数が代わりに使用される。  
+  
+**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
+#### wakarana::reset_password($token, $new_password)
+パスワードリセット用トークンに紐付けられたアカウントのパスワードを再設定する。  
+  
+**$token** : パスワードリセット用トークン  
+**$new_password** : 新しいパスワード  
+  
+**返り値** ： 成功した場合はトークンに紐付けられたユーザーのwakarana_userクラスのインスタンスを返し、それ以外の場合はFALSEを返す。
+
+
+#### wakarana::delete_password_reset_tokens($expire=-1)
+指定した経過時間より前に生成されたパスワードリセット用トークンを無効化する。  
+  
+**$expire** ： 経過時間の秒数。-1を指定した場合はwakarana_config.iniで指定したパスワードリセット用トークンの有効秒数が代わりに使用される。  
   
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
@@ -624,6 +660,12 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
 **$email_address** : トークンの送信先メールアドレス。    
   
 **返り値** ： 成功した場合はメールアドレス確認トークン、失敗した場合はFALSEを返す。
+
+
+#### wakarana_user::create_password_reset_token()
+ユーザーに対してパスワードリセット用トークンを発行する。  
+  
+**返り値** ： 成功した場合はパスワードリセット用トークン、失敗した場合はFALSEを返す。
 
 
 #### wakarana_user::create_totp_temporary_token()

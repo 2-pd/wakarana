@@ -15,6 +15,8 @@ define("WAKARANA_CONFIG_ORIGINAL",
             "pg_db" => "wakarana",
             "pg_port" => 5432,
             
+            "allow_weak_password" => FALSE,
+            
             "allow_duplicate_email_address" => FALSE,
             "verification_email_expire" => 1800,
             
@@ -26,6 +28,8 @@ define("WAKARANA_CONFIG_ORIGINAL",
             "min_attempt_interval" => 5,
             "attempt_logs_per_user" => 20,
             "attempt_log_retention_time" => 1209600,
+            
+            "password_reset_token_expire" => 1800,
             
             "totp_pin_expire" => 1,
             "totp_temporary_token_expire" => 600
@@ -64,6 +68,13 @@ class wakarana_config extends wakarana_common {
         fwrite($file_h,"pg_port=".$this->config["pg_port"]."\n");
         fwrite($file_h,"\n");
         
+        if ($this->config["allow_weak_password"]) {
+            fwrite($file_h,"allow_weak_password=true\n");
+        } else {
+            fwrite($file_h,"allow_weak_password=false\n");
+        }
+        fwrite($file_h,"\n");
+        
         if ($this->config["allow_duplicate_email_address"]) {
             fwrite($file_h,"allow_duplicate_email_address=true\n");
         } else {
@@ -81,6 +92,9 @@ class wakarana_config extends wakarana_common {
         fwrite($file_h,"min_attempt_interval=".$this->config["min_attempt_interval"]."\n");
         fwrite($file_h,"attempt_logs_per_user=".$this->config["attempt_logs_per_user"]."\n");
         fwrite($file_h,"attempt_log_retention_time=".$this->config["attempt_log_retention_time"]."\n");
+        fwrite($file_h,"\n");
+        
+        fwrite($file_h,"password_reset_token_expire=".$this->config["password_reset_token_expire"]."\n");
         fwrite($file_h,"\n");
         
         fwrite($file_h,"totp_pin_expire=".$this->config["totp_pin_expire"]."\n");
@@ -254,6 +268,24 @@ class wakarana_config extends wakarana_common {
             $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_e2" ON "wakarana_email_address_verification"("token_created")');
         } catch (PDOException $err) {
             $this->print_error("テーブル wakarana_email_address_verification のインデックス作成処理に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        try {
+            if ($this->config["use_sqlite"]) {
+                $this->db_obj->exec("CREATE TABLE IF NOT EXISTS `wakarana_password_reset_tokens`(`token` TEXT NOT NULL PRIMARY KEY, `user_id` TEXT COLLATE NOCASE UNIQUE NOT NULL, `token_created` TEXT NOT NULL)");
+            } else {
+                $this->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_password_reset_tokens"("token" varchar(43) NOT NULL PRIMARY KEY, "user_id" varchar(60) UNIQUE NOT NULL, "token_created" timestamp NOT NULL)');
+            }
+        } catch (PDOException $err) {
+            $this->print_error("テーブル wakarana_password_reset_tokens の作成処理に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        try {
+            $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_pr1" ON "wakarana_password_reset_tokens"("token_created")');
+        } catch (PDOException $err) {
+            $this->print_error("テーブル wakarana_password_reset_tokens のインデックス作成処理に失敗しました。".$err->getMessage());
             return FALSE;
         }
         

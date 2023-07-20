@@ -23,8 +23,8 @@ class wakarana extends wakarana_common {
     }
     
     
-    static function check_id_string ($id, $len = 60) {
-        if (gettype($id) === "string" && strlen($id) <= $len && preg_match("/^[0-9A-Za-z_]+$/u", $id)) {
+    static function check_id_string ($id, $length = 60) {
+        if (gettype($id) === "string" && strlen($id) <= $length && preg_match("/^[0-9A-Za-z_]+$/u", $id)) {
             return TRUE;
         } else {
             return FALSE;
@@ -34,6 +34,15 @@ class wakarana extends wakarana_common {
     
     static function hash_password ($user_id, $password) {
         return hash("sha512", $password.hash("sha512", $user_id));
+    }
+    
+    
+    static function check_password_strength ($password, $min_length = 10) {
+        if (strlen($password) >= $min_length && preg_match("/[A-Z]/u", $password) && preg_match("/[a-z]/u", $password) && preg_match("/[0-9]/u", $password)) {
+            return TRUE;
+        } else {
+            return FALSE;
+        }
     }
     
     
@@ -286,6 +295,24 @@ class wakarana extends wakarana_common {
     }
     
     
+    static function create_random_password ($length = 14) {
+        $password = substr(strtr(base64_encode(random_bytes(ceil($length * 0.75))), "+/", "-."), 0, $length);
+        
+        if ($length >= 3 && !self::check_password_strength($password, $length)) {
+            $random_array = range(0, $length - 1);
+            shuffle($random_array);
+            
+            $alphabets = range("A","Z");
+            
+            $password = substr($password, 0, $random_array[0]).$alphabets[mt_rand(0, 25)].substr($password, $random_array[0] + 1);
+            $password = substr($password, 0, $random_array[1]).strtolower($alphabets[mt_rand(0, 25)]).substr($password, $random_array[1] + 1);
+            $password = substr($password, 0, $random_array[2]).mt_rand(0, 9).substr($password, $random_array[2] + 1);
+        }
+        
+        return $password;
+    }
+    
+    
     static function create_token () {
         return rtrim(strtr(base64_encode(random_bytes(32)), "+/", "-_"), "=");
     }
@@ -383,12 +410,12 @@ class wakarana extends wakarana_common {
     
     
     protected static function base32_decode ($base32_str) {
-        $len = strlen($base32_str);
+        $length = strlen($base32_str);
         
         $bin = "";
         $bin_buf = 0;
         $buf_head = 0;
-        for ($cnt = 0; $cnt < $len; $cnt++) {
+        for ($cnt = 0; $cnt < $length; $cnt++) {
             $index = array_search(substr($base32_str, $cnt, 1), WAKARANA_BASE32_TABLE);
             if ($index === FALSE) {
                 break;
