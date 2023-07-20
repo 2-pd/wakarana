@@ -163,7 +163,7 @@ class wakarana extends wakarana_common {
     
     function get_roles () {
         try {
-            $stmt = $this->db_obj->query('SELECT DISTINCT "role_name" FROM "wakarana_permission_values" ORDER BY "role_name" ASC');
+            $stmt = $this->db_obj->query('SELECT DISTINCT "role_name" FROM "wakarana_permission_values" WHERE "role_name" != \''.WAKARANA_BASE_ROLE.'\' ORDER BY "role_name" ASC');
         } catch (PDOException $err) {
             $this->print_error("ロールの取得に失敗しました。".$err->getMessage());
             return FALSE;
@@ -183,7 +183,9 @@ class wakarana extends wakarana_common {
             return FALSE;
         }
         
-        $role_name = strtolower($role_name);
+        if ($role_name !== WAKARANA_ADMIN_ROLE) {
+            $role_name = strtolower($role_name);
+        }
         
         try {
             $this->db_obj->exec('DELETE FROM "wakarana_user_roles" WHERE "role_name" = \''.$role_name.'\'');
@@ -201,8 +203,12 @@ class wakarana extends wakarana_common {
             return FALSE;
         }
         
+        if ($role_name !== WAKARANA_ADMIN_ROLE) {
+            $role_name = strtolower($role_name);
+        }
+        
         try {
-            $stmt = $this->db_obj->query('SELECT "permission_name", "permission_value" FROM "wakarana_permission_values" WHERE "role_name" = \''.strtolower($role_name).'\' ORDER BY "permission_name" ASC');
+            $stmt = $this->db_obj->query('SELECT "permission_name", "permission_value" FROM "wakarana_permission_values" WHERE "role_name" = \''.$role_name.'\' ORDER BY "permission_name" ASC');
         } catch (PDOException $err) {
             $this->print_error("権限値の一覧の取得に失敗しました。".$err->getMessage());
             return FALSE;
@@ -218,7 +224,10 @@ class wakarana extends wakarana_common {
             return FALSE;
         }
         
-        $role_name = strtolower($role_name);
+        if ($role_name !== WAKARANA_ADMIN_ROLE && $role_name !== WAKARANA_BASE_ROLE) {
+            $role_name = strtolower($role_name);
+        }
+        
         $permission_name = strtolower($permission_name);
         $permission_value = intval($permission_value);
         
@@ -239,7 +248,11 @@ class wakarana extends wakarana_common {
                 return FALSE;
             }
             
-            $role_name_q = '"role_name" = \''.strtolower($role_name).'\'';
+            if ($role_name !== WAKARANA_ADMIN_ROLE && $role_name !== WAKARANA_BASE_ROLE) {
+                $role_name = strtolower($role_name);
+            }
+            
+            $role_name_q = '"role_name" = \''.$role_name.'\'';
         } else {
             $role_name_q = '';
         }
@@ -606,8 +619,12 @@ class wakarana_user {
             return FALSE;
         }
         
+        if ($role_name !== WAKARANA_ADMIN_ROLE) {
+            $role_name = strtolower($role_name);
+        }
+        
         try {
-            $this->wakarana->db_obj->exec('INSERT INTO "wakarana_user_roles"("user_id", "role_name") VALUES (\''.$this->user_info["user_id"].'\', \''.strtolower($role_name).'\')');
+            $this->wakarana->db_obj->exec('INSERT INTO "wakarana_user_roles"("user_id", "role_name") VALUES (\''.$this->user_info["user_id"].'\', \''.$role_name.'\')');
         } catch (PDOException $err) {
             $this->wakarana->print_error("ロールの付与に失敗しました。".$err->getMessage());
             return FALSE;
@@ -617,7 +634,7 @@ class wakarana_user {
     }
     
     
-    function remove_role($role_name = NULL) {
+    function remove_role ($role_name = NULL) {
         if (!empty($role_name)) {
             if ($role_name === WAKARANA_BASE_ROLE) {
                 $this->wakarana->print_error("ベースロールを剥奪することはできません。");
@@ -627,8 +644,12 @@ class wakarana_user {
             if (!wakarana::check_id_string($role_name)) {
                 return FALSE;
             }
+        
+            if ($role_name !== WAKARANA_ADMIN_ROLE) {
+                $role_name = strtolower($role_name);
+            }
             
-            $role_name_q = ' AND "role_name" = \''.strtolower($role_name).'\'';
+            $role_name_q = ' AND "role_name" = \''.$role_name.'\'';
         } else {
             $role_name_q = '';
         }
@@ -641,5 +662,31 @@ class wakarana_user {
         }
         
         return TRUE;
+    }
+    
+    
+    function check_permission ($permission_name) {
+        if (!wakarana::check_id_string($permission_name)) {
+            return FALSE;
+        }
+        
+        try {
+            $stmt_1 = $this->wakarana->db_obj->query('SELECT MAX("wakarana_permission_values"."permission_value") FROM "wakarana_user_roles", "wakarana_permission_values" WHERE (("wakarana_user_roles"."user_id"=\''.$this->user_info["user_id"].'\' AND "wakarana_user_roles"."role_name" = "wakarana_permission_values"."role_name") OR "wakarana_permission_values"."role_name" = \''.WAKARANA_BASE_ROLE.'\') AND "permission_name" = \''.strtolower($permission_name).'\'');
+            $permission_value = $stmt_1->fetch(PDO::FETCH_COLUMN);
+            
+            if (!empty($permission_value)) {
+                return $permission_value;
+            } else {
+                $stmt_2 = $this->wakarana->db_obj->query('SELECT COUNT("role_name") FROM "wakarana_user_roles" WHERE "user_id"=\''.$this->user_info["user_id"].'\' AND "role_name" = \''.WAKARANA_ADMIN_ROLE.'\'');
+                if ($stmt_2->fetch(PDO::FETCH_COLUMN)) {
+                    return -1;
+                } else {
+                    return 0;
+                }
+            }
+        } catch (PDOException $err) {
+            $this->wakarana->print_error("権限値の取得に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
     }
 }
