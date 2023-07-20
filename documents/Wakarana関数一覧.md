@@ -101,14 +101,14 @@ wakarana_common::__constructとwakarana_common::connect_dbを順に実行する�
 **$base_dir** : wakarana_config.iniのあるフォルダのパス。省略時はcommon.phpのあるフォルダを使用する。
 
 
-#### ☆ wakarana::escape_id($id, $len=60)
-ユーザーIDやロール名、権限名などの識別名として使用できない文字を除去する。  
+#### ☆ wakarana::check_id_string($id, $len=60)
+文字列にユーザーIDやロール名、権限名などの識別名として使用できない文字が含まれないかどうかを検査する。  
 ☆staticメソッド。  
   
-**$id** : 変換前の文字列  
-**$len** : 文字列の長さの上限   
+**$id** : 検査する文字列  
+**$len** : 文字列の長さの上限。検査する文字列がこれより長い場合は使用できない文字列とみなす。   
   
-**返り値** ： 入力値が正常ならば変換後の文字列を、異常な入力値ならばFALSEを返す。
+**返り値** ： 識別名として使用可能な文字列ならTRUEを、それ以外の場合はFALSEを返す。
 
 
 #### ☆ wakarana::hash_password($user_id, $password)

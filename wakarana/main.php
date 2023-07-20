@@ -23,9 +23,9 @@ class wakarana extends wakarana_common {
     }
     
     
-    static function escape_id ($id, $len = 60) {
-        if (gettype($id) === "string") {
-            return substr(preg_replace("/[^0-9A-Za-z_]/", "", $id), 0, $len);
+    static function check_id_string ($id, $len = 60) {
+        if (gettype($id) === "string" && strlen($id) <= $len && preg_match("/^[0-9A-Za-z_]+$/u", $id)) {
+            return TRUE;
         } else {
             return FALSE;
         }
@@ -38,7 +38,9 @@ class wakarana extends wakarana_common {
     
     
     function get_user ($user_id) {
-        $user_id = self::escape_id($user_id);
+        if (!self::check_id_string($user_id)) {
+            return FALSE;
+        }
         
         try {
             if ($this->config["use_sqlite"]) {
@@ -116,7 +118,11 @@ class wakarana extends wakarana_common {
     
     
     function add_user ($user_id, $password, $user_name = "", $email_address = NULL, $status = WAKARANA_STATUS_NORMAL) {
-        $user_id = self::escape_id($user_id);
+        if (!self::check_id_string($user_id)) {
+            $this->print_error("ユーザーIDに使用できない文字列が指定されました。");
+            return FALSE;
+        }
+        
         $password_hash = self::hash_password($user_id, $password);
         $date_time = date("Y-m-d H:i:s");
         
@@ -173,7 +179,11 @@ class wakarana extends wakarana_common {
             return FALSE;
         }
         
-        $role_name = strtolower(self::escape_id($role_name));
+        if (!self::check_id_string($role_name)) {
+            return FALSE;
+        }
+        
+        $role_name = strtolower($role_name);
         
         try {
             $this->db_obj->exec('DELETE FROM "wakarana_user_roles" WHERE "role_name" = \''.$role_name.'\'');
@@ -182,15 +192,17 @@ class wakarana extends wakarana_common {
             return FALSE;
         }
         
-        $this->remove_permission_value($role_name);
-        
-        return TRUE;
+        return $this->remove_permission_value($role_name);
     }
     
     
     function get_permission_values ($role_name) {
+        if (!self::check_id_string($role_name)) {
+            return FALSE;
+        }
+        
         try {
-            $stmt = $this->db_obj->query('SELECT "permission_name", "permission_value" FROM "wakarana_permission_values" WHERE "role_name" = \''.strtolower(self::escape_id($role_name)).'\' ORDER BY "permission_name" ASC');
+            $stmt = $this->db_obj->query('SELECT "permission_name", "permission_value" FROM "wakarana_permission_values" WHERE "role_name" = \''.strtolower($role_name).'\' ORDER BY "permission_name" ASC');
         } catch (PDOException $err) {
             $this->print_error("権限値の一覧の取得に失敗しました。".$err->getMessage());
             return FALSE;
@@ -201,12 +213,17 @@ class wakarana extends wakarana_common {
     
     
     function set_permission_value ($role_name, $permission_name, $permission_value = TRUE) {
-        $role_name = strtolower(self::escape_id($role_name));
-        $permission_name = strtolower(self::escape_id($permission_name, 120));
+        if (!self::check_id_string($role_name) || !self::check_id_string($permission_name, 120)) {
+            $this->print_error("識別名にに使用できない文字列が指定されました。");
+            return FALSE;
+        }
+        
+        $role_name = strtolower($role_name);
+        $permission_name = strtolower($permission_name);
         $permission_value = intval($permission_value);
         
         try {
-            $this->db_obj->exec('INSERT INTO "wakarana_permission_values"("role_name", "permission_name", "permission_value") VALUES (\''.$role_name.'\', \''.$permission_name.'\',\''.$permission_value.'\') ON CONFLICT ("role_name", "permission_name") DO UPDATE SET "role_name" = \''.$role_name.'\', "permission_name" = \''.$permission_name.'\', "permission_value" = \''.$permission_value.'\'');
+            $this->db_obj->exec('INSERT INTO "wakarana_permission_values"("role_name", "permission_name", "permission_value") VALUES (\''.$role_name.'\', \''.$permission_name.'\','.$permission_value.') ON CONFLICT ("role_name", "permission_name") DO UPDATE SET "role_name" = \''.$role_name.'\', "permission_name" = \''.$permission_name.'\', "permission_value" = '.$permission_value.'');
         } catch (PDOException $err) {
             $this->print_error("権限値の設定に失敗しました。".$err->getMessage());
             return FALSE;
@@ -218,13 +235,21 @@ class wakarana extends wakarana_common {
     
     function remove_permission_value ($role_name = NULL, $permission_name = NULL) {
         if (!empty($role_name)) {
-            $role_name_q = '"role_name" = \''.strtolower(self::escape_id($role_name)).'\'';
+            if (!self::check_id_string($role_name)) {
+                return FALSE;
+            }
+            
+            $role_name_q = '"role_name" = \''.strtolower($role_name).'\'';
         } else {
             $role_name_q = '';
         }
         
         if (!empty($permission_name)) {
-            $permission_name_q = '"permission_name" = \''.strtolower(self::escape_id($permission_name, 120)).'\'';
+            if (!self::check_id_string($permission_name, 120)) {
+                return FALSE;
+            }
+            
+            $permission_name_q = '"permission_name" = \''.strtolower($permission_name, 120).'\'';
         } else {
             $permission_name_q = '';
         }
@@ -576,8 +601,13 @@ class wakarana_user {
             return FALSE;
         }
         
+        if (!wakarana::check_id_string($role_name)) {
+            $this->wakarana->print_error("ロール名にに使用できない文字列が指定されました。");
+            return FALSE;
+        }
+        
         try {
-            $this->wakarana->db_obj->exec('INSERT INTO "wakarana_user_roles"("user_id", "role_name") VALUES (\''.$this->user_info["user_id"].'\', \''.strtolower(wakarana::escape_id($role_name)).'\')');
+            $this->wakarana->db_obj->exec('INSERT INTO "wakarana_user_roles"("user_id", "role_name") VALUES (\''.$this->user_info["user_id"].'\', \''.strtolower($role_name).'\')');
         } catch (PDOException $err) {
             $this->wakarana->print_error("ロールの付与に失敗しました。".$err->getMessage());
             return FALSE;
@@ -593,8 +623,12 @@ class wakarana_user {
                 $this->wakarana->print_error("ベースロールを剥奪することはできません。");
                 return FALSE;
             }
+        
+            if (!wakarana::check_id_string($role_name)) {
+                return FALSE;
+            }
             
-            $role_name_q = ' AND "role_name" = \''.strtolower(wakarana::escape_id($role_name)).'\'';
+            $role_name_q = ' AND "role_name" = \''.strtolower($role_name).'\'';
         } else {
             $role_name_q = '';
         }
