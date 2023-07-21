@@ -345,7 +345,7 @@ class wakarana extends wakarana_common {
             return "0.0.0.0";
         }
         
-        if (preg_match("/^(((1[0-9]{2}|2([0-4][0-9]|5[0-5])|[0-9][0-9]|[0-9])\.){3}(1[0-9]{2}|2([0-4][0-9]|5[0-5])|[0-9][0-9]|[0-9])|([0-9a-f]{0,4}:){2,7}[0-9a-f]{0,4})$/u", $remote_addr) && !preg_match("/(::.*::|:::)/u", $remote_addr)) {
+        if (preg_match("/^(((1[0-9]{2}|2([0-4][0-9]|5[0-5])|[1-9]?[0-9])\.){3}(1[0-9]{2}|2([0-4][0-9]|5[0-5])|[1-9]?[0-9])|([0-9a-f]{0,4}:){2,7}[0-9a-f]{0,4})$/u", $remote_addr) && !preg_match("/(::.*::|:::)/u", $remote_addr)) {
             return $remote_addr;
         } else {
             $this->print_error("クライアント端末のIPアドレスが異常です。");
@@ -375,6 +375,50 @@ class wakarana extends wakarana_common {
         }
         
         return $environment;
+    }
+    
+    
+    function get_client_attempt_logs ($ip_address) {
+        try {
+            $stmt = $this->db_obj->query('SELECT "user_id", "succeeded", "attempt_datetime" FROM "wakarana_attempt_logs" WHERE "ip_address" = \''.$ip_address.'\' ORDER BY "attempt_datetime" DESC');
+            
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $err) {
+            $this->print_error("認証試行ログの取得に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+    }
+    
+    
+    function check_client_attempt_interval ($ip_address) {
+        try {
+            $stmt = $this->db_obj->query('SELECT COUNT("ip_address") FROM "wakarana_attempt_logs" WHERE "ip_address" = \''.$ip_address.'\' AND "attempt_datetime" >= \''.date("Y-m-d H:i:s", time() - $this->config["min_attempt_interval"]).'\'');
+            
+            if ($stmt->fetch(PDO::FETCH_COLUMN) >= 1) {
+                return FALSE;
+            } else {
+                return TRUE;
+            }
+        } catch (PDOException $err) {
+            $this->print_error("認証試行間隔の確認に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+    }
+    
+    
+    function delete_attempt_logs ($expire = -1) {
+        if ($expire === -1) {
+            $expire = $this->config["min_attempt_interval"];
+        }
+        
+        try {
+            $this->db_obj->exec('DELETE FROM "wakarana_attempt_logs" WHERE "attempt_datetime" <= \''.(new DateTime())->modify("-".$expire." second")->format("Y-m-d H:i:s.u").'\'');
+        } catch (PDOException $err) {
+            $this->print_error("認証試行ログの削除に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        return TRUE;
     }
     
     
@@ -799,7 +843,7 @@ class wakarana_user {
         try {
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_attempt_logs" WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "attempt_datetime" NOT IN (SELECT "attempt_datetime" FROM "wakarana_attempt_logs" WHERE "user_id" = \''.$this->user_info["user_id"].'\' ORDER BY "attempt_datetime" DESC LIMIT '.($this->wakarana->config["attempt_logs_per_user"] - 1).')');
             
-            $this->wakarana->db_obj->exec('INSERT INTO "wakarana_attempt_logs"("user_id", "succeeded", "attempt_datetime", "ip_address") VALUES (\''.$this->user_info["user_id"].'\', '.$succeeded_q.', \''.(new DateTime())->format('Y-m-d H:i:s.u').'\', \''.$this->wakarana->get_client_ip_address().'\')');
+            $this->wakarana->db_obj->exec('INSERT INTO "wakarana_attempt_logs"("user_id", "succeeded", "attempt_datetime", "ip_address") VALUES (\''.$this->user_info["user_id"].'\', '.$succeeded_q.', \''.(new DateTime())->format("Y-m-d H:i:s.u").'\', \''.$this->wakarana->get_client_ip_address().'\')');
         } catch (PDOException $err) {
             $this->wakarana->print_error("認証試行ログの追加に失敗しました。".$err->getMessage());
             return FALSE;
