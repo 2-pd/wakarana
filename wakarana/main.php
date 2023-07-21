@@ -318,7 +318,9 @@ class wakarana extends wakarana_common {
     }
     
     
-    
+    function delete_all_tokens () {
+        //あとで実装
+    }
     
     
     function get_client_ip_address () {
@@ -330,7 +332,7 @@ class wakarana extends wakarana_common {
                 $proxy_cnt = 0;
             }
             
-            if ($proxy_cnt <= $this->config["proxy_count"]) {
+            if ($proxy_cnt >= $this->config["proxy_count"]) {
                 $remote_addr = trim($x_forwarded_for[$proxy_cnt - $this->config["proxy_count"]]);
             } else {
                 $this->print_error("設定ファイルで指定されたプロキシ数が検出されたプロキシ数未満です。");

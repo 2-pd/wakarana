@@ -246,7 +246,7 @@ wakarana_common::__constructとwakarana_common::connect_dbを順に実行する�
 #### wakarana::get_client_ip_address()
 プロキシを除外してアクセス中のクライアント端末のIPアドレス文字列を取得し、それがIPアドレスとして正常な文字列であればそれを返す。  
   
-**返り値** ： クライアント端末のIPアドレス。
+**返り値** ： クライアント端末のIPアドレスをサニタイズして返す。IPアドレスの取得に失敗した場合は「0.0.0.0」を返す。
 
 
 #### ☆ wakarana::get_client_environment()
@@ -259,7 +259,7 @@ wakarana_common::__constructとwakarana_common::connect_dbを順に実行する�
 #### wakarana::get_attempt_logs($ip_address)
 クライアントのIPアドレスからログイン試行履歴を新しいものから順に配列で取得する。  
   
-**$ip_address** ： IPアドレス  
+**$ip_address** ： サニタイズ済みのIPアドレス  
   
 **返り値** ： 成功した場合はそのIPアドレスの各試行履歴が格納された連想配列("user_id"(ユーザーID)、"succeeded"(正しいパスワードを入力したか否か)、"attempt_datetime"(試行日時))を、配列に入れて返す。失敗した場合はFALSEを返す。
 
@@ -267,7 +267,7 @@ wakarana_common::__constructとwakarana_common::connect_dbを順に実行する�
 #### wakarana::check_attempt_interval($ip_address)
 クライアントのIPアドレスが前回のログイン試行から次に試行できるようになるまでの期間を経過しているかを調べる。  
   
-**$ip_address** ： IPアドレス  
+**$ip_address** ： サニタイズ済みのIPアドレス  
   
 **返り値** ： wakarana_config.iniで指定した期間が経過していればTRUE、そうでない場合はFALSEを返す。
 
