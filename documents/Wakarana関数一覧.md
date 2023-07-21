@@ -514,7 +514,7 @@ TOTP生成鍵と現在時刻からワンタイムコードを生成する。
 **返り値** ： 2要素認証が有効ならばTRUE、そうでない場合はFALSEを返す。
 
 
-#### wakarana_user::change_password($password)
+#### wakarana_user::set_password($password)
 ユーザーのパスワードを変更する。  
   
 **$password** ： パスワード  

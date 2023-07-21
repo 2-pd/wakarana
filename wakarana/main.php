@@ -24,7 +24,7 @@ class wakarana extends wakarana_common {
     
     
     static function check_id_string ($id, $length = 60) {
-        if (gettype($id) === "string" && strlen($id) <= $length && preg_match("/^[0-9A-Za-z_]+$/u", $id)) {
+        if (gettype($id) === "string" && strlen($id) >= 1 && strlen($id) <= $length && preg_match("/^[0-9A-Za-z_]+$/u", $id)) {
             return TRUE;
         } else {
             return FALSE;
@@ -132,11 +132,8 @@ class wakarana extends wakarana_common {
             return FALSE;
         }
         
-        $password_hash = self::hash_password($user_id, $password);
-        $date_time = date("Y-m-d H:i:s");
-        
-        if (empty($user_id)) {
-            $this->print_error("無効なユーザーIDです。");
+        if (!$this->config["allow_weak_password"] && !self::check_password_strength($password)) {
+            $this->print_error("パスワードの強度が不十分です。現在の設定では弱いパスワードの使用は許可されていません。");
             return FALSE;
         }
         
@@ -144,6 +141,9 @@ class wakarana extends wakarana_common {
             $this->print_error("既に使用されているメールアドレスです。現在の設定では同一メールアドレスでの復数アカウント作成は許可されていません。");
             return FALSE;
         }
+        
+        $password_hash = self::hash_password($user_id, $password);
+        $date_time = date("Y-m-d H:i:s");
         
         try {
             $stmt = $this->db_obj->prepare('INSERT INTO "wakarana_users"("user_id", "password", "user_name", "email_address", "user_created", "last_updated", "last_access", "status", "totp_key") VALUES (\''.$user_id.'\', \''.$password_hash.'\', :user_name, :email_address, \''.$date_time.'\', \''.$date_time.'\', \''.$date_time.'\', '.intval($status).', NULL)');
@@ -512,7 +512,12 @@ class wakarana_user {
     }
     
     
-    function change_password ($password) {
+    function set_password ($password) {
+        if (!$this->wakarana->config["allow_weak_password"] && !wakarana::check_password_strength($password)) {
+            $this->wakarana->print_error("パスワードの強度が不十分です。現在の設定では弱いパスワードの使用は許可されていません。");
+            return FALSE;
+        }
+        
         $password_hash = wakarana::hash_password($this->user_info["user_id"], $password);
         
         try {
