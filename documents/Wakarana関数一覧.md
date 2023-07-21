@@ -58,6 +58,20 @@ wakarana_common::print_errorにて直近に入力されたエラーメッセー�
 **返り値** ： エラーメッセージの文字列
 
 
+#### wakarana_common::get_config_keys()
+wakarana_config.iniの変数名一覧を取得する。  
+  
+**返り値** ： wakarana_config.iniの変数名一覧を配列で返す。
+
+
+#### wakarana_common::get_config_value($key)
+wakarana_config.iniの設定値を取得する。  
+  
+**$key** : wakarana_config.iniの変数名    
+  
+**返り値** ： 指定した変数名が存在すればその設定値、なければNULLを返す。
+
+
 
 ## main.php
 
@@ -224,7 +238,7 @@ wakarana_common::__constructとwakarana_common::connect_dbを順に実行する�
 
 
 #### wakarana::delete_all_tokens()
-データベースに存在する各種トークン(ログイントークン、ワンタイムトークン、メールアドレス確認トークン、2段階認証用一時トークン)を全て削除する。  
+データベースに存在する各種トークン(ログイントークン、ワンタイムトークン、メールアドレス確認トークン、パスワードリセット用トークン、2段階認証用一時トークン)を全て削除する。  
   
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
@@ -234,6 +248,22 @@ wakarana_common::__constructとwakarana_common::connect_dbを順に実行する�
 ☆staticメソッド。  
   
 **返り値** ： キー"os_name"(OS名)と"browser_name"(ブラウザ名)が含まれる連想配列。
+
+
+#### wakarana::get_attempt_logs($ip_address)
+クライアントのIPアドレスからログイン試行履歴を取得する。  
+  
+**$ip_address** ： IPアドレス  
+  
+**返り値** ： 成功した場合はそのIPアドレスの各試行履歴が格納された連想配列("user_id"(ユーザーID)、"succeeded"(正しいパスワードを入力したか否か)、"attempt_datetime"(試行日時))を、配列に入れて返す。失敗した場合はFALSEを返す。
+
+
+#### wakarana::check_attempt_interval($ip_address)
+クライアントのIPアドレスが前回のログイン試行から次に試行できるようになるまでの期間を経過しているかを調べる。  
+  
+**$ip_address** ： IPアドレス  
+  
+**返り値** ： wakarana_config.iniで指定した期間が経過していればTRUE、そうでない場合はFALSEを返す。
 
 
 #### wakarana::delete_attempt_logs($expire=-1)
@@ -592,8 +622,8 @@ TOTP生成鍵と現在時刻からワンタイムコードを生成する。
 **返り値** ： ユーザーが持っている各ロールの権限値のうち最大のものを返す。どのロールにも権限がない場合は「0」とみなす。失敗した場合はFALSEを返す。
 
 
-#### wakarana_user::delete_all_tokens($user_id=NULL)
-ユーザーの各種トークン(ログイントークン、ワンタイムトークン、メールアドレス確認トークン、2段階認証用一時トークン)を全て削除する。  
+#### wakarana_user::delete_all_tokens()
+ユーザーの各種トークン(ログイントークン、ワンタイムトークン、メールアドレス確認トークン、パスワードリセット用トークン、2段階認証用一時トークン)を全て削除する。  
   
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
@@ -601,13 +631,11 @@ TOTP生成鍵と現在時刻からワンタイムコードを生成する。
 #### wakarana_user::get_attempt_logs()
 ユーザーのログイン試行履歴を取得する。  
   
-**$user_id** ： ユーザーID  
-  
-**返り値** ： 成功した場合はそのユーザーの各試行履歴が格納された連想配列("user_id"(ユーザーID)、"succeeded"(正しいパスワードを入力したか否か)、"attempt_datetime"(試行日時))を、配列に入れて返す。失敗した場合はFALSEを返す。
+**返り値** ： 成功した場合はそのユーザーの各試行履歴が格納された連想配列("succeeded"(正しいパスワードを入力したか否か)、"attempt_datetime"(試行日時), "ip_address"(IPアドレス))を、配列に入れて返す。失敗した場合はFALSEを返す。
 
 
 #### wakarana_user::check_attempt_interval()
-ユーザーが前回のログイン試行から次に試行できるようになるまでの期間が経過しているかを調べる。  
+ユーザーが前回のログイン試行から次に試行できるようになるまでの期間を経過しているかを調べる。  
   
 **返り値** ： wakarana_config.iniで指定した期間が経過していればTRUE、そうでない場合はFALSEを返す。
 

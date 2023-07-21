@@ -89,4 +89,18 @@ class wakarana_common {
     function get_last_error_text () {
         return $this->last_error_text;
     }
+    
+    
+    function get_config_keys () {
+        return array_keys($this->config);
+    }
+    
+    
+    function get_config_value ($key) {
+        if (isset($this->config[$key])) {
+            return $this->config[$key];
+        } else {
+            return NULL;
+        }
+    }
 }
