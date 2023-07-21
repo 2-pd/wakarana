@@ -321,6 +321,37 @@ class wakarana extends wakarana_common {
     
     
     
+    function get_client_ip_address () {
+        if ($this->config["proxy_count"] >= 1) {
+            if (!empty($_SERVER["HTTP_X_FORWARDED_FOR"])) {
+                $x_forwarded_for = explode(",", $_SERVER["HTTP_X_FORWARDED_FOR"]);
+                $proxy_cnt = count($x_forwarded_for);
+            } else {
+                $proxy_cnt = 0;
+            }
+            
+            if ($proxy_cnt <= $this->config["proxy_count"]) {
+                $remote_addr = trim($x_forwarded_for[$proxy_cnt - $this->config["proxy_count"]]);
+            } else {
+                $this->print_error("設定ファイルで指定されたプロキシ数が検出されたプロキシ数未満です。");
+                return "0.0.0.0";
+            }
+        } elseif (!empty($_SERVER["REMOTE_ADDR"])) {
+            $remote_addr = $_SERVER["REMOTE_ADDR"];
+        } else {
+            $this->print_error("クライアント端末のIPアドレスが取得できません。");
+            return "0.0.0.0";
+        }
+        
+        if (preg_match("/^(((1[0-9]{2}|2([0-4][0-9]|5[0-5])|[0-9][0-9]|[0-9])\.){3}(1[0-9]{2}|2([0-4][0-9]|5[0-5])|[0-9][0-9]|[0-9])|([0-9a-f]{0,4}:){2,7}[0-9a-f]{0,4})$/u", $remote_addr) && !preg_match("/(::.*::|:::)/u", $remote_addr)) {
+            return $remote_addr;
+        } else {
+            $this->print_error("クライアント端末のIPアドレスが異常です。");
+            return "0.0.0.0";
+        }
+    }
+    
+    
     static function get_client_environment () {
         $os_names = array("Android", "iPhone", "iPad", "Windows", "Macintosh", "CrOS", "Linux", "BSD", "Nintendo", "PlayStation", "Xbox");
         $browser_names = array("Firefox", "Edg", "OPR", "Sleipnir", "Chrome", "Safari", "Trident");
@@ -720,5 +751,70 @@ class wakarana_user {
             $this->wakarana->print_error("権限値の取得に失敗しました。".$err->getMessage());
             return FALSE;
         }
+    }
+    
+    
+    function delete_all_tokens () {
+        //あとで実装
+    }
+    
+    
+    function get_attempt_logs () {
+        try {
+            $stmt = $this->wakarana->db_obj->query('SELECT "succeeded", "attempt_datetime", "ip_address" FROM "wakarana_attempt_logs" WHERE "user_id" = \''.$this->user_info["user_id"].'\' ORDER BY "attempt_datetime" DESC');
+            
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $err) {
+            $this->wakarana->print_error("認証試行ログの取得に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+    }
+
+
+    function check_attempt_interval() {
+        try {
+            $stmt = $this->wakarana->db_obj->query('SELECT COUNT("user_id") FROM "wakarana_attempt_logs" WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "attempt_datetime" >= \''.date("Y-m-d H:i:s", time() - $this->wakarana->config["min_attempt_interval"]).'\'');
+            
+            if ($stmt->fetch(PDO::FETCH_COLUMN) >= 1) {
+                return FALSE;
+            } else {
+                return TRUE;
+            }
+        } catch (PDOException $err) {
+            $this->wakarana->print_error("認証試行間隔の確認に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+    }
+    
+    
+    function add_attempt_log ($succeeded) {
+        if ($succeeded) {
+            $succeeded_q = "TRUE";
+        } else {
+            $succeeded_q = "FALSE";
+        }
+        
+        try {
+            $this->wakarana->db_obj->exec('DELETE FROM "wakarana_attempt_logs" WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "attempt_datetime" NOT IN (SELECT "attempt_datetime" FROM "wakarana_attempt_logs" WHERE "user_id" = \''.$this->user_info["user_id"].'\' ORDER BY "attempt_datetime" DESC LIMIT '.($this->wakarana->config["attempt_logs_per_user"] - 1).')');
+            
+            $this->wakarana->db_obj->exec('INSERT INTO "wakarana_attempt_logs"("user_id", "succeeded", "attempt_datetime", "ip_address") VALUES (\''.$this->user_info["user_id"].'\', '.$succeeded_q.', \''.(new DateTime())->format('Y-m-d H:i:s.u').'\', \''.$this->wakarana->get_client_ip_address().'\')');
+        } catch (PDOException $err) {
+            $this->wakarana->print_error("認証試行ログの追加に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        return TRUE;
+    }
+    
+    
+    function delete_attempt_logs () {
+        try {
+            $this->wakarana->db_obj->exec('DELETE FROM "wakarana_attempt_logs" WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
+        } catch (PDOException $err) {
+            $this->wakarana->print_error("認証試行ログの削除に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        return TRUE;
     }
 }

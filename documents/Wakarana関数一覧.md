@@ -243,6 +243,12 @@ wakarana_common::__constructとwakarana_common::connect_dbを順に実行する�
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
+#### wakarana::get_client_ip_address()
+プロキシを除外してアクセス中のクライアント端末のIPアドレス文字列を取得し、それがIPアドレスとして正常な文字列であればそれを返す。  
+  
+**返り値** ： クライアント端末のIPアドレス。
+
+
 #### ☆ wakarana::get_client_environment()
 アクセス中のクライアント端末の情報を連想配列で返す。  
 ☆staticメソッド。  
@@ -251,7 +257,7 @@ wakarana_common::__constructとwakarana_common::connect_dbを順に実行する�
 
 
 #### wakarana::get_attempt_logs($ip_address)
-クライアントのIPアドレスからログイン試行履歴を取得する。  
+クライアントのIPアドレスからログイン試行履歴を新しいものから順に配列で取得する。  
   
 **$ip_address** ： IPアドレス  
   
@@ -629,7 +635,7 @@ TOTP生成鍵と現在時刻からワンタイムコードを生成する。
 
 
 #### wakarana_user::get_attempt_logs()
-ユーザーのログイン試行履歴を取得する。  
+ユーザーのログイン試行履歴を新しいものから順に配列で取得する。  
   
 **返り値** ： 成功した場合はそのユーザーの各試行履歴が格納された連想配列("succeeded"(正しいパスワードを入力したか否か)、"attempt_datetime"(試行日時), "ip_address"(IPアドレス))を、配列に入れて返す。失敗した場合はFALSEを返す。
 

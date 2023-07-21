@@ -40,6 +40,8 @@ _/_/_/_/ 基本設定ファイル wakarana_config.ini _/_/_/_/
   
   totp_pin_expire TOTPワンタイムパスワードの有効時間(分)
   totp_temporary_token_expire 2段階認証用一時トークンの有効期間(秒)
+  
+  proxy_count リバースプロキシを使用している環境ではその個数を指定する。
 
 <各変数のデフォルト値>
 display_errors=true
@@ -71,6 +73,8 @@ password_reset_token_expire=1800
 
 totp_pin_expire=1
 totp_temporary_token_expire=600
+
+proxy_count=0
 
 
 _/_/_/_/ データベース _/_/_/_/
@@ -139,11 +143,11 @@ _/_/_/_/ データベース _/_/_/_/
 テーブル `wakarana_attempt_logs`
   `user_id` varchar(60) [TEXT COLLATE NOCASE] (NOT NULL) ユーザーID
   `succeeded` boolean [INTEGER] (NOT NULL) ログインに成功したかどうか
-  `attempt_datetime` timestamp [TEXT] (NOT NULL) ログイン試行が行われた日時
+  `attempt_datetime` timestamp [TEXT] (NOT NULL) ログイン試行が行われた日時(マイクロ秒単位)
   `ip_address` varchar(39) [TEXT] (NOT NULL) 利用者のIPアドレス
   
-  INDEX `wakarana_idx_a1` `user_id`, `succeeded`, `attempt_datetime`
-  INDEX `wakarana_idx_a2` `ip_address`, `succeeded`, `attempt_datetime`
+  INDEX `wakarana_idx_a1` `user_id`, `attempt_datetime`
+  INDEX `wakarana_idx_a2` `ip_address`, `attempt_datetime`
   INDEX `wakarana_idx_a3` `attempt_datetime`
 
 

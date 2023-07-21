@@ -32,7 +32,9 @@ define("WAKARANA_CONFIG_ORIGINAL",
             "password_reset_token_expire" => 1800,
             
             "totp_pin_expire" => 1,
-            "totp_temporary_token_expire" => 600
+            "totp_temporary_token_expire" => 600,
+            
+            "proxy_count" => 0
         )
     );
 
@@ -99,6 +101,9 @@ class wakarana_config extends wakarana_common {
         
         fwrite($file_h,"totp_pin_expire=".$this->config["totp_pin_expire"]."\n");
         fwrite($file_h,"totp_temporary_token_expire=".$this->config["totp_temporary_token_expire"]."\n");
+        fwrite($file_h,"\n");
+        
+        fwrite($file_h,"proxy_count=".$this->config["proxy_count"]."\n");
         
         fclose($file_h);
         
@@ -244,8 +249,8 @@ class wakarana_config extends wakarana_common {
         }
         
         try {
-            $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_a1" ON "wakarana_attempt_logs"("user_id", "succeeded", "attempt_datetime")');
-            $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_a2" ON "wakarana_attempt_logs"("ip_address", "succeeded", "attempt_datetime")');
+            $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_a1" ON "wakarana_attempt_logs"("user_id", "attempt_datetime")');
+            $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_a2" ON "wakarana_attempt_logs"("ip_address", "attempt_datetime")');
             $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_a3" ON "wakarana_attempt_logs"("attempt_datetime")');
         } catch (PDOException $err) {
             $this->print_error("テーブル wakarana_attempt_logs のインデックス作成処理に失敗しました。".$err->getMessage());
