@@ -358,11 +358,11 @@ class wakarana extends wakarana_common {
         $os_names = array("Android", "iPhone", "iPad", "Windows", "Macintosh", "CrOS", "Linux", "BSD", "Nintendo", "PlayStation", "Xbox");
         $browser_names = array("Firefox", "Edg", "OPR", "Sleipnir", "Chrome", "Safari", "Trident");
         
-        $environment = array("os_name" => NULL, "browser_name" => NULL);
+        $environment = array("operating_system" => NULL, "browser_name" => NULL);
         
         foreach ($os_names as $os_name) {
             if (strpos($_SERVER["HTTP_USER_AGENT"], $os_name) !== FALSE){
-                $environment["os_name"] = $os_name;
+                $environment["operating_system"] = $os_name;
                 break;
             }
         }
@@ -862,5 +862,70 @@ class wakarana_user {
         }
         
         return TRUE;
+    }
+    
+    
+    function update_last_access ($token = NULL) {
+        $last_access = date("Y-m-d H:i:s");
+        
+        try {
+            $this->wakarana->db_obj->exec('UPDATE "wakarana_users" SET "last_access"=\''.$last_access.'\'  WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
+        } catch (PDOException $err) {
+            $this->wakarana->print_error("ユーザーの最終アクセス日時の更新に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        $this->user_info["last_access"] = $last_access;
+        
+        if (!empty($token)) {
+            try {
+                $stmt = $this->wakarana->db_obj->prepare('UPDATE "wakarana_login_tokens" SET "last_access"=\''.$last_access.'\'  WHERE "token" = :token');
+                
+                $stmt->bindValue(":token", $token, PDO::PARAM_STR);
+                
+                $stmt->execute();
+            } catch (PDOException $err) {
+                $this->wakarana->print_error("ログイントークンの最終アクセス日時の更新に失敗しました。".$err->getMessage());
+                return FALSE;
+            }
+        }
+        
+        return TRUE;
+    }
+    
+    
+    function create_login_token () {
+        $token = wakarana::create_token();
+        
+        $token_created = date("Y-m-d H:i:s");
+        
+        $client_env = wakarana::get_client_environment();
+        
+        try {
+            $this->wakarana->db_obj->exec('DELETE FROM "wakarana_login_tokens" WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "token" NOT IN (SELECT "token" FROM "wakarana_login_tokens" WHERE "user_id" = \''.$this->user_info["user_id"].'\' ORDER BY "token_created" DESC LIMIT '.($this->wakarana->config["login_tokens_per_user"] - 1).')');
+            
+            $stmt = $this->wakarana->db_obj->prepare('INSERT INTO "wakarana_login_tokens"("token", "user_id", "token_created", "ip_address", "operating_system", "browser_name", "last_access") VALUES (\''.$token.'\', \''.$this->user_info["user_id"].'\', \''.$token_created.'\', \''.$this->wakarana->get_client_ip_address().'\', :operating_system, :browser_name, \''.$token_created.'\')');
+            
+            if (!empty($client_env["operating_system"])) {
+                $stmt->bindValue(":operating_system", $client_env["operating_system"], PDO::PARAM_STR);
+            } else {
+                $stmt->bindValue(":operating_system", NULL, PDO::PARAM_NULL);
+            }
+            
+            if (!empty($client_env["browser_name"])) {
+                $stmt->bindValue(":browser_name", $client_env["browser_name"], PDO::PARAM_STR);
+            } else {
+                $stmt->bindValue(":browser_name", NULL, PDO::PARAM_NULL);
+            }
+            
+            $stmt->execute();
+        } catch (PDOException $err) {
+            $this->wakarana->print_error("ログイントークンの保存に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        $this->update_last_access();
+        
+        return $token;
     }
 }

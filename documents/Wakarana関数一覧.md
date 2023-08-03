@@ -253,7 +253,7 @@ wakarana_common::__constructとwakarana_common::connect_dbを順に実行する�
 アクセス中のクライアント端末の情報を連想配列で返す。  
 ☆staticメソッド。  
   
-**返り値** ： キー"os_name"(OS名)と"browser_name"(ブラウザ名)が含まれる連想配列。
+**返り値** ： キー"operating_system"(OS名)と"browser_name"(ブラウザ名)が含まれる連想配列。
 
 
 #### wakarana::get_client_attempt_logs($ip_address)
@@ -660,9 +660,12 @@ TOTP生成鍵と現在時刻からワンタイムコードを生成する。
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
-#### wakarana_user::update_last_access()
+#### wakarana_user::update_last_access($token=NULL)
 現在の時刻をユーザーの最終アクセス日時として記録する。  
-ログイントークン発行処理とログアウト処理ではこの関数が自動的に実行される。  
+ログイントークンを指定した場合、そのトークンの最終アクセス日時も更新する。  
+なお、ログイントークン発行処理とログアウト処理ではこの関数が自動的に実行される。
+  
+**$token** : ログイントークン文字列。  
   
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
