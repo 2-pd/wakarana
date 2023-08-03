@@ -422,6 +422,35 @@ class wakarana extends wakarana_common {
     }
     
     
+    function authenticate ($user_id, $password, $totp_pin = NULL) {
+        $user = $this->get_user($user_id);
+        
+        if (empty($user)) {
+            return FALSE;
+        }
+        
+        if ($user->check_password($password) && $this->check_client_attempt_interval($this->get_client_ip_address()) && $user->check_attempt_interval()) {
+            if ($user->get_totp_enabled()) {
+                if (!is_null($totp_pin)) {
+                    if ($user->totp_check($totp_pin)) {
+                        $user->add_attempt_log(TRUE);
+                        return $user;
+                    }
+                } else {
+                    $user->add_attempt_log(TRUE);
+                    return $user->create_totp_temporary_token();
+                }
+            } else {
+                $user->add_attempt_log(TRUE);
+                return $user;
+            }
+        }
+        
+        $user->add_attempt_log(FALSE);
+        return FALSE;
+    }
+    
+    
     
     
     
