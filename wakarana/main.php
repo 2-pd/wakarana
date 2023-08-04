@@ -137,8 +137,8 @@ class wakarana extends wakarana_common {
             return FALSE;
         }
         
-        if (!$this->config["allow_duplicate_email_address"] && !empty($this->email_address_exists($email_address))) {
-            $this->print_error("既に使用されているメールアドレスです。現在の設定では同一メールアドレスでの復数アカウント作成は許可されていません。");
+        if (!$this->config["allow_duplicate_email_address"] && (empty($email_address) || !empty($this->search_users_with_email_address($email_address)))) {
+            $this->print_error("使用できないメールアドレスです。現在の設定では同一メールアドレスでの復数アカウント作成は許可されていません。");
             return FALSE;
         }
         
@@ -429,7 +429,7 @@ class wakarana extends wakarana_common {
             return FALSE;
         }
         
-        if ($user->check_password($password) && $this->check_client_attempt_interval($this->get_client_ip_address()) && $user->check_attempt_interval()) {
+        if ($user->get_status() === WAKARANA_STATUS_NORMAL && $user->check_password($password) && $this->check_client_attempt_interval($this->get_client_ip_address()) && $user->check_attempt_interval()) {
             if ($user->get_totp_enabled()) {
                 if (!is_null($totp_pin)) {
                     if ($user->totp_check($totp_pin)) {
@@ -475,6 +475,29 @@ class wakarana extends wakarana_common {
         }
         
         return TRUE;
+    }
+    
+    
+    function search_users_with_email_address ($email_address) {
+        try {
+            $stmt = $this->db_obj->prepare('SELECT * FROM "wakarana_users" WHERE "email_address"=:email_address');
+            
+            $stmt->bindValue(":email_address", $email_address, PDO::PARAM_STR);
+            
+            $stmt->execute();
+        } catch (PDOException $err) {
+            $this->print_error("メールアドレスの確認に失敗しました。".$err->getMessage());
+            return -1;
+        }
+        
+        $users_info = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        $users = array();
+        foreach ($users_info as $user_info) {
+            $users[] = new wakarana_user($this, $user_info);
+        }
+        
+        return $users;
     }
     
     
@@ -689,6 +712,11 @@ class wakarana_user {
     
     
     function set_email_address ($email_address) {
+        if (!$this->wakarana->config["allow_duplicate_email_address"] && $email_address !== $this->user_info["email_address"] && (empty($email_address) || !empty($this->wakarana->search_users_with_email_address($email_address)))) {
+            $this->wakarana->print_error("使用できないメールアドレスです。現在の設定では同一メールアドレスでの復数アカウント作成は許可されていません。");
+            return FALSE;
+        }
+        
         try {
             $stmt = $this->wakarana->db_obj->prepare('UPDATE "wakarana_users" SET "email_address"= :email_address, "last_updated"=\''.date("Y-m-d H:i:s").'\' WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
             
@@ -712,6 +740,10 @@ class wakarana_user {
     
     function set_status ($status) {
         $status = intval($status);
+        
+        if ($status !== WAKARANA_STATUS_NORMAL) {
+            $this->delete_login_tokens();
+        }
         
         try {
             $this->wakarana->db_obj->exec('UPDATE "wakarana_users" SET "status"=\''.$status.'\', "last_updated"=\''.date("Y-m-d H:i:s").'\'  WHERE "user_id" = \''.$this->user_info["user_id"].'\'');

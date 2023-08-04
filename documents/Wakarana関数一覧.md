@@ -311,12 +311,12 @@ wakarana_common::__constructとwakarana_common::connect_dbを順に実行する�
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
-#### wakarana::email_address_exists($email_address)
-あるメールアドレスを使用しているユーザーがいるかを調る。  
+#### wakarana::search_users_with_email_address($email_address)
+メールアドレスからユーザーを逆引きする。  
   
 **$email_address** ： 調べるメールアドレス  
   
-**返り値** ： 指定したメールアドレスを登録しているユーザーがいればそのユーザーID、そうでない場合はFALSE、エラーの場合はNULLを返す。
+**返り値** ： 指定したメールアドレスを登録しているユーザーがいれば、該当ユーザーらのwakarana_userインスタンスの配列、そうでない場合は空配列、エラーの場合は-1を返す。
 
 
 #### wakarana::create_email_address_verification_token($email_address)
@@ -576,6 +576,7 @@ TOTP生成鍵と現在時刻からワンタイムコードを生成する。
 
 #### wakarana_user::set_status($status)
 ユーザーアカウントの状態(有効、停止、等)を切り替える。  
+有効以外の状態を指定した場合、そのユーザーは自動的にログアウト状態となる。  
   
 **$status** : WAKARANA_STATUS_NORMALまたはWAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_EMAIL_UNVERIFIED。  
   
@@ -637,7 +638,7 @@ TOTP生成鍵と現在時刻からワンタイムコードを生成する。
 #### wakarana_user::get_attempt_logs()
 ユーザーのログイン試行履歴を新しい順に配列で取得する。  
   
-**返り値** ： 成功した場合はそのユーザーの各試行履歴が格納された連想配列("succeeded"(正しいパスワードを入力したか否か)、"attempt_datetime"(試行日時), "ip_address"(IPアドレス))を、配列に入れて返す。失敗した場合はFALSEを返す。
+**返り値** ： 成功した場合はそのユーザーの各試行履歴が格納された連想配列("succeeded"(認証に成功したか否か)、"attempt_datetime"(試行日時), "ip_address"(IPアドレス))を、配列に入れて返す。失敗した場合はFALSEを返す。
 
 
 #### wakarana_user::check_attempt_interval()
