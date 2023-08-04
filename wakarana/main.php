@@ -451,6 +451,33 @@ class wakarana extends wakarana_common {
     }
     
     
+    function login ($user_id, $password, $totp_pin = NULL) {
+        $user = $this->authenticate($user_id, $password, $totp_pin);
+        
+        if (is_object($user)) {
+            $user->set_login_token();
+        }
+        
+        return $user;
+    }
+    
+    
+    function delete_login_tokens ($expire = -1) {
+        if ($expire === -1) {
+            $expire = $this->config["login_token_expire"];
+        }
+        
+        try {
+            $this->db_obj->exec('DELETE FROM "wakarana_login_tokens" WHERE "token_created" <= \''.date("Y-m-d H:i:s", time() - $expire).'\'');
+        } catch (PDOException $err) {
+            $this->print_error("ログイントークンの削除に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        return TRUE;
+    }
+    
+    
     
     
     
@@ -924,6 +951,8 @@ class wakarana_user {
     
     
     function create_login_token () {
+        $this->wakarana->delete_login_tokens();
+        
         $token = wakarana::create_token();
         
         $token_created = date("Y-m-d H:i:s");
@@ -956,5 +985,29 @@ class wakarana_user {
         $this->update_last_access();
         
         return $token;
+    }
+    
+    
+    function set_login_token () {
+        $token = $this->create_login_token();
+        
+        if (!empty($token) && setcookie($this->wakarana->config["login_token_cookie_name"], $token, time() + $this->wakarana->config["login_token_expire"], "/", $this->wakarana->config["cookie_domain"], FALSE, TRUE)) {
+            return TRUE;
+        } else {
+            $this->wakarana->print_error("ログイントークンの送信に失敗しました。");
+            return FALSE;
+        }
+    }
+    
+    
+    function delete_login_tokens () {
+        try {
+            $this->wakarana->db_obj->exec('DELETE FROM "wakarana_login_tokens" WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
+        } catch (PDOException $err) {
+            $this->wakarana->print_error("ユーザーのログイントークン削除に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        return TRUE;
     }
 }

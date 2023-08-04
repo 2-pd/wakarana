@@ -27,6 +27,9 @@ _/_/_/_/ 基本設定ファイル wakarana_config.ini _/_/_/_/
   allow_duplicate_email_address 同じメールアドレスでの複数のアカウント作成を許すかどうか(trueまたはfalse、trueの場合はメールアドレスなし(NULL)を許可しない)
   verification_email_expire メールアドレス確認トークンの有効時間(秒数で指定)
   
+  login_token_cookie_name ログイントークンのCookie保存名
+  cookie_domain サブドメインと主ドメインでログインを共通化する場合、主ドメインを指定する(例: "example.jp"と"hoge.example.jp"でログインを共通化する場合は"example.jp"を指定する)
+    
   login_tokens_per_user ユーザーごとのトークン保持可能数(超過した場合は、生成日時の古いトークンから順に削除される)
   login_token_expire ログイン用トークンの有効時間(秒数で指定)
   one_time_tokens_per_user ユーザーごとのワンタイムトークンの保持可能数(上記に同じ)
@@ -59,6 +62,9 @@ allow_weak_password=false
 
 allow_duplicate_email_address=false
 verification_email_expire=1800
+
+login_token_cookie_name="wakarana_login_token"
+cookie_domain=""
 
 login_tokens_per_user=4
 login_token_expire=2592000

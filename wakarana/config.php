@@ -20,6 +20,9 @@ define("WAKARANA_CONFIG_ORIGINAL",
             "allow_duplicate_email_address" => FALSE,
             "verification_email_expire" => 1800,
             
+            "login_token_cookie_name" => "wakarana_login_token",
+            "cookie_domain" => "",
+            
             "login_tokens_per_user" => 4,
             "login_token_expire" => 2592000,
             "one_time_tokens_per_user" => 8,
@@ -83,6 +86,10 @@ class wakarana_config extends wakarana_common {
             fwrite($file_h,"allow_duplicate_email_address=false\n");
         }
         fwrite($file_h,"verification_email_expire=".$this->config["verification_email_expire"]."\n");
+        fwrite($file_h,"\n");
+        
+        fwrite($file_h,"login_token_cookie_name=\"".$this->config["login_token_cookie_name"]."\"\n");
+        fwrite($file_h,"cookie_domain=\"".$this->config["cookie_domain"]."\"\n");
         fwrite($file_h,"\n");
         
         fwrite($file_h,"login_tokens_per_user=".$this->config["login_tokens_per_user"]."\n");
