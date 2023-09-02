@@ -325,17 +325,17 @@ wakarana_common::__constructとwakarana_common::connect_dbを順に実行する�
   
 **$email_address** : トークンの送信先メールアドレス。   
   
-**返り値** ： 成功した場合はメールアドレス確認トークン、失敗した場合はFALSEを返す。
+**返り値** ： 成功した場合はメールアドレス確認トークン、失敗した場合はFALSEを返す。同じメールアドレスでの複数のアカウント作成を許可しない設定の場合、既に使用されているメールアドレスならNULLを返す。
 
 
 #### wakarana::email_address_verify($token, $delete_token=TRUE)
 メールアドレス確認トークンを照合し、トークン生成時に紐付けられたメールアドレスとユーザーを取得する。 
-トークンがアカウント登録前の新規ユーザーに対して生成されたものだった場合、メールアドレスのみを取得する。  
+トークンがアカウント登録前の新規ユーザーに対して生成されたものだった場合、メールアドレスのみを取得する。(ユーザー値はNULLとなる)  
   
 **$token** : メールアドレス確認トークン  
 **$delete_token** : TRUEの場合、使用済みのメールアドレス確認トークンを削除する。  
   
-**返り値** ： 認証された場合はキー"wakarana_user"(wakarana_userインスタンス)と"email_address"(メールアドレス)が含まれる連想配列を返し、それ以外の場合はFALSEを返す。
+**返り値** ： 認証された場合はキー"user"(wakarana_userインスタンス)と"email_address"(メールアドレス)が含まれる連想配列を返し、それ以外の場合はFALSEを返す。
 
 
 #### wakarana::delete_email_address_verification_tokens($expire=-1)
