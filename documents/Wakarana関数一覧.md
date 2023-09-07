@@ -346,11 +346,12 @@ wakarana_common::__constructとwakarana_common::connect_dbを順に実行する�
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
-#### wakarana::reset_password($token, $new_password)
+#### wakarana::reset_password($token, $new_password, $delete_token=TRUE)
 パスワードリセット用トークンに紐付けられたアカウントのパスワードを再設定する。  
   
 **$token** : パスワードリセット用トークン  
 **$new_password** : 新しいパスワード  
+**$delete_token** : TRUEの場合、使用済みのパスワードリセット用トークンを削除する。
   
 **返り値** ： 成功した場合はトークンに紐付けられたユーザーのwakarana_userクラスのインスタンスを返し、それ以外の場合はFALSEを返す。
 
@@ -363,7 +364,7 @@ wakarana_common::__constructとwakarana_common::connect_dbを順に実行する�
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
-#### wakarana::delete_totp_tokens($expire=-1)
+#### wakarana::delete_2_factor_auth_tokens($expire=-1)
 指定した経過時間より前に生成された2段階認証用一時トークンを無効化する。  
   
 **$expire** ： 経過時間の秒数。-1を指定した場合はwakarana_config.iniで指定した2段階認証用一時トークンの有効秒数が代わりに使用される。  
@@ -708,7 +709,7 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
 **返り値** ： 成功した場合はパスワードリセット用トークン、失敗した場合はFALSEを返す。
 
 
-#### wakarana_user::create_totp_temporary_token()
+#### wakarana_user::create_2_factor_auth_token()
 ユーザーに対して2段階認証用の一時トークンを発行する。  
   
 **返り値** ： 成功した場合は一時トークン、失敗した場合はFALSEを返す。

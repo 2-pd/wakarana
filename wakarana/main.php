@@ -591,6 +591,59 @@ class wakarana extends wakarana_common {
     }
     
     
+    function reset_password ($token, $new_password, $delete_token = TRUE) {
+        $this->delete_password_reset_tokens();
+        
+        try {
+            $stmt = $this->db_obj->prepare('SELECT "user_id" FROM "wakarana_password_reset_tokens" WHERE "token" = :token');
+            
+            $stmt->bindValue(":token", $token, PDO::PARAM_STR);
+            
+            $stmt->execute();
+        } catch (PDOException $err) {
+            $this->print_error("パスワード再設定用トークンの認証に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        $user = $this->get_user($stmt->fetchColumn());
+        
+        if ($user !== FALSE && $user->set_password($new_password)) {
+            if ($delete_token) {
+                try {
+                    $stmt = $this->db_obj->prepare('DELETE FROM "wakarana_password_reset_tokens" WHERE "token" = :token');
+                    
+                    $stmt->bindValue(":token", $token, PDO::PARAM_STR);
+                    
+                    $stmt->execute();
+                } catch (PDOException $err) {
+                    $this->print_error("使用済みのパスワード再設定用トークンの削除に失敗しました。".$err->getMessage());
+                    return FALSE;
+                }
+            }
+            
+            return $user;
+        } else {
+            return FALSE;
+        }
+    }
+    
+    
+    function delete_password_reset_tokens ($expire=-1) {
+        if ($expire === -1) {
+            $expire = $this->config["password_reset_token_expire"];
+        }
+        
+        try {
+            $this->db_obj->exec('DELETE FROM "wakarana_password_reset_tokens" WHERE "token_created" <= \''.date("Y-m-d H:i:s", time() - $expire).'\'');
+        } catch (PDOException $err) {
+            $this->print_error("パスワード再設定用トークンの削除に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        return TRUE;
+    }
+    
+    
     
     
     
@@ -1155,6 +1208,24 @@ class wakarana_user {
             $stmt->execute();
         } catch (PDOException $err) {
             $this->wakarana->print_error("メールアドレス確認用トークンの生成に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        return $token;
+    }
+    
+    
+    function create_password_reset_token () {
+        $this->wakarana->delete_password_reset_tokens();
+        
+        $token = wakarana::create_token();
+        
+        $token_created = date("Y-m-d H:i:s");
+        
+        try {
+            $this->wakarana->db_obj->exec('INSERT INTO "wakarana_password_reset_tokens"("token", "user_id", "token_created") VALUES (\''.$token.'\', \''.$this->user_info["user_id"].'\', \''.$token_created.'\') ON CONFLICT("user_id") DO UPDATE SET "token" = \''.$token.'\', "token_created"=\''.$token_created.'\'');
+        } catch (PDOException $err) {
+            $this->wakarana->print_error("パスワード再設定用トークンの生成に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
