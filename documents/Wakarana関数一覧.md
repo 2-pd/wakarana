@@ -264,10 +264,11 @@ wakarana_common::__constructとwakarana_common::connect_dbを順に実行する�
 **返り値** ： 成功した場合はそのIPアドレスの各試行履歴が格納された連想配列("user_id"(ユーザーID)、"succeeded"(正しいパスワードを入力したか否か)、"attempt_datetime"(試行日時))を、配列に入れて返す。失敗した場合はFALSEを返す。
 
 
-#### wakarana::check_client_attempt_interval($ip_address)
+#### wakarana::check_client_attempt_interval($ip_address, $unsucceeded_only=FALSE)
 クライアントのIPアドレスが前回のログイン試行から次に試行できるようになるまでの期間を経過しているかを調べる。  
   
 **$ip_address** ： サニタイズ済みのIPアドレス  
+**$unsucceeded_only** : 失敗した試行のみを対象にする  
   
 **返り値** ： wakarana_config.iniで指定した期間が経過していればTRUE、そうでない場合はFALSEを返す。
 
@@ -364,7 +365,7 @@ wakarana_common::__constructとwakarana_common::connect_dbを順に実行する�
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
-#### wakarana::delete_2_factor_auth_tokens($expire=-1)
+#### wakarana::delete_2sv_tokens($expire=-1)
 指定した経過時間より前に生成された2段階認証用一時トークンを無効化する。  
   
 **$expire** ： 経過時間の秒数。-1を指定した場合はwakarana_config.iniで指定した2段階認証用一時トークンの有効秒数が代わりに使用される。  
@@ -585,7 +586,7 @@ TOTP生成鍵と現在時刻からワンタイムコードを生成する。
 
 
 #### wakarana_user::enable_2_factor_auth($totp_key=NULL)
-ユーザーのログイン時に2段階認証を要求するように設定する。  
+ユーザーのログイン時に2要素認証を要求するように設定する。  
   
 **$totp_key** ： TOTP生成鍵。省略したときは自動で生成される。  
   
@@ -593,7 +594,7 @@ TOTP生成鍵と現在時刻からワンタイムコードを生成する。
 
 
 #### wakarana_user::disable_2_factor_auth()
-ユーザーのログイン時に2段階認証を要求しないように設定する。  
+ユーザーのログイン時に2要素認証を要求しないように設定する。  
   
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
@@ -642,8 +643,10 @@ TOTP生成鍵と現在時刻からワンタイムコードを生成する。
 **返り値** ： 成功した場合はそのユーザーの各試行履歴が格納された連想配列("succeeded"(認証に成功したか否か)、"attempt_datetime"(試行日時), "ip_address"(IPアドレス))を、配列に入れて返す。失敗した場合はFALSEを返す。
 
 
-#### wakarana_user::check_attempt_interval()
+#### wakarana_user::check_attempt_interval($unsucceeded_only=FALSE)
 ユーザーが前回のログイン試行から次に試行できるようになるまでの期間を経過しているかを調べる。  
+  
+**$unsucceeded_only** : 失敗した試行のみを対象にする  
   
 **返り値** ： wakarana_config.iniで指定した期間が経過していればTRUE、そうでない場合はFALSEを返す。
 
@@ -709,7 +712,7 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
 **返り値** ： 成功した場合はパスワードリセット用トークン、失敗した場合はFALSEを返す。
 
 
-#### wakarana_user::create_2_factor_auth_token()
+#### wakarana_user::create_2sv_token()
 ユーザーに対して2段階認証用の一時トークンを発行する。  
   
 **返り値** ： 成功した場合は一時トークン、失敗した場合はFALSEを返す。

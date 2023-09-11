@@ -35,7 +35,7 @@ define("WAKARANA_CONFIG_ORIGINAL",
             "password_reset_token_expire" => 1800,
             
             "totp_pin_expire" => 1,
-            "totp_temporary_token_expire" => 600,
+            "two_step_verification_token_expire" => 600,
             
             "proxy_count" => 0
         )
@@ -107,7 +107,7 @@ class wakarana_config extends wakarana_common {
         fwrite($file_h,"\n");
         
         fwrite($file_h,"totp_pin_expire=".$this->config["totp_pin_expire"]."\n");
-        fwrite($file_h,"totp_temporary_token_expire=".$this->config["totp_temporary_token_expire"]."\n");
+        fwrite($file_h,"two_step_verification_token_expire=".$this->config["two_step_verification_token_expire"]."\n");
         fwrite($file_h,"\n");
         
         fwrite($file_h,"proxy_count=".$this->config["proxy_count"]."\n");

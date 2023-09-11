@@ -390,9 +390,15 @@ class wakarana extends wakarana_common {
     }
     
     
-    function check_client_attempt_interval ($ip_address) {
+    function check_client_attempt_interval ($ip_address, $unsucceeded_only = FALSE) {
+        if ($unsucceeded_only) {
+            $succeeded_q = ' AND "succeeded" = FALSE';
+        } else {
+            $succeeded_q = '';
+        }
+        
         try {
-            $stmt = $this->db_obj->query('SELECT COUNT("ip_address") FROM "wakarana_attempt_logs" WHERE "ip_address" = \''.$ip_address.'\' AND "attempt_datetime" >= \''.date("Y-m-d H:i:s", time() - $this->config["min_attempt_interval"]).'\'');
+            $stmt = $this->db_obj->query('SELECT COUNT("ip_address") FROM "wakarana_attempt_logs" WHERE "ip_address" = \''.$ip_address.'\' AND "attempt_datetime" >= \''.date("Y-m-d H:i:s", time() - $this->config["min_attempt_interval"]).'\''.$succeeded_q);
             
             if ($stmt->fetch(PDO::FETCH_COLUMN) >= 1) {
                 return FALSE;
@@ -438,7 +444,7 @@ class wakarana extends wakarana_common {
                     }
                 } else {
                     $user->add_attempt_log(TRUE);
-                    return $user->create_totp_temporary_token();
+                    return $user->create_2sv_token();
                 }
             } else {
                 $user->add_attempt_log(TRUE);
@@ -641,6 +647,64 @@ class wakarana extends wakarana_common {
         }
         
         return TRUE;
+    }
+    
+    
+    function delete_2sv_tokens ($expire=-1) {
+        if ($expire === -1) {
+            $expire = $this->config["two_step_verification_token_expire"];
+        }
+        
+        try {
+            $this->db_obj->exec('DELETE FROM "wakarana_totp_temporary_tokens" WHERE "token_created" <= \''.date("Y-m-d H:i:s", time() - $expire).'\'');
+        } catch (PDOException $err) {
+            $this->print_error("2段階認証用一時トークンの削除に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        return TRUE;
+    }
+    
+    
+    function totp_authenticate ($tmp_token, $totp_pin) {
+        $this->delete_2sv_tokens();
+        
+        try {
+            $stmt = $this->db_obj->prepare('SELECT "user_id" FROM "wakarana_totp_temporary_tokens" WHERE "token" = :token');
+            
+            $stmt->bindValue(":token", $tmp_token, PDO::PARAM_STR);
+            
+            $stmt->execute();
+        } catch (PDOException $err) {
+            $this->print_error("2段階認証用一時トークンの認証に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        $user = $this->get_user($stmt->fetchColumn());
+        
+        if ($user !== FALSE) {
+            if ($user->totp_check($totp_pin) && $this->check_client_attempt_interval($this->get_client_ip_address(), TRUE) && $user->check_attempt_interval(TRUE)) {
+                $user->add_attempt_log(TRUE);
+                return $user;
+            } else {
+                $user->add_attempt_log(FALSE);
+            }
+            
+            return FALSE;
+        } else {
+            return FALSE;
+        }
+    }
+    
+    
+    function totp_login ($tmp_token, $totp_pin) {
+        $user = $this->totp_authenticate($tmp_token, $totp_pin);
+        
+        if (is_object($user)) {
+            $user->set_login_token();
+        }
+        
+        return $user;
     }
     
     
@@ -920,6 +984,8 @@ class wakarana_user {
             return FALSE;
         }
         
+        $this->user_info["totp_key"] = $totp_key;
+        
         return $totp_key;
     }
     
@@ -931,6 +997,8 @@ class wakarana_user {
             $this->wakarana->print_error("2要素認証の無効化に失敗しました。".$err->getMessage());
             return FALSE;
         }
+        
+        $this->user_info["totp_key"] = NULL;
         
         return TRUE;
     }
@@ -1048,9 +1116,15 @@ class wakarana_user {
     }
 
 
-    function check_attempt_interval() {
+    function check_attempt_interval($unsucceeded_only = FALSE) {
+        if ($unsucceeded_only) {
+            $succeeded_q = ' AND "succeeded" = FALSE';
+        } else {
+            $succeeded_q = '';
+        }
+        
         try {
-            $stmt = $this->wakarana->db_obj->query('SELECT COUNT("user_id") FROM "wakarana_attempt_logs" WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "attempt_datetime" >= \''.date("Y-m-d H:i:s", time() - $this->wakarana->config["min_attempt_interval"]).'\'');
+            $stmt = $this->wakarana->db_obj->query('SELECT COUNT("user_id") FROM "wakarana_attempt_logs" WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "attempt_datetime" >= \''.date("Y-m-d H:i:s", time() - $this->wakarana->config["min_attempt_interval"]).'\''.$succeeded_q);
             
             if ($stmt->fetch(PDO::FETCH_COLUMN) >= 1) {
                 return FALSE;
@@ -1230,5 +1304,35 @@ class wakarana_user {
         }
         
         return $token;
+    }
+    
+    
+    function create_2sv_token () {
+        $this->wakarana->delete_2sv_tokens();
+        
+        $token = wakarana::create_token();
+        
+        $token_created = date("Y-m-d H:i:s");
+        
+        try {
+            $this->wakarana->db_obj->exec('INSERT INTO "wakarana_totp_temporary_tokens"("token", "user_id", "token_created") VALUES (\''.$token.'\', \''.$this->user_info["user_id"].'\', \''.$token_created.'\') ON CONFLICT("user_id") DO UPDATE SET "token" = \''.$token.'\', "token_created"=\''.$token_created.'\'');
+        } catch (PDOException $err) {
+            $this->wakarana->print_error("2段階認証用一時トークンの生成に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        return $token;
+    }
+    
+    
+    
+    
+    
+    function totp_check ($totp_pin) {
+        if ($this->get_totp_enabled()){
+            return $this->wakarana->totp_compare($this->user_info["totp_key"], $totp_pin);
+        } else {
+            return FALSE;
+        }
     }
 }

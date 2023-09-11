@@ -42,7 +42,7 @@ _/_/_/_/ 基本設定ファイル wakarana_config.ini _/_/_/_/
   password_reset_token_expire パスワードリセット用トークンの有効時間(秒数で指定)
   
   totp_pin_expire TOTPワンタイムパスワードの有効時間(分)
-  totp_temporary_token_expire 2段階認証用一時トークンの有効期間(秒)
+  two_step_verification_token_expire 2段階認証用一時トークンの有効期間(秒)
   
   proxy_count リバースプロキシを使用している環境ではその個数を指定する。
 
@@ -78,7 +78,7 @@ attempt_log_retention_time=1209600
 password_reset_token_expire=1800
 
 totp_pin_expire=1
-totp_temporary_token_expire=600
+two_step_verification_token_expire=600
 
 proxy_count=0
 
