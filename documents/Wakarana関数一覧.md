@@ -393,10 +393,11 @@ wakarana_common::__constructとwakarana_common::connect_dbを順に実行する�
 **返り値** ： ログインが完了した場合はユーザーのwakarana_userインスタンス、それ以外の場合はFALSEを返す。
 
 
-#### wakarana::check($token=NULL)
+#### wakarana::check($token=NULL, $update_last_access=TRUE)
 クライアント端末のcookieを参照し、正しくログインしているかどうかを照合する。  
   
-**$token** ： 文字列を指定した場合、クライアント端末のcookieではなくその文字列をログイントークンとみなして照合処理を行う。  
+**$token** ： 文字列を指定した場合、クライアント端末のcookie情報に関係なくその文字列をログイントークンとみなして照合処理を行う。  
+**$update_last_access** : FALSEの場合、最終アクセス日時の更新を行わない。  
   
 **返り値** ： 正しいログイントークンでログインしており、かつ、停止中のアカウントでない場合はそのトークンに対応するユーザーのwakarana_userインスタンス、それ以外の場合はFALSEを返す。
 
@@ -409,12 +410,12 @@ wakarana_common::__constructとwakarana_common::connect_dbを順に実行する�
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
-#### wakarana::logout($delete_client_cookie=TRUE)
+#### wakarana::logout()
 接続中のクライアント端末が持つログイントークンをクライアント端末とデータベースの双方から削除し、ログアウト状態にする。  
   
 この関数はHTTPヘッダーの出力を伴うため、この関数より前にのHTMLやHTTPヘッダー以外の何らかの文字が出力されていた場合はエラーとなる。  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** ： 成功した場合はTRUE、既にログアウトしている場合はNULL、失敗した場合はFALSEを返す。
 
 
 #### wakarana::delete_one_time_tokens($expire=-1)
@@ -673,6 +674,12 @@ TOTP生成鍵と現在時刻からワンタイムコードを生成する。
 **$token** : ログイントークン文字列。  
   
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
+#### wakarana_user::get_login_tokens()
+ユーザーに発行されている全てのログイントークンの情報を最終アクセス日時の新しい順に2次元配列で取得する。  
+  
+**返り値** ： 成功した場合は、そのユーザーに発行されている個々のログイントークンの情報が格納された連想配列("token"(トークン文字列)、"token_created"(トークンの生成日時), "ip_address"(トークン生成時のクライアント端末のIPアドレス)、"operating_system"(トークン生成時のクライアント端末のOS名)、"browser_name"(トークン生成時のクライアント端末のブラウザ名)、"last_access"(そのトークンでの最終アクセス日時))を、配列に入れて返す。失敗した場合はFALSEを返す。  
 
 
 #### wakarana_user::create_login_token()
