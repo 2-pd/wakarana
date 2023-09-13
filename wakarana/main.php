@@ -774,7 +774,20 @@ class wakarana extends wakarana_common {
     }
     
     
-    
+    function delete_one_time_tokens ($expire = -1) {
+        if ($expire === -1) {
+            $expire = $this->config["one_time_token_expire"];
+        }
+        
+        try {
+            $this->db_obj->exec('DELETE FROM "wakarana_one_time_tokens" WHERE "token_created" <= \''.date("Y-m-d H:i:s", time() - $expire).'\'');
+        } catch (PDOException $err) {
+            $this->print_error("ワンタイムトークンの削除に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        return TRUE;
+    }
     
     
     function totp_compare ($totp_key, $totp_pin) {
@@ -1331,7 +1344,7 @@ class wakarana_user {
         try {
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_login_tokens" WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
         } catch (PDOException $err) {
-            $this->wakarana->print_error("ユーザーのログイントークン削除に失敗しました。".$err->getMessage());
+            $this->wakarana->print_error("ユーザーのログイントークンの削除に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -1403,7 +1416,69 @@ class wakarana_user {
     }
     
     
+    function create_one_time_token () {
+        $this->wakarana->delete_one_time_tokens();
+        
+        $token = wakarana::create_token();
+        
+        $token_created = date("Y-m-d H:i:s");
+        
+        try {
+            $this->wakarana->db_obj->exec('DELETE FROM "wakarana_one_time_tokens" WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "token" NOT IN (SELECT "token" FROM "wakarana_one_time_tokens" WHERE "user_id" = \''.$this->user_info["user_id"].'\' ORDER BY "token_created" DESC LIMIT '.($this->wakarana->config["one_time_tokens_per_user"] - 1).')');
+            
+            $this->wakarana->db_obj->exec('INSERT INTO "wakarana_one_time_tokens"("token", "user_id", "token_created") VALUES (\''.$token.'\', \''.$this->user_info["user_id"].'\', \''.date("Y-m-d H:i:s").'\')');
+        } catch (PDOException $err) {
+            $this->wakarana->print_error("ワンタイムトークンの生成に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        return $token;
+    }
     
+    
+    function check_one_time_token ($token) {
+        $this->wakarana->delete_one_time_tokens();
+        
+        try {
+            $stmt = $this->wakarana->db_obj->prepare('SELECT COUNT(*) FROM "wakarana_one_time_tokens" WHERE "token" = :token AND "user_id" = \''.$this->user_info["user_id"].'\'');
+            
+            $stmt->bindValue(":token", $token, PDO::PARAM_STR);
+            
+            $stmt->execute();
+        } catch (PDOException $err) {
+            $this->wakarana->print_error("ワンタイムトークンの確認に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        if (intval($stmt->fetchColumn()) === 1) {
+            try {
+                $stmt = $this->wakarana->db_obj->prepare('DELETE FROM "wakarana_one_time_tokens" WHERE "token" = :token');
+                
+                $stmt->bindValue(":token", $token, PDO::PARAM_STR);
+                
+                $stmt->execute();
+            } catch (PDOException $err) {
+                $this->wakarana->print_error("使用済みワンタイムトークンの削除に失敗しました。".$err->getMessage());
+                return FALSE;
+            }
+            
+            return TRUE;
+        } else {
+            return FALSE;
+        }
+    }
+    
+    
+    function delete_one_time_tokens () {
+        try {
+            $this->wakarana->db_obj->exec('DELETE FROM "wakarana_one_time_tokens" WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
+        } catch (PDOException $err) {
+            $this->wakarana->print_error("ユーザーのワンタイムトークンの削除に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        return TRUE;
+    }
     
     
     function totp_check ($totp_pin) {

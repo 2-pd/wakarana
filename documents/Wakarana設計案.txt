@@ -116,6 +116,7 @@ _/_/_/_/ データベース _/_/_/_/
   
   INDEX `wakarana_idx_l1` `user_id`, `token_created`
   INDEX `wakarana_idx_l2` `token_created`
+  INDEX `wakarana_idx_l3` `user_id`, `token`
   
  ※`last_access`については、処理の高速化の観点から、あえてインデックスを指定しない。
 
@@ -144,6 +145,7 @@ _/_/_/_/ データベース _/_/_/_/
   
   INDEX `wakarana_idx_o1` `user_id`, `token_created`
   INDEX `wakarana_idx_o2` `token_created`
+  INDEX `wakarana_idx_o3` `user_id`, `token`
 
 
 テーブル `wakarana_attempt_logs`
