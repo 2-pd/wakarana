@@ -35,9 +35,9 @@ _/_/_/_/ 基本設定ファイル wakarana_config.ini _/_/_/_/
   one_time_tokens_per_user ユーザーごとのワンタイムトークンの保持可能数(上記に同じ)
   one_time_token_expire ワンタイムトークンの有効時間(秒数で指定)
 
-  min_attempt_interval ログイン試行後、次に試行できるようになるまでの期間(秒)
-  attempt_logs_per_user ログイン試行ログのユーザーあたりの保持個数(0の場合はログを保存しない)
-  attempt_log_retention_time ログイン試行ログの保持期間
+  minimum_authenticate_interval ログイン試行後、次に試行できるようになるまでの期間(秒)
+  authenticate_logs_per_user ログイン試行ログのユーザーあたりの保持個数(0の場合はログを保存しない)
+  authenticate_log_retention_time ログイン試行ログの保持期間
   
   password_reset_token_expire パスワードリセット用トークンの有効時間(秒数で指定)
   
@@ -71,9 +71,9 @@ login_token_expire=2592000
 one_time_tokens_per_user=8
 one_time_token_expire=43200
 
-min_attempt_interval=5
-attempt_logs_per_user=20
-attempt_log_retention_time=1209600
+minimum_authenticate_interval=5
+authenticate_logs_per_user=20
+authenticate_log_retention_time=1209600
 
 password_reset_token_expire=1800
 
@@ -148,15 +148,15 @@ _/_/_/_/ データベース _/_/_/_/
   INDEX `wakarana_idx_o3` `user_id`, `token`
 
 
-テーブル `wakarana_attempt_logs`
+テーブル `wakarana_authenticate_logs`
   `user_id` varchar(60) [TEXT COLLATE NOCASE] (NOT NULL) ユーザーID
   `succeeded` boolean [INTEGER] (NOT NULL) ログインに成功したかどうか
-  `attempt_datetime` timestamp [TEXT] (NOT NULL) ログイン試行が行われた日時(マイクロ秒単位)
+  `authenticate_datetime` timestamp [TEXT] (NOT NULL) ログイン試行が行われた日時(マイクロ秒単位)
   `ip_address` varchar(39) [TEXT] (NOT NULL) 利用者のIPアドレス
   
-  INDEX `wakarana_idx_a1` `user_id`, `attempt_datetime`
-  INDEX `wakarana_idx_a2` `ip_address`, `attempt_datetime`
-  INDEX `wakarana_idx_a3` `attempt_datetime`
+  INDEX `wakarana_idx_a1` `user_id`, `authenticate_datetime`
+  INDEX `wakarana_idx_a2` `ip_address`, `authenticate_datetime`
+  INDEX `wakarana_idx_a3` `authenticate_datetime`
 
 
 テーブル `wakarana_email_address_verification`
@@ -177,7 +177,7 @@ _/_/_/_/ データベース _/_/_/_/
   INDEX `wakarana_idx_pr1` `token_created`
 
 
-テーブル `wakarana_totp_temporary_tokens`
+テーブル `wakarana_two_step_verification_tokens`
   `token` varchar(43) [TEXT] (NOT NULL PRIMARY KEY) 仮トークン(上記と同じ)
   `user_id` varchar(60) [TEXT COLLATE NOCASE] (UNIQUE NOT NULL) ユーザーID
   `token_created` timestamp [TEXT] (NOT NULL) そのトークンの生成日時

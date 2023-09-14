@@ -394,9 +394,9 @@ class wakarana extends wakarana_common {
     }
     
     
-    function get_client_attempt_logs ($ip_address) {
+    function get_client_auth_logs ($ip_address) {
         try {
-            $stmt = $this->db_obj->query('SELECT "user_id", "succeeded", "attempt_datetime" FROM "wakarana_attempt_logs" WHERE "ip_address" = \''.$ip_address.'\' ORDER BY "attempt_datetime" DESC');
+            $stmt = $this->db_obj->query('SELECT "user_id", "succeeded", "authenticate_datetime" FROM "wakarana_authenticate_logs" WHERE "ip_address" = \''.$ip_address.'\' ORDER BY "authenticate_datetime" DESC');
             
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $err) {
@@ -406,7 +406,7 @@ class wakarana extends wakarana_common {
     }
     
     
-    function check_client_attempt_interval ($ip_address, $unsucceeded_only = FALSE) {
+    function check_client_auth_interval ($ip_address, $unsucceeded_only = FALSE) {
         if ($unsucceeded_only) {
             $succeeded_q = ' AND "succeeded" = FALSE';
         } else {
@@ -414,7 +414,7 @@ class wakarana extends wakarana_common {
         }
         
         try {
-            $stmt = $this->db_obj->query('SELECT COUNT("ip_address") FROM "wakarana_attempt_logs" WHERE "ip_address" = \''.$ip_address.'\' AND "attempt_datetime" >= \''.date("Y-m-d H:i:s", time() - $this->config["min_attempt_interval"]).'\''.$succeeded_q);
+            $stmt = $this->db_obj->query('SELECT COUNT("ip_address") FROM "wakarana_authenticate_logs" WHERE "ip_address" = \''.$ip_address.'\' AND "authenticate_datetime" >= \''.date("Y-m-d H:i:s", time() - $this->config["minimum_authenticate_interval"]).'\''.$succeeded_q);
             
             if ($stmt->fetch(PDO::FETCH_COLUMN) >= 1) {
                 return FALSE;
@@ -428,13 +428,13 @@ class wakarana extends wakarana_common {
     }
     
     
-    function delete_attempt_logs ($expire = -1) {
+    function delete_auth_logs ($expire = -1) {
         if ($expire === -1) {
-            $expire = $this->config["min_attempt_interval"];
+            $expire = $this->config["minimum_authenticate_interval"];
         }
         
         try {
-            $this->db_obj->exec('DELETE FROM "wakarana_attempt_logs" WHERE "attempt_datetime" <= \''.(new DateTime())->modify("-".$expire." second")->format("Y-m-d H:i:s.u").'\'');
+            $this->db_obj->exec('DELETE FROM "wakarana_authenticate_logs" WHERE "authenticate_datetime" <= \''.(new DateTime())->modify("-".$expire." second")->format("Y-m-d H:i:s.u").'\'');
         } catch (PDOException $err) {
             $this->print_error("認証試行ログの削除に失敗しました。".$err->getMessage());
             return FALSE;
@@ -451,24 +451,24 @@ class wakarana extends wakarana_common {
             return FALSE;
         }
         
-        if ($user->get_status() === WAKARANA_STATUS_NORMAL && $user->check_password($password) && $this->check_client_attempt_interval($this->get_client_ip_address()) && $user->check_attempt_interval()) {
+        if ($user->get_status() === WAKARANA_STATUS_NORMAL && $user->check_password($password) && $this->check_client_auth_interval($this->get_client_ip_address()) && $user->check_auth_interval()) {
             if ($user->get_totp_enabled()) {
                 if (!is_null($totp_pin)) {
                     if ($user->totp_check($totp_pin)) {
-                        $user->add_attempt_log(TRUE);
+                        $user->add_auth_log(TRUE);
                         return $user;
                     }
                 } else {
-                    $user->add_attempt_log(TRUE);
+                    $user->add_auth_log(TRUE);
                     return $user->create_2sv_token();
                 }
             } else {
-                $user->add_attempt_log(TRUE);
+                $user->add_auth_log(TRUE);
                 return $user;
             }
         }
         
-        $user->add_attempt_log(FALSE);
+        $user->add_auth_log(FALSE);
         return FALSE;
     }
     
@@ -672,7 +672,7 @@ class wakarana extends wakarana_common {
         }
         
         try {
-            $this->db_obj->exec('DELETE FROM "wakarana_totp_temporary_tokens" WHERE "token_created" <= \''.date("Y-m-d H:i:s", time() - $expire).'\'');
+            $this->db_obj->exec('DELETE FROM "wakarana_two_step_verification_tokens" WHERE "token_created" <= \''.date("Y-m-d H:i:s", time() - $expire).'\'');
         } catch (PDOException $err) {
             $this->print_error("2段階認証用一時トークンの削除に失敗しました。".$err->getMessage());
             return FALSE;
@@ -686,7 +686,7 @@ class wakarana extends wakarana_common {
         $this->delete_2sv_tokens();
         
         try {
-            $stmt = $this->db_obj->prepare('SELECT "user_id" FROM "wakarana_totp_temporary_tokens" WHERE "token" = :token');
+            $stmt = $this->db_obj->prepare('SELECT "user_id" FROM "wakarana_two_step_verification_tokens" WHERE "token" = :token');
             
             $stmt->bindValue(":token", $tmp_token, PDO::PARAM_STR);
             
@@ -699,11 +699,11 @@ class wakarana extends wakarana_common {
         $user = $this->get_user($stmt->fetchColumn());
         
         if ($user !== FALSE) {
-            if ($user->totp_check($totp_pin) && $this->check_client_attempt_interval($this->get_client_ip_address(), TRUE) && $user->check_attempt_interval(TRUE)) {
-                $user->add_attempt_log(TRUE);
+            if ($user->totp_check($totp_pin) && $this->check_client_auth_interval($this->get_client_ip_address(), TRUE) && $user->check_auth_interval(TRUE)) {
+                $user->add_auth_log(TRUE);
                 return $user;
             } else {
-                $user->add_attempt_log(FALSE);
+                $user->add_auth_log(FALSE);
             }
             
             return FALSE;
@@ -1209,9 +1209,9 @@ class wakarana_user {
     }
     
     
-    function get_attempt_logs () {
+    function get_auth_logs () {
         try {
-            $stmt = $this->wakarana->db_obj->query('SELECT "succeeded", "attempt_datetime", "ip_address" FROM "wakarana_attempt_logs" WHERE "user_id" = \''.$this->user_info["user_id"].'\' ORDER BY "attempt_datetime" DESC');
+            $stmt = $this->wakarana->db_obj->query('SELECT "succeeded", "authenticate_datetime", "ip_address" FROM "wakarana_authenticate_logs" WHERE "user_id" = \''.$this->user_info["user_id"].'\' ORDER BY "authenticate_datetime" DESC');
             
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $err) {
@@ -1221,7 +1221,7 @@ class wakarana_user {
     }
 
 
-    function check_attempt_interval($unsucceeded_only = FALSE) {
+    function check_auth_interval($unsucceeded_only = FALSE) {
         if ($unsucceeded_only) {
             $succeeded_q = ' AND "succeeded" = FALSE';
         } else {
@@ -1229,7 +1229,7 @@ class wakarana_user {
         }
         
         try {
-            $stmt = $this->wakarana->db_obj->query('SELECT COUNT("user_id") FROM "wakarana_attempt_logs" WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "attempt_datetime" >= \''.date("Y-m-d H:i:s", time() - $this->wakarana->config["min_attempt_interval"]).'\''.$succeeded_q);
+            $stmt = $this->wakarana->db_obj->query('SELECT COUNT("user_id") FROM "wakarana_authenticate_logs" WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "authenticate_datetime" >= \''.date("Y-m-d H:i:s", time() - $this->wakarana->config["minimum_authenticate_interval"]).'\''.$succeeded_q);
             
             if ($stmt->fetch(PDO::FETCH_COLUMN) >= 1) {
                 return FALSE;
@@ -1243,7 +1243,7 @@ class wakarana_user {
     }
     
     
-    function add_attempt_log ($succeeded) {
+    function add_auth_log ($succeeded) {
         if ($succeeded) {
             $succeeded_q = "TRUE";
         } else {
@@ -1251,9 +1251,9 @@ class wakarana_user {
         }
         
         try {
-            $this->wakarana->db_obj->exec('DELETE FROM "wakarana_attempt_logs" WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "attempt_datetime" NOT IN (SELECT "attempt_datetime" FROM "wakarana_attempt_logs" WHERE "user_id" = \''.$this->user_info["user_id"].'\' ORDER BY "attempt_datetime" DESC LIMIT '.($this->wakarana->config["attempt_logs_per_user"] - 1).')');
+            $this->wakarana->db_obj->exec('DELETE FROM "wakarana_authenticate_logs" WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "authenticate_datetime" NOT IN (SELECT "authenticate_datetime" FROM "wakarana_authenticate_logs" WHERE "user_id" = \''.$this->user_info["user_id"].'\' ORDER BY "authenticate_datetime" DESC LIMIT '.($this->wakarana->config["authenticate_logs_per_user"] - 1).')');
             
-            $this->wakarana->db_obj->exec('INSERT INTO "wakarana_attempt_logs"("user_id", "succeeded", "attempt_datetime", "ip_address") VALUES (\''.$this->user_info["user_id"].'\', '.$succeeded_q.', \''.(new DateTime())->format("Y-m-d H:i:s.u").'\', \''.$this->wakarana->get_client_ip_address().'\')');
+            $this->wakarana->db_obj->exec('INSERT INTO "wakarana_authenticate_logs"("user_id", "succeeded", "authenticate_datetime", "ip_address") VALUES (\''.$this->user_info["user_id"].'\', '.$succeeded_q.', \''.(new DateTime())->format("Y-m-d H:i:s.u").'\', \''.$this->wakarana->get_client_ip_address().'\')');
         } catch (PDOException $err) {
             $this->wakarana->print_error("認証試行ログの追加に失敗しました。".$err->getMessage());
             return FALSE;
@@ -1263,9 +1263,9 @@ class wakarana_user {
     }
     
     
-    function delete_attempt_logs () {
+    function delete_auth_logs () {
         try {
-            $this->wakarana->db_obj->exec('DELETE FROM "wakarana_attempt_logs" WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
+            $this->wakarana->db_obj->exec('DELETE FROM "wakarana_authenticate_logs" WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
         } catch (PDOException $err) {
             $this->wakarana->print_error("認証試行ログの削除に失敗しました。".$err->getMessage());
             return FALSE;
@@ -1456,7 +1456,7 @@ class wakarana_user {
         $token_created = date("Y-m-d H:i:s");
         
         try {
-            $this->wakarana->db_obj->exec('INSERT INTO "wakarana_totp_temporary_tokens"("token", "user_id", "token_created") VALUES (\''.$token.'\', \''.$this->user_info["user_id"].'\', \''.$token_created.'\') ON CONFLICT("user_id") DO UPDATE SET "token" = \''.$token.'\', "token_created"=\''.$token_created.'\'');
+            $this->wakarana->db_obj->exec('INSERT INTO "wakarana_two_step_verification_tokens"("token", "user_id", "token_created") VALUES (\''.$token.'\', \''.$this->user_info["user_id"].'\', \''.$token_created.'\') ON CONFLICT("user_id") DO UPDATE SET "token" = \''.$token.'\', "token_created"=\''.$token_created.'\'');
         } catch (PDOException $err) {
             $this->wakarana->print_error("2段階認証用一時トークンの生成に失敗しました。".$err->getMessage());
             return FALSE;
@@ -1468,7 +1468,7 @@ class wakarana_user {
     
     function delete_2sv_token () {
         try {
-            $this->wakarana->db_obj->exec('DELETE FROM "wakarana_totp_temporary_tokens" WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
+            $this->wakarana->db_obj->exec('DELETE FROM "wakarana_two_step_verification_tokens" WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
         } catch (PDOException $err) {
             $this->wakarana->print_error("ユーザーの2段階認証用一時トークンの削除に失敗しました。".$err->getMessage());
             return FALSE;
@@ -1553,7 +1553,7 @@ class wakarana_user {
     
     
     function delete_user () {
-        if (!$this->delete_all_tokens() || !$this->remove_role() || !$this->delete_attempt_logs()){
+        if (!$this->delete_all_tokens() || !$this->remove_role() || !$this->delete_auth_logs()){
             return FALSE;
         }
         

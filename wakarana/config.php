@@ -28,9 +28,9 @@ define("WAKARANA_CONFIG_ORIGINAL",
             "one_time_tokens_per_user" => 8,
             "one_time_token_expire" => 43200,
             
-            "min_attempt_interval" => 5,
-            "attempt_logs_per_user" => 20,
-            "attempt_log_retention_time" => 1209600,
+            "minimum_authenticate_interval" => 5,
+            "authenticate_logs_per_user" => 20,
+            "authenticate_log_retention_time" => 1209600,
             
             "password_reset_token_expire" => 1800,
             
@@ -98,9 +98,9 @@ class wakarana_config extends wakarana_common {
         fwrite($file_h,"one_time_token_expire=".$this->config["one_time_token_expire"]."\n");
         fwrite($file_h,"\n");
         
-        fwrite($file_h,"min_attempt_interval=".$this->config["min_attempt_interval"]."\n");
-        fwrite($file_h,"attempt_logs_per_user=".$this->config["attempt_logs_per_user"]."\n");
-        fwrite($file_h,"attempt_log_retention_time=".$this->config["attempt_log_retention_time"]."\n");
+        fwrite($file_h,"minimum_authenticate_interval=".$this->config["minimum_authenticate_interval"]."\n");
+        fwrite($file_h,"authenticate_logs_per_user=".$this->config["authenticate_logs_per_user"]."\n");
+        fwrite($file_h,"authenticate_log_retention_time=".$this->config["authenticate_log_retention_time"]."\n");
         fwrite($file_h,"\n");
         
         fwrite($file_h,"password_reset_token_expire=".$this->config["password_reset_token_expire"]."\n");
@@ -248,21 +248,21 @@ class wakarana_config extends wakarana_common {
         
         try {
             if ($this->config["use_sqlite"]) {
-                $this->db_obj->exec("CREATE TABLE IF NOT EXISTS `wakarana_attempt_logs`(`user_id` TEXT COLLATE NOCASE NOT NULL, `succeeded` INTEGER NOT NULL, `attempt_datetime` TEXT NOT NULL, `ip_address` TEXT NOT NULL)");
+                $this->db_obj->exec("CREATE TABLE IF NOT EXISTS `wakarana_authenticate_logs`(`user_id` TEXT COLLATE NOCASE NOT NULL, `succeeded` INTEGER NOT NULL, `authenticate_datetime` TEXT NOT NULL, `ip_address` TEXT NOT NULL)");
             } else {
-                $this->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_attempt_logs"("user_id" varchar(60) NOT NULL, "succeeded" boolean NOT NULL, "attempt_datetime" timestamp NOT NULL, "ip_address" varchar(39) NOT NULL)');
+                $this->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_authenticate_logs"("user_id" varchar(60) NOT NULL, "succeeded" boolean NOT NULL, "authenticate_datetime" timestamp NOT NULL, "ip_address" varchar(39) NOT NULL)');
             }
         } catch (PDOException $err) {
-            $this->print_error("テーブル wakarana_attempt_logs の作成処理に失敗しました。".$err->getMessage());
+            $this->print_error("テーブル wakarana_authenticate_logs の作成処理に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
         try {
-            $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_a1" ON "wakarana_attempt_logs"("user_id", "attempt_datetime")');
-            $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_a2" ON "wakarana_attempt_logs"("ip_address", "attempt_datetime")');
-            $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_a3" ON "wakarana_attempt_logs"("attempt_datetime")');
+            $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_a1" ON "wakarana_authenticate_logs"("user_id", "authenticate_datetime")');
+            $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_a2" ON "wakarana_authenticate_logs"("ip_address", "authenticate_datetime")');
+            $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_a3" ON "wakarana_authenticate_logs"("authenticate_datetime")');
         } catch (PDOException $err) {
-            $this->print_error("テーブル wakarana_attempt_logs のインデックス作成処理に失敗しました。".$err->getMessage());
+            $this->print_error("テーブル wakarana_authenticate_logs のインデックス作成処理に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -305,19 +305,19 @@ class wakarana_config extends wakarana_common {
         
         try {
             if ($this->config["use_sqlite"]) {
-                $this->db_obj->exec("CREATE TABLE IF NOT EXISTS `wakarana_totp_temporary_tokens`(`token` TEXT NOT NULL PRIMARY KEY, `user_id` TEXT COLLATE NOCASE UNIQUE NOT NULL, `token_created` TEXT NOT NULL)");
+                $this->db_obj->exec("CREATE TABLE IF NOT EXISTS `wakarana_two_step_verification_tokens`(`token` TEXT NOT NULL PRIMARY KEY, `user_id` TEXT COLLATE NOCASE UNIQUE NOT NULL, `token_created` TEXT NOT NULL)");
             } else {
-                $this->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_totp_temporary_tokens"("token" varchar(43) NOT NULL PRIMARY KEY, "user_id" varchar(60) UNIQUE NOT NULL, "token_created" timestamp NOT NULL)');
+                $this->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_two_step_verification_tokens"("token" varchar(43) NOT NULL PRIMARY KEY, "user_id" varchar(60) UNIQUE NOT NULL, "token_created" timestamp NOT NULL)');
             }
         } catch (PDOException $err) {
-            $this->print_error("テーブル wakarana_totp_temporary_tokens の作成処理に失敗しました。".$err->getMessage());
+            $this->print_error("テーブル wakarana_two_step_verification_tokens の作成処理に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
         try {
-            $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_t1" ON "wakarana_totp_temporary_tokens"("token_created")');
+            $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_t1" ON "wakarana_two_step_verification_tokens"("token_created")');
         } catch (PDOException $err) {
-            $this->print_error("テーブル wakarana_totp_temporary_tokens のインデックス作成処理に失敗しました。".$err->getMessage());
+            $this->print_error("テーブル wakarana_two_step_verification_tokens のインデックス作成処理に失敗しました。".$err->getMessage());
             return FALSE;
         }
         

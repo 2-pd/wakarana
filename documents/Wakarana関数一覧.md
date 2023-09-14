@@ -263,15 +263,15 @@ Wakarana_userインスタンスを生成する。
 **返り値** ： キー"operating_system"(OS名)と"browser_name"(ブラウザ名)が含まれる連想配列。
 
 
-#### wakarana::get_client_attempt_logs($ip_address)
+#### wakarana::get_client_auth_logs($ip_address)
 クライアントのIPアドレスからログイン試行履歴を新しい順に配列で取得する。  
   
 **$ip_address** ： サニタイズ済みのIPアドレス  
   
-**返り値** ： 成功した場合はそのIPアドレスの各試行履歴が格納された連想配列("user_id"(ユーザーID)、"succeeded"(正しいパスワードを入力したか否か)、"attempt_datetime"(試行日時))を、配列に入れて返す。失敗した場合はFALSEを返す。
+**返り値** ： 成功した場合はそのIPアドレスの各試行履歴が格納された連想配列("user_id"(ユーザーID)、"succeeded"(正しいパスワードを入力したか否か)、"authenticate_datetime"(試行日時))を、配列に入れて返す。失敗した場合はFALSEを返す。
 
 
-#### wakarana::check_client_attempt_interval($ip_address, $unsucceeded_only=FALSE)
+#### wakarana::check_client_auth_interval($ip_address, $unsucceeded_only=FALSE)
 クライアントのIPアドレスが前回のログイン試行から次に試行できるようになるまでの期間を経過しているかを調べる。  
   
 **$ip_address** ： サニタイズ済みのIPアドレス  
@@ -280,7 +280,7 @@ Wakarana_userインスタンスを生成する。
 **返り値** ： wakarana_config.iniで指定した期間が経過していればTRUE、そうでない場合はFALSEを返す。
 
 
-#### wakarana::delete_attempt_logs($expire=-1)
+#### wakarana::delete_auth_logs($expire=-1)
 指定した期間より前のログイン試行履歴を全て削除する。  
   
 **$expire** ： 経過時間の秒数。-1を指定した場合はwakarana_config.iniで指定した履歴の保持秒数が代わりに使用される。  
@@ -653,13 +653,13 @@ wakarana_userインスタンスはこの関数以外の方法(unsetや変数の�
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
-#### wakarana_user::get_attempt_logs()
+#### wakarana_user::get_auth_logs()
 ユーザーのログイン試行履歴を新しい順に配列で取得する。  
   
-**返り値** ： 成功した場合はそのユーザーの各試行履歴が格納された連想配列("succeeded"(認証に成功したか否か)、"attempt_datetime"(試行日時), "ip_address"(IPアドレス))を、配列に入れて返す。失敗した場合はFALSEを返す。
+**返り値** ： 成功した場合はそのユーザーの各試行履歴が格納された連想配列("succeeded"(認証に成功したか否か)、"authenticate_datetime"(試行日時), "ip_address"(IPアドレス))を、配列に入れて返す。失敗した場合はFALSEを返す。
 
 
-#### wakarana_user::check_attempt_interval($unsucceeded_only=FALSE)
+#### wakarana_user::check_auth_interval($unsucceeded_only=FALSE)
 ユーザーが前回のログイン試行から次に試行できるようになるまでの期間を経過しているかを調べる。  
   
 **$unsucceeded_only** : 失敗した試行のみを対象にする  
@@ -667,7 +667,7 @@ wakarana_userインスタンスはこの関数以外の方法(unsetや変数の�
 **返り値** ： wakarana_config.iniで指定した期間が経過していればTRUE、そうでない場合はFALSEを返す。
 
 
-#### wakarana_user::add_attempt_log($succeeded)
+#### wakarana_user::add_auth_log($succeeded)
 ユーザーのログイン試行ログを登録する。  
   
 **$succeeded** : ログインが成功した場合はTRUE、失敗した場合はFALSEを指定する。  
@@ -675,7 +675,7 @@ wakarana_userインスタンスはこの関数以外の方法(unsetや変数の�
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
-#### wakarana_user::delete_attempt_logs()
+#### wakarana_user::delete_auth_logs()
 ユーザーのログイン試行履歴を全て削除する。  
   
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
