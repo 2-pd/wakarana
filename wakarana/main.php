@@ -17,6 +17,9 @@ define("WAKARANA_BASE32_TABLE", array("A", "B", "C", "D", "E", "F", "G", "H", "I
 
 
 class wakarana extends wakarana_common {
+    public $user_ids = array();
+    
+    
     function __construct ($base_dir = NULL) {
         parent::__construct($base_dir);
         $this->connect_db();
@@ -46,6 +49,15 @@ class wakarana extends wakarana_common {
     }
     
     
+    protected function new_wakarana_user ($user_info) {
+        if (!isset($this->user_ids[$user_info["user_id"]])) {
+            $this->user_ids[$user_info["user_id"]] = new wakarana_user($this, $user_info);
+        }
+        
+        return $this->user_ids[$user_info["user_id"]];
+    }
+    
+    
     function get_user ($user_id) {
         if (!self::check_id_string($user_id)) {
             return FALSE;
@@ -65,7 +77,7 @@ class wakarana extends wakarana_common {
         $user_info = $stmt->fetch(PDO::FETCH_ASSOC);
         
         if (!empty($user_info)) {
-            return new wakarana_user($this, $user_info);
+            return $this->new_wakarana_user($user_info);
         } else {
             return FALSE;
         }
@@ -119,7 +131,7 @@ class wakarana extends wakarana_common {
         
         $users = array();
         foreach ($users_info as $user_info) {
-            $users[] = new wakarana_user($this, $user_info);
+            $users[] = $this->new_wakarana_user($user_info);
         }
         
         return $users;
@@ -319,7 +331,11 @@ class wakarana extends wakarana_common {
     
     
     function delete_all_tokens () {
-        //あとで実装
+        if($this->delete_login_tokens(0) && $this->delete_one_time_tokens(0) && $this->delete_email_address_verification_tokens(0) && $this->delete_password_reset_tokens(0) && $this->delete_2sv_tokens(0)){
+            return TRUE;
+        } else {
+            return FALSE;
+        }
     }
     
     
@@ -500,7 +516,7 @@ class wakarana extends wakarana_common {
         
         $users = array();
         foreach ($users_info as $user_info) {
-            $users[] = new wakarana_user($this, $user_info);
+            $users[] = $this->new_wakarana_user($user_info);
         }
         
         return $users;
@@ -901,6 +917,12 @@ class wakarana_user {
     }
     
     
+    static function free (&$wakarana_user) {
+        unset($wakarana_user->wakarana->user_ids[$wakarana_user->user_info["user_id"]]);
+        unset($wakarana_user);
+    }
+    
+    
     function get_id () {
         return $this->user_info["user_id"];
     }
@@ -1179,7 +1201,11 @@ class wakarana_user {
     
     
     function delete_all_tokens () {
-        //あとで実装
+        if($this->delete_login_tokens() && $this->delete_one_time_tokens() && $this->delete_email_address_verification_token() && $this->delete_password_reset_token() && $this->delete_2sv_token()){
+            return TRUE;
+        } else {
+            return FALSE;
+        }
     }
     
     
@@ -1380,6 +1406,18 @@ class wakarana_user {
     }
     
     
+    function delete_email_address_verification_token () {
+        try {
+            $this->wakarana->db_obj->exec('DELETE FROM "wakarana_email_address_verification" WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
+        } catch (PDOException $err) {
+            $this->wakarana->print_error("ユーザーのメールアドレス確認用トークンの削除に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        return TRUE;
+    }
+    
+    
     function create_password_reset_token () {
         $this->wakarana->delete_password_reset_tokens();
         
@@ -1398,6 +1436,18 @@ class wakarana_user {
     }
     
     
+    function delete_password_reset_token () {
+        try {
+            $this->wakarana->db_obj->exec('DELETE FROM "wakarana_email_address_verification" WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
+        } catch (PDOException $err) {
+            $this->wakarana->print_error("ユーザーのメールアドレス確認用トークンの削除に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        return TRUE;
+    }
+    
+    
     function create_2sv_token () {
         $this->wakarana->delete_2sv_tokens();
         
@@ -1413,6 +1463,18 @@ class wakarana_user {
         }
         
         return $token;
+    }
+    
+    
+    function delete_2sv_token () {
+        try {
+            $this->wakarana->db_obj->exec('DELETE FROM "wakarana_totp_temporary_tokens" WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
+        } catch (PDOException $err) {
+            $this->wakarana->print_error("ユーザーの2段階認証用一時トークンの削除に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        return TRUE;
     }
     
     
@@ -1487,5 +1549,26 @@ class wakarana_user {
         } else {
             return FALSE;
         }
+    }
+    
+    
+    function delete_user () {
+        if (!$this->delete_all_tokens() || !$this->remove_role() || !$this->delete_attempt_logs()){
+            return FALSE;
+        }
+        
+        try {
+            $this->wakarana->db_obj->exec('DELETE FROM "wakarana_users" WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
+        } catch (PDOException $err) {
+            $this->wakarana->print_error("ユーザーの削除に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        unset($this->wakarana->user_ids[$this->user_info["user_id"]]);
+        
+        unset($this->wakarana);
+        unset($this->user_info);
+        
+        return TRUE;
     }
 }

@@ -109,7 +109,7 @@ Base32エンコード用の変換対応表。
 ### class wakarana
 wakarana_commonの派生クラス。
 
-#### wakarana::construct($base_dir=NULL)
+#### wakarana::__construct($base_dir=NULL)
 wakarana_common::__constructとwakarana_common::connect_dbを順に実行する。  
   
 **$base_dir** : wakarana_config.iniのあるフォルダのパス。省略時はcommon.phpのあるフォルダを使用する。
@@ -143,6 +143,13 @@ wakarana_common::__constructとwakarana_common::connect_dbを順に実行する�
 **$min_length** : 強いパスワードとみなす最小の文字数  
   
 **返り値** ： パスワードが指定した文字数以上かつ大文字・小文字・数字の全てを含むならTRUE、そうでないならFALSEを返す。
+
+
+#### ◆ wakarana::new_wakarana_user($user_info)
+Wakarana_userインスタンスを生成する。  
+◆クラス内呼び出し専用。  
+  
+**$user_info** : ユーザー情報("user_id"(ユーザーID)、"user_name"(ユーザー名)、"password"(ハッシュ化されたパスワード)、"email_address"(メールアドレス)、"user_created"(アカウント作成日時)、"last_updated"(アカウント情報更新日時)、"last_access"(最終アクセス日時)、"status"(アカウントが使用可能か停止されているか)、"totp_key"(TOTPワンタイムパスワード生成キー))を格納した連想配列。
 
 
 #### wakarana::get_user($user_id)
@@ -496,6 +503,14 @@ TOTP生成鍵と現在時刻からワンタイムコードを生成する。
 **$user_info** : ユーザー情報("user_id"(ユーザーID)、"user_name"(ユーザー名)、"password"(ハッシュ化されたパスワード)、"email_address"(メールアドレス)、"user_created"(アカウント作成日時)、"last_updated"(アカウント情報更新日時)、"last_access"(最終アクセス日時)、"status"(アカウントが使用可能か停止されているか)、"totp_key"(TOTPワンタイムパスワード生成キー))を格納した連想配列。
 
 
+#### ☆ wakarana_user::free($wakarana_user)
+wakarana_userインスタンスをメモリから解放する。  
+wakarana_userインスタンスはこの関数以外の方法(unsetや変数の上書き)では解放されない。  
+☆staticメソッド。  
+  
+**$wakarana_user** : メモリから解放するwakarana_userインスタンス
+
+
 #### wakarana_user::get_id()
 ユーザーのIDを取得する。  
   
@@ -713,16 +728,34 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
 **返り値** ： 成功した場合はメールアドレス確認トークン、失敗した場合はFALSEを返す。
 
 
+#### wakarana_user::delete_email_address_verification_token()
+ユーザーに対して発行されているメールアドレス確認トークンを削除する。  
+  
+**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。  
+
+
 #### wakarana_user::create_password_reset_token()
 ユーザーに対してパスワードリセット用トークンを発行する。  
   
 **返り値** ： 成功した場合はパスワードリセット用トークン、失敗した場合はFALSEを返す。
 
 
+#### wakarana_user::delete_password_reset_token()
+ユーザーに対して発行されているパスワードリセット用トークンを削除する。  
+  
+**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。  
+
+
 #### wakarana_user::create_2sv_token()
 ユーザーに対して2段階認証用の一時トークンを発行する。  
   
 **返り値** ： 成功した場合は一時トークン、失敗した場合はFALSEを返す。
+
+
+#### wakarana_user::delete_2sv_token()
+ユーザーに対して発行されている2段階認証用の一時トークンを削除する。  
+  
+**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。  
 
 
 #### wakarana_user::create_one_time_token()
@@ -755,8 +788,8 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
 **返り値** ： ユーザーに割り当てられた生成鍵に対して正しいTOTPコードだった場合はTRUEを、それ以外の場合はFALSEを返す。
 
 
-#### wakarana_user::delete()
-ユーザーアカウントをデータベースから完全に削除する。このとき、現在のwakarana_userインスタンスも開放される。  
+#### wakarana_user::delete_user()
+ユーザーアカウントをデータベースから完全に削除する。この関数を呼び出したwakarana_userインスタンスはそれ以降動作しなくなる。  
   
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
