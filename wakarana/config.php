@@ -322,6 +322,7 @@ class wakarana_config extends wakarana_common {
         }
         
         $this->disconnect_db();
+        
         return TRUE;
     }
 }

@@ -451,7 +451,13 @@ class wakarana extends wakarana_common {
             return FALSE;
         }
         
-        if ($user->get_status() === WAKARANA_STATUS_NORMAL && $user->check_password($password) && $this->check_client_auth_interval($this->get_client_ip_address()) && $user->check_auth_interval()) {
+        if ($user->check_password($password) && $this->check_client_auth_interval($this->get_client_ip_address()) && $user->check_auth_interval()) {
+            $status = $user->get_status();
+            if ($status !== WAKARANA_STATUS_NORMAL) {
+                $user->add_auth_log(TRUE);
+                return $status;
+            }
+            
             if ($user->get_totp_enabled()) {
                 if (!is_null($totp_pin)) {
                     if ($user->totp_check($totp_pin)) {
@@ -701,12 +707,17 @@ class wakarana extends wakarana_common {
         if ($user !== FALSE) {
             if ($user->totp_check($totp_pin) && $this->check_client_auth_interval($this->get_client_ip_address(), TRUE) && $user->check_auth_interval(TRUE)) {
                 $user->add_auth_log(TRUE);
+                
+                $status = $user->get_status();
+                if ($status !== WAKARANA_STATUS_NORMAL) {
+                    return $status;
+                }
+                
                 return $user;
             } else {
                 $user->add_auth_log(FALSE);
+                return FALSE;
             }
-            
-            return FALSE;
         } else {
             return FALSE;
         }
