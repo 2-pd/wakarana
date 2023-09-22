@@ -5,6 +5,8 @@
 --------------------------------------------------------------------------------
 【システム要件】
 PHP : 7以降
+SQLite : 3 (SQLiteを使用する場合)
+PostgreSQL : 10以降 (SQLiteを使用しない場合)
 
 
 _/_/_/_/ 基本設定ファイル wakarana_config.ini _/_/_/_/
@@ -20,20 +22,29 @@ _/_/_/_/ 基本設定ファイル wakarana_config.ini _/_/_/_/
   
   sqlite_db_file SQLiteのデータベースファイルのパス(この設定ファルからの相対パス)
   
+  allow_weak_password 弱いパスワード(空または10文字未満、大文字・小文字・数字のどれかを含んでいない)を許すかどうか
+  
   allow_duplicate_email_address 同じメールアドレスでの複数のアカウント作成を許すかどうか(trueまたはfalse、trueの場合はメールアドレスなし(NULL)を許可しない)
   verification_email_expire メールアドレス確認トークンの有効時間(秒数で指定)
   
+  login_token_cookie_name ログイントークンのCookie保存名
+  cookie_domain サブドメインと主ドメインでログインを共通化する場合、主ドメインを指定する(例: "example.jp"と"hoge.example.jp"でログインを共通化する場合は"example.jp"を指定する)
+  
   login_tokens_per_user ユーザーごとのトークン保持可能数(超過した場合は、生成日時の古いトークンから順に削除される)
-  login_token_expire ログイン用トークンの有効時間(秒数で指定、ただし、ログイン処理時にこれより短い期間を指定することもできる)
+  login_token_expire ログイン用トークンの有効時間(秒数で指定)
   one_time_tokens_per_user ユーザーごとのワンタイムトークンの保持可能数(上記に同じ)
   one_time_token_expire ワンタイムトークンの有効時間(秒数で指定)
-
-  min_attempt_interval ログイン試行後、次に試行できるようになるまでの期間(秒)
-  attempt_logs_per_user ログイン試行ログのユーザーあたりの保持個数(0の場合はログを保存しない)
-  attempt_log_retention_time ログイン試行ログの保持期間
+  
+  minimum_authenticate_interval ログイン試行後、次に試行できるようになるまでの期間(秒)
+  authenticate_logs_per_user ログイン試行ログのユーザーあたりの保持個数(0の場合はログを保存しない)
+  authenticate_log_retention_time ログイン試行ログの保持期間
+  
+  password_reset_token_expire パスワードリセット用トークンの有効時間(秒数で指定)
   
   totp_pin_expire TOTPワンタイムパスワードの有効時間(分)
-  totp_temporary_token_expire 2段階認証用一時トークンの有効期間(秒)
+  two_step_verification_token_expire 2段階認証用一時トークンの有効期間(秒)
+  
+  proxy_count リバースプロキシを使用している環境ではその個数を指定する。
 
 <各変数のデフォルト値>
 display_errors=true
@@ -47,30 +58,39 @@ pg_pass=""
 pg_db="wakarana"
 pg_port=5432
 
+allow_weak_password=false
+
 allow_duplicate_email_address=false
 verification_email_expire=1800
+
+login_token_cookie_name="wakarana_login_token"
+cookie_domain=""
 
 login_tokens_per_user=4
 login_token_expire=2592000
 one_time_tokens_per_user=8
 one_time_token_expire=43200
 
-min_attempt_interval=5
-attempt_logs_per_user=20
-attempt_log_retention_time=1209600
+minimum_authenticate_interval=5
+authenticate_logs_per_user=20
+authenticate_log_retention_time=1209600
+
+password_reset_token_expire=1800
 
 totp_pin_expire=1
-totp_temporary_token_expire=600
+two_step_verification_token_expire=600
+
+proxy_count=0
 
 
 _/_/_/_/ データベース _/_/_/_/
 []内はSQLiteでのデータ型
 
 テーブル `wakarana_users`
-  `user_id` varchar(63) [TEXT COLLATE NOCASE] (NOT NULL PRIMARY KEY) ユーザーID(半角英数字及びアンダーバーが使用可能、大文字小文字区別なし)
+  `user_id` varchar(60) [TEXT COLLATE NOCASE] (NOT NULL PRIMARY KEY) ユーザーID(半角英数字及びアンダーバーが使用可能、大文字小文字区別なし)
   `password` varchar(128) [TEXT] (NOT NULL) パスワード+ソルト(ユーザーIDのSHA512ハッシュ)のSHA512ハッシュ(バージョンアップでアルゴリズム変更の可能性あり)
-  `user_name` varchar(255) [TEXT COLLATE NOCASE] ユーザー名(ハンドルネームや氏名など、空欄可)
-  `email_address` varchar(255) [TEXT] メールアドレス(空欄可)
+  `user_name` varchar(240) [TEXT COLLATE NOCASE] ユーザー名(ハンドルネームや氏名など、空欄可)
+  `email_address` varchar(254) [TEXT] メールアドレス(空欄可)
   `user_created` timestamp [TEXT] (NOT NULL) アカウントの作成日時
   `last_updated` timestamp [TEXT] (NOT NULL) アカウント情報の最終更新日時
   `last_access` timestamp [TEXT] (NOT NULL) そのアカウントの最終利用日時
@@ -87,30 +107,31 @@ _/_/_/_/ データベース _/_/_/_/
 
 テーブル `wakarana_login_tokens`
   `token` varchar(43) [TEXT] (NOT NULL PRIMARY KEY) ログイン用トークン(/dev/urandom由来の32バイト乱数バイナリをBase64エンコード(+と/の代わりに-と_)したもの)
-  `user_id` varchar(63) [TEXT COLLATE NOCASE] (NOT NULL) ユーザーID
+  `user_id` varchar(60) [TEXT COLLATE NOCASE] (NOT NULL) ユーザーID
   `token_created` timestamp [TEXT] (NOT NULL) そのトークンの生成日時
   `ip_address` varchar(39) [TEXT] (NOT NULL) 利用者のIPアドレス
-  `operating_system` varchar(31) [TEXT] そのトークンを割り当てられた端末のOS名(「GNU/Linux」、「Android」等)
-  `browser_name` varchar(31) [TEXT] そのトークンを割り当てられた端末のブラウザ名(「Chrome」、「Firefox」等)
+  `operating_system` varchar(30) [TEXT] そのトークンを割り当てられた端末のOS名(「GNU/Linux」、「Android」等)
+  `browser_name` varchar(30) [TEXT] そのトークンを割り当てられた端末のブラウザ名(「Chrome」、「Firefox」等)
   `last_access` timestamp [TEXT] (NOT NULL) そのトークンでの最終アクセス日時
   
   INDEX `wakarana_idx_l1` `user_id`, `token_created`
   INDEX `wakarana_idx_l2` `token_created`
+  INDEX `wakarana_idx_l3` `user_id`, `token`
   
  ※`last_access`については、処理の高速化の観点から、あえてインデックスを指定しない。
 
 
 テーブル `wakarana_user_roles`
-  `user_id` varchar(63) [TEXT COLLATE NOCASE] (NOT NULL) ユーザーID
-  `role_name` varchar(63) [TEXT] (NOT NULL) ロール名
+  `user_id` varchar(60) [TEXT COLLATE NOCASE] (NOT NULL) ユーザーID
+  `role_name` varchar(60) [TEXT] (NOT NULL) ロール名
   
   PRIMARY KEY `user_id`, `role_name`
   INDEX `wakarana_idx_r1` `role_name`, `user_id`
 
 
 テーブル `wakarana_permission_values`
-  `role_name` varchar(63) [TEXT] (NOT NULL) ロール名
-  `permission_name` varchar(127) [TEXT] (NOT NULL) 権限名
+  `role_name` varchar(60) [TEXT] (NOT NULL) ロール名
+  `permission_name` varchar(120) [TEXT] (NOT NULL) 権限名
   `permission_value` integer [INTEGER] (NOT NULL) 権限の値(真偽値のTRUEとして扱う場合は1。0は権限なしとみなす)
   
   PRIMARY KEY `role_name`, `permission_name`
@@ -119,37 +140,46 @@ _/_/_/_/ データベース _/_/_/_/
 
 テーブル `wakarana_one_time_tokens`
   `token` varchar(43) [TEXT] (NOT NULL PRIMARY KEY) ワンタイムトークン(上記と同じ)
-  `user_id` varchar(63) [TEXT COLLATE NOCASE] (NOT NULL) ユーザーID
+  `user_id` varchar(60) [TEXT COLLATE NOCASE] (NOT NULL) ユーザーID
   `token_created` timestamp [TEXT] (NOT NULL) そのトークンの生成日時
   
   INDEX `wakarana_idx_o1` `user_id`, `token_created`
   INDEX `wakarana_idx_o2` `token_created`
+  INDEX `wakarana_idx_o3` `user_id`, `token`
 
 
-テーブル `wakarana_attempt_logs`
-  `user_id` varchar(63) [TEXT COLLATE NOCASE] (NOT NULL) ユーザーID
+テーブル `wakarana_authenticate_logs`
+  `user_id` varchar(60) [TEXT COLLATE NOCASE] (NOT NULL) ユーザーID
   `succeeded` boolean [INTEGER] (NOT NULL) ログインに成功したかどうか
-  `attempt_datetime` timestamp [TEXT] (NOT NULL) ログイン試行が行われた日時
-  `ip_address` varchar(15) [TEXT] (NOT NULL) 利用者のIPアドレス
+  `authenticate_datetime` timestamp [TEXT] (NOT NULL) ログイン試行が行われた日時(マイクロ秒単位)
+  `ip_address` varchar(39) [TEXT] (NOT NULL) 利用者のIPアドレス
   
-  INDEX `wakarana_idx_a1` `user_id`, `succeeded`, `attempt_datetime`
-  INDEX `wakarana_idx_a2` `ip_address`, `succeeded`, `attempt_datetime`
-  INDEX `wakarana_idx_a3` `attempt_datetime`
+  INDEX `wakarana_idx_a1` `user_id`, `authenticate_datetime`
+  INDEX `wakarana_idx_a2` `ip_address`, `authenticate_datetime`
+  INDEX `wakarana_idx_a3` `authenticate_datetime`
 
 
 テーブル `wakarana_email_address_verification`
   `token` varchar(43) [TEXT] (NOT NULL PRIMARY KEY) メールアドレス確認用トークン(上記と同じ)
-  `user_id` varchar(63) [TEXT COLLATE NOCASE] (UNIQUE)ユーザーID(NULLの場合は、ユーザーID登録前のメールアドレス確認)
-  `email_address` varchar(255) [TEXT] (NOT NULL) メールアドレス(上記と同じ)
+  `user_id` varchar(60) [TEXT COLLATE NOCASE] (UNIQUE)ユーザーID(NULLの場合は、ユーザーID登録前のメールアドレス確認)
+  `email_address` varchar(254) [TEXT] (NOT NULL) メールアドレス(上記と同じ)
   `token_created` timestamp [TEXT] (NOT NULL) そのトークンの生成日時
   
   INDEX `wakarana_idx_e1` `email_address`, `user_id`
   INDEX `wakarana_idx_e2` `token_created`
 
 
-テーブル `wakarana_totp_temporary_tokens`
+テーブル `wakarana_password_reset_tokens`
+  `token` varchar(43) [TEXT] (NOT NULL PRIMARY KEY) メールアドレス確認用トークン(上記と同じ)
+  `user_id` varchar(60) [TEXT COLLATE NOCASE] (UNIQUE NOT NULL)ユーザーID(NULLの場合は、ユーザーID登録前のメールアドレス確認)
+  `token_created` timestamp [TEXT] (NOT NULL) そのトークンの生成日時
+  
+  INDEX `wakarana_idx_pr1` `token_created`
+
+
+テーブル `wakarana_two_step_verification_tokens`
   `token` varchar(43) [TEXT] (NOT NULL PRIMARY KEY) 仮トークン(上記と同じ)
-  `user_id` varchar(63) [TEXT COLLATE NOCASE] (UNIQUE NOT NULL) ユーザーID
+  `user_id` varchar(60) [TEXT COLLATE NOCASE] (UNIQUE NOT NULL) ユーザーID
   `token_created` timestamp [TEXT] (NOT NULL) そのトークンの生成日時
   
   INDEX `wakarana_idx_t1` `token_created`

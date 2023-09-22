@@ -3,7 +3,7 @@
  *
  *  Wakarana
 */
-    define("WAKARANA_VERSION", "23.07-1");
+    define("WAKARANA_VERSION", "23.09-2");
 /*
  *_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  *
@@ -41,6 +41,18 @@ class wakarana_common {
     }
     
     
+    function __get ($name) {
+        switch ($name) {
+            case "base_path":
+                return $this->base_path;
+            case "config":
+                return $this->config;
+            case "db_obj":
+                return $this->db_obj;
+        }
+    }
+    
+    
     protected function connect_db () {
         try {
             if ($this->config["use_sqlite"]) {
@@ -65,7 +77,7 @@ class wakarana_common {
     }
     
     
-    protected function print_error ($error_text) {
+    function print_error ($error_text) {
         $this->last_error_text = $error_text;
         
         if (empty($this->config) || $this->config["display_errors"]) {
@@ -76,5 +88,19 @@ class wakarana_common {
     
     function get_last_error_text () {
         return $this->last_error_text;
+    }
+    
+    
+    function get_config_keys () {
+        return array_keys($this->config);
+    }
+    
+    
+    function get_config_value ($key) {
+        if (isset($this->config[$key])) {
+            return $this->config[$key];
+        } else {
+            return NULL;
+        }
     }
 }
