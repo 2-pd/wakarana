@@ -1317,7 +1317,7 @@ class wakarana_user {
     
     function get_login_tokens () {
         try {
-            $stmt = $this->wakarana->db_obj->query('SELECT * FROM "wakarana_login_tokens" WHERE "user_id" = \''.$this->user_info["user_id"].'\' ORDER BY "last_access" DESC');
+            $stmt = $this->wakarana->db_obj->query('SELECT SUBSTR("token", 1, 6) AS "token", "token_created", "ip_address", "operating_system", "browser_name", "last_access" FROM "wakarana_login_tokens" WHERE "user_id" = \''.$this->user_info["user_id"].'\' ORDER BY "last_access" DESC');
             
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $err) {
@@ -1374,6 +1374,22 @@ class wakarana_user {
             $this->wakarana->print_error("ログイントークンの送信に失敗しました。");
             return FALSE;
         }
+    }
+    
+    
+    function delete_login_token ($abbreviated_token) {
+        try {
+            $stmt = $this->wakarana->db_obj->prepare('DELETE FROM "wakarana_login_tokens" WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "token" LIKE :token');
+            
+            $stmt->bindValue(":token", $abbreviated_token."%", PDO::PARAM_STR);
+            
+            $stmt->execute();
+        } catch (PDOException $err) {
+            $this->wakarana->print_error("指定されたログイントークンの削除に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        return TRUE;
     }
     
     

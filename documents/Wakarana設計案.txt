@@ -29,12 +29,12 @@ _/_/_/_/ 基本設定ファイル wakarana_config.ini _/_/_/_/
   
   login_token_cookie_name ログイントークンのCookie保存名
   cookie_domain サブドメインと主ドメインでログインを共通化する場合、主ドメインを指定する(例: "example.jp"と"hoge.example.jp"でログインを共通化する場合は"example.jp"を指定する)
-    
+  
   login_tokens_per_user ユーザーごとのトークン保持可能数(超過した場合は、生成日時の古いトークンから順に削除される)
   login_token_expire ログイン用トークンの有効時間(秒数で指定)
   one_time_tokens_per_user ユーザーごとのワンタイムトークンの保持可能数(上記に同じ)
   one_time_token_expire ワンタイムトークンの有効時間(秒数で指定)
-
+  
   minimum_authenticate_interval ログイン試行後、次に試行できるようになるまでの期間(秒)
   authenticate_logs_per_user ログイン試行ログのユーザーあたりの保持個数(0の場合はログを保存しない)
   authenticate_log_retention_time ログイン試行ログの保持期間

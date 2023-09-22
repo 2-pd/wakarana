@@ -3,7 +3,7 @@
  *
  *  Wakarana
 */
-    define("WAKARANA_VERSION", "23.09-1");
+    define("WAKARANA_VERSION", "23.09-2");
 /*
  *_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  *
