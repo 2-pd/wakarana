@@ -83,6 +83,15 @@ two_step_verification_token_expire=600
 proxy_count=0
 
 
+_/_/_/_/ カスタムフィールド設定ファイル wakarana_custom_fields.json _/_/_/_/
+{
+    "カスタムフィールド名" : {
+        "maximum_length" : 最大文字数(500文字以内),
+        "records_per_user" : ユーザーあたりの上限件数
+    }...
+}
+
+
 _/_/_/_/ データベース _/_/_/_/
 []内はSQLiteでのデータ型
 
@@ -103,6 +112,16 @@ _/_/_/_/ データベース _/_/_/_/
   INDEX `wakarana_idx_u3` `user_created`
   
  ※`last_access`については、処理の高速化の観点から、あえてインデックスを指定しない。
+ 
+ 
+テーブル `wakarana_user_custom_fields`
+  `user_id` varchar(60) [TEXT COLLATE NOCASE] (NOT NULL) ユーザーID
+  `custom_field_name` varchar(60) [TEXT] (NOT NULL) カスタムフィールド名
+  `value_number` smallint [INTEGER] (NOT NULL) カスタムフィールド値が複数ある場合の並び順番号(1から付番)
+  `custom_field_value` text [TEXT] カスタムフィールド値
+  
+  PRIMARY KEY `user_id`, `custom_field_name`, `value_number`
+  INDEX `wakarana_idx_c1` `custom_field_name`, `custom_field_value`
 
 
 テーブル `wakarana_login_tokens`

@@ -67,9 +67,31 @@ wakarana_config.iniの変数名一覧を取得する。
 #### wakarana_common::get_config_value($key)
 wakarana_config.iniの設定値を取得する。  
   
-**$key** : wakarana_config.iniの変数名    
+**$key** : wakarana_config.iniの変数名  
   
 **返り値** ： 指定した変数名が存在すればその設定値、なければNULLを返す。
+
+
+#### wakarana_common::get_custom_field_names()
+ユーザーデータに追加可能なカスタムフィールド名一覧を取得する。  
+  
+**返り値** ： wakarana_custom_fields.jsonのキー一覧を配列で返す。
+
+
+#### wakarana_common::get_custom_field_maximum_length($custom_field_name)
+指定したカスタムフィールドに保存可能な最大文字数を取得する。  
+  
+**$custom_field_name** : カスタムフィールド名  
+  
+**返り値** ： カスタムフィールド名がwakarana_custom_fields.jsonに存在すればその最大文字数、なければFALSEを返す。
+
+
+#### wakarana_common::get_custom_field_records_per_user($custom_field_name)
+指定したカスタムフィールドのユーザーあたりの上限件数を取得する。  
+  
+**$custom_field_name** : カスタムフィールド名  
+  
+**返り値** ： カスタムフィールド名がwakarana_custom_fields.jsonに存在すればその上限件数、なければFALSEを返す。
 
 
 
@@ -568,6 +590,22 @@ wakarana_userインスタンスはこの関数以外の方法(unsetや変数の�
 **返り値** ： 2要素認証が有効ならばTRUE、そうでない場合はFALSEを返す。
 
 
+#### wakarana_user::get_values($custom_field_name)
+ユーザーの指定したカスタムフィールドの値を配列で取得する。  
+  
+**$custom_field_name** ： カスタムフィールド名  
+  
+**返り値** ： カスタムフィールドの値を配列で返す。値が存在しない場合は空文字列を、失敗した場合はFALSEを返す。
+
+
+#### wakarana_user::get_value($custom_field_name)
+ユーザーの指定したカスタムフィールドの単一の値を取得する。  
+  
+**$custom_field_name** ： カスタムフィールド名。2個以上の値の登録が可能なカスタムフィールドは指定できない。  
+  
+**返り値** ： 成功した場合はカスタムフィールドの値、失敗した場合はFALSEを返す。値が存在しない場合はNULLとみなす。
+
+
 #### wakarana_user::set_password($password)
 ユーザーのパスワードを変更する。  
   
@@ -615,10 +653,29 @@ wakarana_userインスタンスはこの関数以外の方法(unsetや変数の�
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
+#### wakarana_user::set_value($custom_field_name, $custom_field_value, $value_number=1)
+ユーザーの指定したカスタムフィールドの値を設定する。  
+  
+**$custom_field_name** ： カスタムフィールド名  
+**$custom_field_value** ： 値として保存する文字列  
+**$value_number** ： 並び順番号。ユーザーのカスタムフィールドにおいて既に値が存在する番号を指定した場合、その値を上書きする。  
+  
+**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
+#### wakarana_user::remove_value($custom_field_name, $value_number=NULL)
+ユーザーの指定したカスタムフィールドの値を削除する。  
+  
+**$custom_field_name** ： カスタムフィールド名  
+**$value_number** ： 並び順番号。NULLを指定した場合はユーザーのそのカスタムフィールド値を全て削除する。  
+  
+**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
 #### wakarana_user::get_roles()
 ユーザーに割り当てられたロール名の一覧を取得する。ただし、ベースロールは取得しない。  
   
-**返り値** ： ロール名をアルファベット順に格納した配列を返す。ロールが存在しない場合は空配列を返す。
+**返り値** ： ロール名をアルファベット順に格納した配列を返す。ロールが存在しない場合は空配列を返す。失敗した場合はFALSEを返す。
 
 
 #### wakarana_user::add_role($role_name)
@@ -833,6 +890,35 @@ wakarana_config.iniの設定値を変更する。
 
 #### wakarana_config::reset_config()
 wakarana_config.iniの設定値を全て既定値に戻す。  
+  
+**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
+#### ◆ wakarana_config::save_custom_fields()
+現在の設定値でcustom_fields.jsonを上書きする。  
+◆クラス内呼び出し専用。  
+  
+**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
+#### wakarana_config::add_custom_field($custom_field_name, $maximum_length=500, $records_per_user=1, $save_now=TRUE)
+カスタムフィールドを追加する。  
+既に存在するカスタムフィールド名を指定した場合はその設定を上書きする。  
+  
+**$custom_field_name** : カスタムフィールド名  
+**$maximum_length** : 保存可能な最大文字数(500以下)  
+**$records_per_user** : ユーザーあたりの上限件数  
+**$save_now** : FALSEならcustom_fields.jsonへの上書きは保留する。  
+  
+**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
+#### wakarana_config::delete_custom_field($custom_field_name, $save_now=TRUE)
+カスタムフィールドを削除する。  
+この関数により既にデータベースに保存されている当該カスタムフィールドのデータが削除されるわけではない。  
+  
+**$custom_field_name** : カスタムフィールド名  
+**$save_now** : FALSEならcustom_fields.jsonへの上書きは保留する。  
   
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
