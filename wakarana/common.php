@@ -61,6 +61,8 @@ class wakarana_common {
                 return $this->config;
             case "db_obj":
                 return $this->db_obj;
+            case "custom_fields":
+                return $this->custom_fields;
         }
     }
     

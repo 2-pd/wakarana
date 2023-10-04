@@ -89,7 +89,7 @@ _/_/_/_/ カスタムフィールド設定ファイル wakarana_custom_fields.js
 {
     "カスタムフィールド名" : {
         "maximum_length" : 最大文字数(500文字以内),
-        "records_per_user" : ユーザーあたりの上限件数,
+        "records_per_user" : ユーザーあたりの上限件数(100件以内),
         "allow_nonunique_value" : 異なるユーザーが同一の値を持つことを認めるか(trueまたはfalse)
     }...
 }

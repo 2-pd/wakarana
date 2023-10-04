@@ -994,7 +994,7 @@ wakarana_config.iniの設定値を全て既定値に戻す。
   
 **$custom_field_name** : カスタムフィールド名  
 **$maximum_length** : 保存可能な最大文字数(500以下)  
-**$records_per_user** : ユーザーあたりの上限件数  
+**$records_per_user** : ユーザーあたりの上限件数(100以下)  
 **$allow_nonunique_value** : 異なるユーザーが同一の値を持つことを認めるか  
 **$save_now** : FALSEならcustom_fields.jsonへの上書きは保留する。  
   

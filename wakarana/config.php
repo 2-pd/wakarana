@@ -44,7 +44,7 @@ define("WAKARANA_CONFIG_ORIGINAL",
 
 
 class wakarana_config extends wakarana_common {
-    function save () {
+    protected function save () {
         $file_h = @fopen($this->base_path."/wakarana_config.ini","w");
         
         if (empty($file_h)) {
@@ -129,17 +129,78 @@ class wakarana_config extends wakarana_common {
         $this->config[$key] = $value;
         
         if ($save_now) {
-            $this->save();
+            return $this->save();
+        } else {
+            return TRUE;
         }
-        
-        return TRUE;
     }
     
     
     function reset_config () {
         $this->config = WAKARANA_CONFIG_ORIGINAL;
         
-        $this->save();
+        return $this->save();
+    }
+    
+    
+    protected function save_custom_fields () {
+        if (@file_put_contents($this->base_path."/wakarana_custom_fields.json", json_encode($this->custom_fields)) !== FALSE) {
+            return TRUE;
+        } else {
+            $this->print_error("カスタムフィールド設定ファイルへの書き込みに失敗しました。");
+            return FALSE;
+        }
+    }
+    
+    
+    function add_custom_field ($custom_field_name, $maximum_length = 500, $records_per_user = 1, $allow_nonunique_value = TRUE, $save_now = TRUE) {
+        if (!is_string($custom_field_name) || strlen($custom_field_name) === 0) {
+            $this->print_error("指定されたカスタムフィールド名が異常です。");
+            return FALSE;
+        }
+        
+        if ($maximum_length > 500 || $maximum_length < 1) {
+            $this->print_error("指定された最大文字数が異常です。カスタムフィールドの最大文字数は1〜500の範囲で指定してください。");
+            return FALSE;
+        }
+        
+        if ($records_per_user > 100 || $records_per_user < 1) {
+            $this->print_error("指定された最大件数が異常です。カスタムフィールドの最大件数は1〜100の範囲で指定してください。");
+            return FALSE;
+        }
+        
+        if (!is_bool($allow_nonunique_value)) {
+            $this->print_error("カスタムフィールド値の重複可否の設定値が異常です。");
+            return FALSE;
+        }
+        
+        $this->custom_fields[$custom_field_name] = array(
+            "maximum_length" => $maximum_length,
+            "records_per_user" => $records_per_user,
+            "allow_nonunique_value" => $allow_nonunique_value
+        );
+        
+        if ($save_now) {
+            return $this->save_custom_fields();
+        } else {
+            return TRUE;
+        }
+    }
+    
+    
+    function delete_custom_field($custom_field_name, $save_now = TRUE) {
+        if (!isset($this->custom_fields[$custom_field_name])) {
+            $this->print_error("指定されたカスタムフィールドは存在しません。");
+            return FALSE;
+        }
+        
+        unset($this->custom_fields[$custom_field_name]);
+        
+        if ($save_now) {
+            return $this->save_custom_fields();
+        } else {
+            return TRUE;
+        }
     }
     
     
