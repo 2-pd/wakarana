@@ -32,6 +32,16 @@ wakaranaクラスとwakarana_configクラスの親クラス。このクラスの
 **$name** : クラス内変数名。
 
 
+#### ☆ wakarana_common::check_id_string($id, $length=60)
+文字列に、ユーザーIDやロール名などの識別名として使用できない文字が含まれないかどうかを検査する。  
+☆staticメソッド。  
+  
+**$id** : 検査する文字列  
+**$length** : 文字列の長さの上限。検査する文字列がこれより長い場合は使用できない文字列とみなす。   
+  
+**返り値** ： 識別名として使用可能な文字列ならTRUEを、それ以外の場合はFALSEを返す。
+
+
 #### ◆ wakarana_common::connect_db()
 wakarana_config.iniの設定に基づき、データベースに接続する。  
 ◆クラス内呼び出し専用であり、wakaranaクラスとwakarana_configクラスはこの関数を自動的に実行する。  
@@ -143,16 +153,6 @@ wakarana_commonの派生クラス。
 wakarana_common::__constructとwakarana_common::connect_dbを順に実行する。  
   
 **$base_dir** : wakarana_config.iniのあるフォルダのパス。省略時はcommon.phpのあるフォルダを使用する。
-
-
-#### ☆ wakarana::check_id_string($id, $length=60)
-文字列にユーザーIDやロール名、権限名などの識別名として使用できない文字が含まれないかどうかを検査する。  
-☆staticメソッド。  
-  
-**$id** : 検査する文字列  
-**$length** : 文字列の長さの上限。検査する文字列がこれより長い場合は使用できない文字列とみなす。   
-  
-**返り値** ： 識別名として使用可能な文字列ならTRUEを、それ以外の場合はFALSEを返す。
 
 
 #### ☆ wakarana::hash_password($user_id, $password)
@@ -638,20 +638,20 @@ wakarana_userインスタンスはこの関数以外の方法(unsetや変数の�
 **返り値** ： 2要素認証が有効ならばTRUE、そうでない場合はFALSEを返す。
 
 
-#### wakarana_user::get_values($custom_field_name)
-ユーザーの指定したカスタムフィールドの値を配列で取得する。  
-  
-**$custom_field_name** ： カスタムフィールド名  
-  
-**返り値** ： カスタムフィールドの値を配列で返す。値が存在しない場合は空文字列を、失敗した場合はFALSEを返す。
-
-
 #### wakarana_user::get_value($custom_field_name)
 ユーザーの指定したカスタムフィールドの単一の値を取得する。  
   
 **$custom_field_name** ： カスタムフィールド名。2個以上の値の登録が可能なカスタムフィールドは指定できない。  
   
 **返り値** ： 成功した場合はカスタムフィールドの値、失敗した場合はFALSEを返す。値が存在しない場合はNULLとみなす。
+
+
+#### wakarana_user::get_values($custom_field_name)
+ユーザーの指定したカスタムフィールドの値を配列で取得する。  
+  
+**$custom_field_name** ： カスタムフィールド名  
+  
+**返り値** ： カスタムフィールドの値を配列で返す。値が存在しない場合は空文字列を、失敗した場合はFALSEを返す。
 
 
 #### wakarana_user::set_password($password)
@@ -741,27 +741,33 @@ wakarana_userインスタンスはこの関数以外の方法(unsetや変数の�
   
 **$custom_field_name** ： カスタムフィールド名  
 **$custom_field_value** ： 値として保存する文字列   
-**$value_number** ： 並び順番号。既に値が存在する並び順番号を指定した場合、それより後の値の並び順番号を後ろにずらして新しい値を挿入する。   
+**$value_number** ： 並び順番号。既に値が存在する並び順番号を指定した場合、それより後の値の並び順番号を後ろにずらして新しい値を挿入する。既存の項目数+1よりも大きい値は使用できない。  
   
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
-#### wakarana_user::update_value($custom_field_name, $custom_field_value, $value_number)
+#### wakarana_user::update_value($custom_field_name, $value_number, $custom_field_value)
 ユーザーの指定したカスタムフィールドにおいて既に存在している値を上書きする。  
   
 **$custom_field_name** ： カスタムフィールド名  
-**$custom_field_value** ： 値として保存する文字列  
 **$value_number** ： 上書きする値の並び順番号  
+**$custom_field_value** ： 値として保存する文字列  
   
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
-#### wakarana_user::remove_value($custom_field_name, $value_number=NULL)
+#### wakarana_user::remove_value($custom_field_name, $number_or_value=NULL)
 ユーザーの指定したカスタムフィールドの値を削除する。  
 削除された値より後の値の並び順番号は1つ前にずれる。  
   
 **$custom_field_name** ： カスタムフィールド名  
-**$value_number** ： 並び順番号。NULLを指定した場合はユーザーのそのカスタムフィールド値を全て削除する。  
+**$number_or_value** ： 削除対象の並び順番号(1から順に付番されている整数値)または削除対象の値(文字列)。NULLを指定した場合はユーザーのそのカスタムフィールド値を全て削除する。  
+  
+**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
+#### wakarana_user::remove_all_values()
+ユーザーの全てのカスタムフィールドの値を削除する。  
   
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
@@ -1009,7 +1015,7 @@ wakarana_config.iniの設定値を全て既定値に戻す。
 カスタムフィールドを追加する。  
 既に存在するカスタムフィールド名を指定した場合はその設定を上書きする。  
   
-**$custom_field_name** : カスタムフィールド名  
+**$custom_field_name** : カスタムフィールド名。半角英数字及びアンダーバーが使用可能。  
 **$maximum_length** : 保存可能な最大文字数(500以下)  
 **$records_per_user** : ユーザーあたりの上限件数(100以下)  
 **$allow_nonunique_value** : 異なるユーザーが同一の値を持つことを認めるか  

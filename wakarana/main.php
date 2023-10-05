@@ -26,15 +26,6 @@ class wakarana extends wakarana_common {
     }
     
     
-    static function check_id_string ($id, $length = 60) {
-        if (gettype($id) === "string" && strlen($id) >= 1 && strlen($id) <= $length && preg_match("/^[0-9A-Za-z_]+$/u", $id)) {
-            return TRUE;
-        } else {
-            return FALSE;
-        }
-    }
-    
-    
     static function hash_password ($user_id, $password) {
         return hash("sha512", $password.hash("sha512", $user_id));
     }
@@ -676,6 +667,34 @@ class wakarana extends wakarana_common {
     }
     
     
+    function search_users_with_custom_field ($custom_field_name, $custom_field_value) {
+        if (!self::check_id_string($custom_field_name) || !isset($this->custom_fields[$custom_field_name])) {
+            $this->print_error("指定されたカスタムフィールドは存在しません。");
+            return FALSE;
+        }
+        
+        try {
+            $stmt = $this->db_obj->prepare('SELECT "wakarana_users".* FROM "wakarana_users", "wakarana_user_custom_fields" WHERE "wakarana_user_custom_fields"."custom_field_name" = \''.$custom_field_name.'\' AND "wakarana_user_custom_fields"."custom_field_value" = :custom_field_value AND "wakarana_users"."user_id" = "wakarana_user_custom_fields"."user_id"');
+            
+            $stmt->bindValue(":custom_field_value", $custom_field_value, PDO::PARAM_STR);
+            
+            $stmt->execute();
+        } catch (PDOException $err) {
+            $this->print_error("カスタムフィールド値の確認に失敗しました。".$err->getMessage());
+            return -1;
+        }
+        
+        $users_info = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        $users = array();
+        foreach ($users_info as $user_info) {
+            $users[] = $this->new_wakarana_user($user_info);
+        }
+        
+        return $users;
+    }
+    
+    
     function delete_2sv_tokens ($expire=-1) {
         if ($expire === -1) {
             $expire = $this->config["two_step_verification_token_expire"];
@@ -1016,6 +1035,45 @@ class wakarana_user {
     }
     
     
+    function get_value ($custom_field_name) {
+        if (!wakarana::check_id_string($custom_field_name) || !isset($this->wakarana->custom_fields[$custom_field_name])) {
+            $this->wakarana->print_error("指定されたカスタムフィールドは存在しません。");
+            return FALSE;
+        }
+        
+        if ($this->wakarana->custom_fields[$custom_field_name]["records_per_user"] !== 1) {
+            $this->wakarana->print_error("指定されたカスタムフィールドは単一値ではありません。");
+            return FALSE;
+        }
+        
+        try {
+            $stmt = $this->wakarana->db_obj->query('SELECT "custom_field_value" FROM "wakarana_user_custom_fields" WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "custom_field_name" = \''.$custom_field_name.'\'');
+        } catch (PDOException $err) {
+            $this->wakarana->print_error("カスタムフィールド値の取得に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        return $stmt->fetchColumn();
+    }
+    
+    
+    function get_values ($custom_field_name) {
+        if (!wakarana::check_id_string($custom_field_name) || !isset($this->wakarana->custom_fields[$custom_field_name])) {
+            $this->wakarana->print_error("指定されたカスタムフィールドは存在しません。");
+            return FALSE;
+        }
+        
+        try {
+            $stmt = $this->wakarana->db_obj->query('SELECT "custom_field_value" FROM "wakarana_user_custom_fields" WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "custom_field_name" = \''.$custom_field_name.'\' ORDER BY "value_number" ASC');
+        } catch (PDOException $err) {
+            $this->wakarana->print_error("カスタムフィールド値の取得に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        return $stmt->fetchAll(PDO::FETCH_COLUMN);
+    }
+    
+    
     function set_password ($password) {
         if (!$this->wakarana->config["allow_weak_password"] && !wakarana::check_password_strength($password)) {
             $this->wakarana->print_error("パスワードの強度が不十分です。現在の設定では弱いパスワードの使用は許可されていません。");
@@ -1068,7 +1126,7 @@ class wakarana_user {
         }
         
         if (!$this->wakarana->config["allow_nonunique_email_address"] && !empty($this->wakarana->search_users_with_email_address($email_address))) {
-            $this->wakarana->print_error("使用できないメールアドレスです。現在の設定では同一メールアドレスでの復数アカウント作成は許可されていません。");
+            $this->wakarana->print_error("使用できないメールアドレスです。現在の設定では同一メールアドレスの復数アカウントでの使用は許可されていません。");
             return FALSE;
         }
         
@@ -1203,6 +1261,170 @@ class wakarana_user {
         }
         
         $this->user_info["totp_key"] = NULL;
+        
+        return TRUE;
+    }
+    
+    
+    function set_value ($custom_field_name, $custom_field_value) {
+        if (!wakarana::check_id_string($custom_field_name) || !isset($this->wakarana->custom_fields[$custom_field_name])) {
+            $this->wakarana->print_error("指定されたカスタムフィールドは存在しません。");
+            return FALSE;
+        }
+        
+        if ($this->wakarana->custom_fields[$custom_field_name]["records_per_user"] !== 1) {
+            $this->wakarana->print_error("指定されたカスタムフィールドは単一値ではありません。");
+            return FALSE;
+        }
+        
+        $custom_field_value = mb_substr($custom_field_value, 0, $this->wakarana->custom_fields[$custom_field_name]["maximum_length"]);
+        
+        if (!$this->wakarana->custom_fields[$custom_field_name]["allow_nonunique_value"] && !empty($this->wakarana->search_users_with_custom_field($custom_field_name, $custom_field_value))) {
+            $this->wakarana->print_error("使用できない値です。指定されたカスタムフィールドでは複数のアカウントに同じ値を設定することは許可されていません。");
+            return FALSE;
+        }
+        
+        try {
+            $stmt = $this->wakarana->db_obj->prepare('INSERT INTO "wakarana_user_custom_fields"("user_id", "custom_field_name", "value_number", "custom_field_value") VALUES (\''.$this->user_info["user_id"].'\', \''.$custom_field_name.'\', 1, :custom_field_value) ON CONFLICT("user_id", "custom_field_name", "value_number") DO UPDATE SET "custom_field_value" = :custom_field_value_2');
+            
+            $stmt->bindValue(":custom_field_value", $custom_field_value, PDO::PARAM_STR);
+            $stmt->bindValue(":custom_field_value_2", $custom_field_value, PDO::PARAM_STR);
+            
+            $stmt->execute();
+        } catch (PDOException $err) {
+            $this->wakarana->print_error("カスタムフィールド値の設定に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        return TRUE;
+    }
+    
+    
+    function add_value ($custom_field_name, $custom_field_value, $value_number = -1) {
+        if (!wakarana::check_id_string($custom_field_name) || !isset($this->wakarana->custom_fields[$custom_field_name])) {
+            $this->wakarana->print_error("指定されたカスタムフィールドは存在しません。");
+            return FALSE;
+        }
+        
+        $value_count = count($this->get_values($custom_field_name));
+        
+        if ($value_count >= $this->wakarana->custom_fields[$custom_field_name]["records_per_user"]) {
+            $this->wakarana->print_error("指定されたカスタムフィールドにはこれ以上項目を追加できません。");
+            return FALSE;
+        }
+        
+        if ($value_number === -1) {
+            $value_number = $value_count + 1;
+        } elseif($value_number <= $value_count + 1) {
+            $value_number = intval($value_number);
+        } else {
+            $this->wakarana->print_error("並び順番号として使用可能な数値は既存の項目数に1を加えた値以下です。");
+            return FALSE;
+        }
+        
+        $custom_field_value = mb_substr($custom_field_value, 0, $this->wakarana->custom_fields[$custom_field_name]["maximum_length"]);
+        
+        if (!$this->wakarana->custom_fields[$custom_field_name]["allow_nonunique_value"] && !empty($this->wakarana->search_users_with_custom_field($custom_field_name, $custom_field_value))) {
+            $this->wakarana->print_error("使用できない値です。指定されたカスタムフィールドでは複数のアカウントに同じ値を設定することは許可されていません。");
+            return FALSE;
+        }
+        
+        try {
+            if ($value_number <= $value_count) {
+                $this->wakarana->db_obj->exec('UPDATE "wakarana_user_custom_fields" SET "value_number" = "value_number" + '.$this->wakarana->custom_fields[$custom_field_name]["records_per_user"].' WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "custom_field_name" = \''.$custom_field_name.'\' AND "value_number" >= '.$value_number);
+                $this->wakarana->db_obj->exec('UPDATE "wakarana_user_custom_fields" SET "value_number" = "value_number" - '.($this->wakarana->custom_fields[$custom_field_name]["records_per_user"] - 1).' WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "custom_field_name" = \''.$custom_field_name.'\' AND "value_number" >= '.$this->wakarana->custom_fields[$custom_field_name]["records_per_user"]);
+            }
+            
+            $stmt = $this->wakarana->db_obj->prepare('INSERT INTO "wakarana_user_custom_fields"("user_id", "custom_field_name", "value_number", "custom_field_value") VALUES (\''.$this->user_info["user_id"].'\', \''.$custom_field_name.'\', '.$value_number.', :custom_field_value)');
+            
+            $stmt->bindValue(":custom_field_value", $custom_field_value, PDO::PARAM_STR);
+            
+            $stmt->execute();
+        } catch (PDOException $err) {
+            $this->wakarana->print_error("カスタムフィールド値の追加に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        return TRUE;
+    }
+    
+    
+    function update_value ($custom_field_name, $value_number, $custom_field_value) {
+        if (!wakarana::check_id_string($custom_field_name) || !isset($this->wakarana->custom_fields[$custom_field_name])) {
+            $this->wakarana->print_error("指定されたカスタムフィールドは存在しません。");
+            return FALSE;
+        }
+        
+        $custom_field_value = mb_substr($custom_field_value, 0, $this->wakarana->custom_fields[$custom_field_name]["maximum_length"]);
+        
+        if (!$this->wakarana->custom_fields[$custom_field_name]["allow_nonunique_value"] && !empty($this->wakarana->search_users_with_custom_field($custom_field_name, $custom_field_value))) {
+            $this->wakarana->print_error("使用できない値です。指定されたカスタムフィールドでは複数のアカウントに同じ値を設定することは許可されていません。");
+            return FALSE;
+        }
+        
+        try {
+            $stmt = $this->wakarana->db_obj->prepare('UPDATE "wakarana_user_custom_fields" SET "custom_field_value" = :custom_field_value WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "custom_field_name" = \''.$custom_field_name.'\' AND "value_number" = '.intval($value_number));
+            
+            $stmt->bindValue(":custom_field_value", $custom_field_value, PDO::PARAM_STR);
+            
+            $stmt->execute();
+        } catch (PDOException $err) {
+            $this->wakarana->print_error("カスタムフィールド値の変更に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        return TRUE;
+    }
+    
+    
+    function remove_value ($custom_field_name, $number_or_value = NULL) {
+        if (!wakarana::check_id_string($custom_field_name) || !isset($this->wakarana->custom_fields[$custom_field_name])) {
+            $this->wakarana->print_error("指定されたカスタムフィールドは存在しません。");
+            return FALSE;
+        }
+        
+        if (empty($number_or_value)) {
+            $value_number_q = '';
+        } else {
+            if (is_int($number_or_value)) {
+                $value_number = $number_or_value;
+            } else {
+                $index = array_search($number_or_value, $this->get_values($custom_field_name));
+                
+                if ($index === FALSE) {
+                    $this->wakarana->print_error("指定されたカスタムフィールド値は存在しません。");
+                    return FALSE;
+                }
+                
+                $value_number = $index + 1;
+            }
+            
+            $value_number_q = ' AND "value_number" = '.$value_number;
+        }
+        
+        try {
+            $this->wakarana->db_obj->exec('DELETE FROM "wakarana_user_custom_fields" WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "custom_field_name" = \''.$custom_field_name.'\''.$value_number_q);
+            
+            if (!empty($number_or_value)) {
+                $this->wakarana->db_obj->exec('UPDATE "wakarana_user_custom_fields" SET "value_number" = "value_number" + '.$this->wakarana->custom_fields[$custom_field_name]["records_per_user"].' WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "custom_field_name" = \''.$custom_field_name.'\' AND "value_number" > '.$value_number);
+                $this->wakarana->db_obj->exec('UPDATE "wakarana_user_custom_fields" SET "value_number" = "value_number" - '.($this->wakarana->custom_fields[$custom_field_name]["records_per_user"] + 1).' WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "custom_field_name" = \''.$custom_field_name.'\' AND "value_number" >= '.$this->wakarana->custom_fields[$custom_field_name]["records_per_user"]);
+            }
+        } catch (PDOException $err) {
+            $this->wakarana->print_error("カスタムフィールド値の削除に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        return TRUE;
+    }
+    
+    
+    function remove_all_values () {
+        try {
+            $this->wakarana->db_obj->exec('DELETE FROM "wakarana_user_custom_fields" WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
+        } catch (PDOException $err) {
+            $this->wakarana->print_error("カスタムフィールド値の削除に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
         
         return TRUE;
     }
@@ -1701,7 +1923,7 @@ class wakarana_user {
     
     
     function delete_user () {
-        if (!$this->delete_all_tokens() || !$this->remove_role() || !$this->remove_all_email_addresses() || !$this->delete_auth_logs()){
+        if (!$this->delete_all_tokens() || !$this->remove_role() || !$this->remove_all_email_addresses() || !$this->remove_all_values() || !$this->delete_auth_logs()){
             return FALSE;
         }
         

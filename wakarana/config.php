@@ -154,7 +154,7 @@ class wakarana_config extends wakarana_common {
     
     
     function add_custom_field ($custom_field_name, $maximum_length = 500, $records_per_user = 1, $allow_nonunique_value = TRUE, $save_now = TRUE) {
-        if (!is_string($custom_field_name) || strlen($custom_field_name) === 0) {
+        if (!self::check_id_string($custom_field_name)) {
             $this->print_error("指定されたカスタムフィールド名が異常です。");
             return FALSE;
         }
@@ -255,7 +255,7 @@ class wakarana_config extends wakarana_common {
             if ($this->config["use_sqlite"]) {
                 $this->db_obj->exec("CREATE TABLE IF NOT EXISTS `wakarana_user_custom_fields`(`user_id` TEXT COLLATE NOCASE NOT NULL, `custom_field_name` TEXT NOT NULL, `value_number` INTEGER NOT NULL, `custom_field_value` TEXT, PRIMARY KEY(`user_id`, `custom_field_name`, `value_number`))");
             } else {
-                $this->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_user_custom_fields"("user_id" varchar(60) NOT NULL, "custom_field_name" varchar(60) NOT NULL, "value_number" smallint NOT NULL, "custom_field_value" text,PRIMARY KEY("user_id", "custom_field_name", "value_number"))');
+                $this->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_user_custom_fields"("user_id" varchar(60) NOT NULL, "custom_field_name" varchar(60) NOT NULL, "value_number" smallint NOT NULL, "custom_field_value" text, PRIMARY KEY("user_id", "custom_field_name", "value_number"))');
             }
         } catch (PDOException $err) {
             $this->print_error("テーブル wakarana_user_custom_fields の作成処理に失敗しました。".$err->getMessage());
