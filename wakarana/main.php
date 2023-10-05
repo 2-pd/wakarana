@@ -440,36 +440,51 @@ class wakarana extends wakarana_common {
             return FALSE;
         }
         
-        if ($user->check_password($password) && $this->check_client_auth_interval($this->get_client_ip_address()) && $user->check_auth_interval()) {
-            $status = $user->get_status();
-            if ($status !== WAKARANA_STATUS_NORMAL) {
-                $user->add_auth_log(TRUE);
-                return $status;
-            }
-            
-            if ($user->get_totp_enabled()) {
-                if (!is_null($totp_pin)) {
-                    if ($user->totp_check($totp_pin)) {
-                        $user->add_auth_log(TRUE);
-                        return $user;
-                    }
-                } else {
-                    $user->add_auth_log(TRUE);
-                    return $user->create_2sv_token();
-                }
-            } else {
-                $user->add_auth_log(TRUE);
-                return $user;
-            }
-        }
+        $result = $user->authenticate($password, $totp_pin);
         
-        $user->add_auth_log(FALSE);
-        return FALSE;
+        if ($result === TRUE) {
+            return $user;
+        } else {
+            return $result;
+        }
     }
     
     
     function login ($user_id, $password, $totp_pin = NULL) {
         $user = $this->authenticate($user_id, $password, $totp_pin);
+        
+        if (is_object($user)) {
+            $user->set_login_token();
+        }
+        
+        return $user;
+    }
+    
+    
+    function authenticate_with_email_address ($email_address, $password, $totp_pin = NULL) {
+        if ($this->config["allow_nonunique_email_address"]) {
+            $this->print_error("同一メールアドレスの複数アカウントへの登録を容認する設定では、メールアドレスでのログインは利用できません。");
+            return FALSE;
+        }
+        
+        $users = $this->search_users_with_email_address($email_address);
+        
+        if (empty($users)) {
+            return FALSE;
+        }
+        
+        $result = $users[0]->authenticate($password, $totp_pin);
+        
+        if ($result === TRUE) {
+            return $users[0];
+        } else {
+            return $result;
+        }
+    }
+    
+    
+    function login_with_email_address ($email_address, $password, $totp_pin = NULL) {
+        $user = $this->authenticate_with_email_address($email_address, $password, $totp_pin);
         
         if (is_object($user)) {
             $user->set_login_token();
@@ -1482,6 +1497,35 @@ class wakarana_user {
     }
     
     
+    function authenticate ($password, $totp_pin = NULL) {
+        if ($this->check_password($password) && $this->wakarana->check_client_auth_interval($this->wakarana->get_client_ip_address()) && $this->check_auth_interval()) {
+            $status = $this->get_status();
+            if ($status !== WAKARANA_STATUS_NORMAL) {
+                $this->add_auth_log(TRUE);
+                return $status;
+            }
+            
+            if ($this->get_totp_enabled()) {
+                if (!is_null($totp_pin)) {
+                    if ($this->totp_check($totp_pin)) {
+                        $this->add_auth_log(TRUE);
+                        return TRUE;
+                    }
+                } else {
+                    $this->add_auth_log(TRUE);
+                    return $this->create_2sv_token();
+                }
+            } else {
+                $this->add_auth_log(TRUE);
+                return TRUE;
+            }
+        }
+        
+        $this->add_auth_log(FALSE);
+        return FALSE;
+    }
+    
+    
     function create_email_address_verification_token ($email_address) {
         if (!$this->wakarana->config["allow_nonunique_email_address"] && !empty($this->wakarana->search_users_with_email_address($email_address))) {
             $this->wakarana->print_error("使用できないメールアドレスです。現在の設定では同一メールアドレスでの復数アカウント作成は許可されていません。");
@@ -1657,7 +1701,7 @@ class wakarana_user {
     
     
     function delete_user () {
-        if (!$this->delete_all_tokens() || !$this->remove_role() || !$this->delete_auth_logs()){
+        if (!$this->delete_all_tokens() || !$this->remove_role() || !$this->remove_all_email_addresses() || !$this->delete_auth_logs()){
             return FALSE;
         }
         

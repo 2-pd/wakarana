@@ -877,6 +877,16 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。  
 
 
+#### wakarana_user::authenticate($password, $totp_pin=NULL)
+ユーザーに対するパスワードとTOTPコード(2要素認証を使用する場合)の照合を行う。  
+トークンの生成と送信は行わないが、内部的にログイン試行ログの参照と登録は実施する。  
+  
+**$password** ： パスワード  
+**$totp_pin** ： 6桁のTOTPコード。2要素認証を使用しない場合と2要素認証の入力画面を分ける場合は省略。  
+  
+**返り値** ： 認証された場合はTRUE、ユーザーアカウントが停止中の場合はその状態値(WAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_EMAIL_UNVERIFIED)、ユーザーIDが2段階認証の対象ユーザーでTOTPコードがNULLだった場合は仮トークン、それ以外の場合はFALSEを返す。
+
+
 #### wakarana_user::create_email_address_verification_token($email_address)
 メールアドレス確認トークンを生成し、ユーザーに割り当てる。  
 前に同じユーザーに対して生成されたメールアドレス確認トークンがデータベースに残っていた場合、古いトークンは削除される。  
