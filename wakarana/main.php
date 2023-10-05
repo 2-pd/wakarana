@@ -65,9 +65,9 @@ class wakarana extends wakarana_common {
         
         try {
             if ($this->config["use_sqlite"]) {
-                $stmt = $this->db_obj->query("SELECT * FROM `wakarana_users` WHERE `user_id`='".$user_id."'");
+                $stmt = $this->db_obj->query("SELECT * FROM `wakarana_users` WHERE `user_id` = '".$user_id."'");
             } else {
-                $stmt = $this->db_obj->query('SELECT * FROM "wakarana_users" WHERE LOWER("user_id")=\''.strtolower($user_id).'\'');
+                $stmt = $this->db_obj->query('SELECT * FROM "wakarana_users" WHERE LOWER("user_id") = \''.strtolower($user_id).'\'');
             }
         } catch (PDOException $err) {
             $this->print_error("ユーザー情報の取得に失敗しました。".$err->getMessage());
@@ -138,7 +138,7 @@ class wakarana extends wakarana_common {
     }
     
     
-    function add_user ($user_id, $password, $user_name = "", $email_address = NULL, $status = WAKARANA_STATUS_NORMAL) {
+    function add_user ($user_id, $password, $user_name = "", $status = WAKARANA_STATUS_NORMAL) {
         if (!self::check_id_string($user_id)) {
             $this->print_error("ユーザーIDに使用できない文字列が指定されました。");
             return FALSE;
@@ -149,27 +149,16 @@ class wakarana extends wakarana_common {
             return FALSE;
         }
         
-        if (!$this->config["allow_duplicate_email_address"] && (empty($email_address) || !empty($this->search_users_with_email_address($email_address)))) {
-            $this->print_error("使用できないメールアドレスです。現在の設定では同一メールアドレスでの復数アカウント作成は許可されていません。");
-            return FALSE;
-        }
-        
         $password_hash = self::hash_password($user_id, $password);
         $date_time = date("Y-m-d H:i:s");
         
         try {
-            $stmt = $this->db_obj->prepare('INSERT INTO "wakarana_users"("user_id", "password", "user_name", "email_address", "user_created", "last_updated", "last_access", "status", "totp_key") VALUES (\''.$user_id.'\', \''.$password_hash.'\', :user_name, :email_address, \''.$date_time.'\', \''.$date_time.'\', \''.$date_time.'\', '.intval($status).', NULL)');
+            $stmt = $this->db_obj->prepare('INSERT INTO "wakarana_users"("user_id", "password", "user_name", "user_created", "last_updated", "last_access", "status", "totp_key") VALUES (\''.$user_id.'\', \''.$password_hash.'\', :user_name, \''.$date_time.'\', \''.$date_time.'\', \''.$date_time.'\', '.intval($status).', NULL)');
             
             if (!empty($user_name)) {
                 $stmt->bindValue(":user_name", mb_substr($user_name, 0, 240), PDO::PARAM_STR);
             } else {
                 $stmt->bindValue(":user_name", NULL, PDO::PARAM_NULL);
-            }
-            
-            if (!empty($email_address)) {
-                $stmt->bindValue(":email_address", mb_substr($email_address, 0, 254), PDO::PARAM_STR);
-            } else {
-                $stmt->bindValue(":email_address", NULL, PDO::PARAM_NULL);
             }
             
             $stmt->execute();
@@ -416,7 +405,7 @@ class wakarana extends wakarana_common {
         try {
             $stmt = $this->db_obj->query('SELECT COUNT("ip_address") FROM "wakarana_authenticate_logs" WHERE "ip_address" = \''.$ip_address.'\' AND "authenticate_datetime" >= \''.date("Y-m-d H:i:s", time() - $this->config["minimum_authenticate_interval"]).'\''.$succeeded_q);
             
-            if ($stmt->fetch(PDO::FETCH_COLUMN) >= 1) {
+            if ($stmt->fetchColumn() >= 1) {
                 return FALSE;
             } else {
                 return TRUE;
@@ -508,7 +497,7 @@ class wakarana extends wakarana_common {
     
     function search_users_with_email_address ($email_address) {
         try {
-            $stmt = $this->db_obj->prepare('SELECT * FROM "wakarana_users" WHERE "email_address"=:email_address');
+            $stmt = $this->db_obj->prepare('SELECT "wakarana_users".* FROM "wakarana_users", "wakarana_user_email_addresses" WHERE "wakarana_user_email_addresses"."email_address" = :email_address AND "wakarana_users"."user_id" = "wakarana_user_email_addresses"."user_id"');
             
             $stmt->bindValue(":email_address", $email_address, PDO::PARAM_STR);
             
@@ -530,7 +519,7 @@ class wakarana extends wakarana_common {
     
     
     function create_email_address_verification_token ($email_address) {
-        if (!$this->config["allow_duplicate_email_address"] && !empty($this->search_users_with_email_address($email_address))) {
+        if (!$this->config["allow_nonunique_email_address"] && !empty($this->search_users_with_email_address($email_address))) {
             $this->print_error("使用できないメールアドレスです。現在の設定では同一メールアドレスでの復数アカウント作成は許可されていません。");
             return NULL;
         }
@@ -953,8 +942,33 @@ class wakarana_user {
     }
     
     
-    function get_email_address () {
-        return $this->user_info["email_address"];
+    function get_primary_email_address () {
+        try {
+            $stmt = $this->wakarana->db_obj->query('SELECT "email_address" FROM "wakarana_user_email_addresses" WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "is_primary" = TRUE');
+        } catch (PDOException $err) {
+            $this->wakarana->print_error("プライマリメールアドレスの取得に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        $primary_email_address = $stmt->fetchColumn();
+        
+        if (!empty($primary_email_address)) {
+            return $primary_email_address;
+        } else {
+            return NULL;
+        }
+    }
+    
+    
+    function get_email_addresses () {
+        try {
+            $stmt = $this->wakarana->db_obj->query('SELECT "email_address" FROM "wakarana_user_email_addresses" WHERE "user_id" = \''.$this->user_info["user_id"].'\' ORDER BY "email_address" ASC');
+        } catch (PDOException $err) {
+            $this->wakarana->print_error("メールアドレスの取得に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        return $stmt->fetchAll(PDO::FETCH_COLUMN);
     }
     
     
@@ -996,7 +1010,7 @@ class wakarana_user {
         $password_hash = wakarana::hash_password($this->user_info["user_id"], $password);
         
         try {
-            $this->wakarana->db_obj->exec('UPDATE "wakarana_users" SET "password"=\''.$password_hash.'\', "last_updated"=\''.date("Y-m-d H:i:s").'\'  WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
+            $this->wakarana->db_obj->exec('UPDATE "wakarana_users" SET "password" = \''.$password_hash.'\', "last_updated" = \''.date("Y-m-d H:i:s").'\'  WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
         } catch (PDOException $err) {
             $this->wakarana->print_error("パスワードの変更に失敗しました。".$err->getMessage());
             return FALSE;
@@ -1010,7 +1024,7 @@ class wakarana_user {
     
     function set_name ($user_name) {
         try {
-            $stmt = $this->wakarana->db_obj->prepare('UPDATE "wakarana_users" SET "user_name"= :user_name, "last_updated"=\''.date("Y-m-d H:i:s").'\' WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
+            $stmt = $this->wakarana->db_obj->prepare('UPDATE "wakarana_users" SET "user_name" = :user_name, "last_updated" = \''.date("Y-m-d H:i:s").'\' WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
             
             if (!empty($user_name)) {
                 $stmt->bindValue(":user_name", mb_substr($user_name, 0, 240), PDO::PARAM_STR);
@@ -1030,20 +1044,29 @@ class wakarana_user {
     }
     
     
-    function set_email_address ($email_address) {
-        if (!$this->wakarana->config["allow_duplicate_email_address"] && $email_address !== $this->user_info["email_address"] && (empty($email_address) || !empty($this->wakarana->search_users_with_email_address($email_address)))) {
+    function add_email_address ($email_address) {
+        $email_addresses_count = count($this->get_email_addresses());
+        
+        if ($email_addresses_count >= $this->wakarana->config["email_addresses_per_user"]) {
+            $this->wakarana->print_error("現在の設定ではこのアカウントにはこれ以上メールアドレスを追加できません。");
+            return FALSE;
+        }
+        
+        if (!$this->wakarana->config["allow_nonunique_email_address"] && !empty($this->wakarana->search_users_with_email_address($email_address))) {
             $this->wakarana->print_error("使用できないメールアドレスです。現在の設定では同一メールアドレスでの復数アカウント作成は許可されていません。");
             return FALSE;
         }
         
+        if ($email_addresses_count === 0) {
+            $is_primary_q = "TRUE";
+        } else {
+            $is_primary_q = "FALSE";
+        }
+        
         try {
-            $stmt = $this->wakarana->db_obj->prepare('UPDATE "wakarana_users" SET "email_address"= :email_address, "last_updated"=\''.date("Y-m-d H:i:s").'\' WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
+            $stmt = $this->wakarana->db_obj->prepare('INSERT INTO "wakarana_user_email_addresses"("user_id", "email_address", "is_primary") VALUES (\''.$this->user_info["user_id"].'\', :email_address, '.$is_primary_q.')');
             
-            if (!empty($email_address)) {
-                $stmt->bindValue(":email_address", mb_substr($email_address, 0, 254), PDO::PARAM_STR);
-            } else {
-                $stmt->bindValue(":email_address", NULL, PDO::PARAM_NULL);
-            }
+            $stmt->bindValue(":email_address", mb_substr($email_address, 0, 254), PDO::PARAM_STR);
             
             $stmt->execute();
         } catch (PDOException $err) {
@@ -1051,7 +1074,61 @@ class wakarana_user {
             return FALSE;
         }
         
-        $this->user_info["email_address"] = $email_address;
+        return TRUE;
+    }
+    
+    
+    function set_primary_email_address ($email_address) {
+        if (array_search($email_address, $this->get_email_addresses()) === FALSE) {
+            $this->wakarana->print_error("未登録のメールアドレスをプライマリメールアドレスに設定することはできません。");
+            return FALSE;
+        }
+        
+        try {
+            $this->wakarana->db_obj->exec('UPDATE "wakarana_user_email_addresses" SET "is_primary" = FALSE  WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
+            
+            $stmt = $this->wakarana->db_obj->prepare('UPDATE "wakarana_user_email_addresses" SET "is_primary" = TRUE WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "email_address" = :email_address');
+            
+            $stmt->bindValue(":email_address", mb_substr($email_address, 0, 254), PDO::PARAM_STR);
+            
+            $stmt->execute();
+        } catch (PDOException $err) {
+            $this->wakarana->print_error("プライマリメールアドレスの変更に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        return TRUE;
+    }
+    
+    
+    function remove_email_address ($email_address) {
+        if ($this->get_primary_email_address() === $email_address) {
+            $this->wakarana->print_error("この関数ではプライマリメールアドレスを削除することはできません。");
+            return FALSE;
+        }
+        
+        try {
+            $stmt = $this->wakarana->db_obj->prepare('DELETE FROM "wakarana_user_email_addresses" WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "email_address" = :email_address');
+            
+            $stmt->bindValue(":email_address", mb_substr($email_address, 0, 254), PDO::PARAM_STR);
+            
+            $stmt->execute();
+        } catch (PDOException $err) {
+            $this->wakarana->print_error("メールアドレスの削除に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        return TRUE;
+    }
+    
+    
+    function remove_all_email_addresses () {
+        try {
+            $this->wakarana->db_obj->exec('DELETE FROM "wakarana_user_email_addresses" WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
+        } catch (PDOException $err) {
+            $this->wakarana->print_error("ユーザーの全メールアドレスの削除に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
         
         return TRUE;
     }
@@ -1065,7 +1142,7 @@ class wakarana_user {
         }
         
         try {
-            $this->wakarana->db_obj->exec('UPDATE "wakarana_users" SET "status"=\''.$status.'\', "last_updated"=\''.date("Y-m-d H:i:s").'\'  WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
+            $this->wakarana->db_obj->exec('UPDATE "wakarana_users" SET "status" = \''.$status.'\', "last_updated" = \''.date("Y-m-d H:i:s").'\'  WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
         } catch (PDOException $err) {
             $this->wakarana->print_error("ユーザーアカウントの状態の変更に失敗しました。".$err->getMessage());
             return FALSE;
@@ -1118,7 +1195,7 @@ class wakarana_user {
     
     function get_roles () {
         try {
-            $stmt = $this->wakarana->db_obj->query('SELECT "role_name" FROM "wakarana_user_roles" WHERE "user_id"=\''.$this->user_info["user_id"].'\' ORDER BY "role_name" ASC');
+            $stmt = $this->wakarana->db_obj->query('SELECT "role_name" FROM "wakarana_user_roles" WHERE "user_id" = \''.$this->user_info["user_id"].'\' ORDER BY "role_name" ASC');
         } catch (PDOException $err) {
             $this->wakarana->print_error("ロールの取得に失敗しました。".$err->getMessage());
             return FALSE;
@@ -1191,14 +1268,14 @@ class wakarana_user {
         }
         
         try {
-            $stmt_1 = $this->wakarana->db_obj->query('SELECT MAX("wakarana_permission_values"."permission_value") FROM "wakarana_user_roles", "wakarana_permission_values" WHERE (("wakarana_user_roles"."user_id"=\''.$this->user_info["user_id"].'\' AND "wakarana_user_roles"."role_name" = "wakarana_permission_values"."role_name") OR "wakarana_permission_values"."role_name" = \''.WAKARANA_BASE_ROLE.'\') AND "permission_name" = \''.strtolower($permission_name).'\'');
-            $permission_value = $stmt_1->fetch(PDO::FETCH_COLUMN);
+            $stmt_1 = $this->wakarana->db_obj->query('SELECT MAX("wakarana_permission_values"."permission_value") FROM "wakarana_user_roles", "wakarana_permission_values" WHERE (("wakarana_user_roles"."user_id" = \''.$this->user_info["user_id"].'\' AND "wakarana_user_roles"."role_name" = "wakarana_permission_values"."role_name") OR "wakarana_permission_values"."role_name" = \''.WAKARANA_BASE_ROLE.'\') AND "permission_name" = \''.strtolower($permission_name).'\'');
+            $permission_value = $stmt_1->fetchColumn();
             
             if (!empty($permission_value)) {
                 return $permission_value;
             } else {
                 $stmt_2 = $this->wakarana->db_obj->query('SELECT COUNT("role_name") FROM "wakarana_user_roles" WHERE "user_id"=\''.$this->user_info["user_id"].'\' AND "role_name" = \''.WAKARANA_ADMIN_ROLE.'\'');
-                if ($stmt_2->fetch(PDO::FETCH_COLUMN)) {
+                if ($stmt_2->fetchColumn()) {
                     return -1;
                 } else {
                     return 0;
@@ -1242,7 +1319,7 @@ class wakarana_user {
         try {
             $stmt = $this->wakarana->db_obj->query('SELECT COUNT("user_id") FROM "wakarana_authenticate_logs" WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "authenticate_datetime" >= \''.date("Y-m-d H:i:s", time() - $this->wakarana->config["minimum_authenticate_interval"]).'\''.$succeeded_q);
             
-            if ($stmt->fetch(PDO::FETCH_COLUMN) >= 1) {
+            if ($stmt->fetchColumn() >= 1) {
                 return FALSE;
             } else {
                 return TRUE;
@@ -1290,7 +1367,7 @@ class wakarana_user {
         $last_access = date("Y-m-d H:i:s");
         
         try {
-            $this->wakarana->db_obj->exec('UPDATE "wakarana_users" SET "last_access"=\''.$last_access.'\'  WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
+            $this->wakarana->db_obj->exec('UPDATE "wakarana_users" SET "last_access" = \''.$last_access.'\'  WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
         } catch (PDOException $err) {
             $this->wakarana->print_error("ユーザーの最終アクセス日時の更新に失敗しました。".$err->getMessage());
             return FALSE;
@@ -1406,7 +1483,7 @@ class wakarana_user {
     
     
     function create_email_address_verification_token ($email_address) {
-        if (!$this->wakarana->config["allow_duplicate_email_address"] && !empty($this->wakarana->search_users_with_email_address($email_address))) {
+        if (!$this->wakarana->config["allow_nonunique_email_address"] && !empty($this->wakarana->search_users_with_email_address($email_address))) {
             $this->wakarana->print_error("使用できないメールアドレスです。現在の設定では同一メールアドレスでの復数アカウント作成は許可されていません。");
             return NULL;
         }
@@ -1418,7 +1495,7 @@ class wakarana_user {
         $token_created = date("Y-m-d H:i:s");
         
         try {
-            $stmt = $this->wakarana->db_obj->prepare('INSERT INTO "wakarana_email_address_verification"("token", "user_id", "email_address", "token_created") VALUES (\''.$token.'\', \''.$this->user_info["user_id"].'\', :email_address, \''.$token_created.'\') ON CONFLICT("user_id") DO UPDATE SET "token" = \''.$token.'\', "email_address" = :email_address_2, "token_created"=\''.$token_created.'\'');
+            $stmt = $this->wakarana->db_obj->prepare('INSERT INTO "wakarana_email_address_verification"("token", "user_id", "email_address", "token_created") VALUES (\''.$token.'\', \''.$this->user_info["user_id"].'\', :email_address, \''.$token_created.'\') ON CONFLICT("user_id") DO UPDATE SET "token" = \''.$token.'\', "email_address" = :email_address_2, "token_created" = \''.$token_created.'\'');
             
             $stmt->bindValue(":email_address", $email_address, PDO::PARAM_STR);
             $stmt->bindValue(":email_address_2", $email_address, PDO::PARAM_STR);
@@ -1465,9 +1542,9 @@ class wakarana_user {
     
     function delete_password_reset_token () {
         try {
-            $this->wakarana->db_obj->exec('DELETE FROM "wakarana_email_address_verification" WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
+            $this->wakarana->db_obj->exec('DELETE FROM "wakarana_password_reset_tokens" WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
         } catch (PDOException $err) {
-            $this->wakarana->print_error("ユーザーのメールアドレス確認用トークンの削除に失敗しました。".$err->getMessage());
+            $this->wakarana->print_error("ユーザーのパスワード再設定用トークンの削除に失敗しました。".$err->getMessage());
             return FALSE;
         }
         

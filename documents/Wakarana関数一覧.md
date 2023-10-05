@@ -690,8 +690,15 @@ wakarana_userインスタンスはこの関数以外の方法(unsetや変数の�
 
 #### wakarana_user::remove_email_address($email_address)
 ユーザーのメールアドレスを削除する。  
+この関数ではプライマリメールアドレスは削除できない。  
   
 **$email_address** ： 削除するメールアドレス  
+  
+**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
+#### wakarana_user::remove_all_email_addresses()
+プライマリメールアドレスを含むユーザーのメールアドレスを全て削除する。  
   
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
