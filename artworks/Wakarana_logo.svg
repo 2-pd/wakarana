@@ -1,0 +1,279 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="1500"
+   height="1000"
+   viewBox="0 0 396.875 264.58335"
+   version="1.1"
+   id="svg8"
+   sodipodi:docname="Wakarana_logo.svg"
+   inkscape:version="1.3 (0e150ed6c4, 2023-07-21)"
+   inkscape:export-filename="Wakarana_logo.webp"
+   inkscape:export-xdpi="153.60001"
+   inkscape:export-ydpi="153.60001"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <defs
+     id="defs2">
+    <linearGradient
+       id="linearGradient1"
+       inkscape:collect="always">
+      <stop
+         style="stop-color:#ff6666;stop-opacity:1;"
+         offset="0"
+         id="stop1" />
+      <stop
+         style="stop-color:#ffaa44;stop-opacity:1;"
+         offset="0.25"
+         id="stop5" />
+      <stop
+         style="stop-color:#ffdd55;stop-opacity:1;"
+         offset="0.5"
+         id="stop3" />
+      <stop
+         style="stop-color:#55dd55;stop-opacity:1;"
+         offset="0.75"
+         id="stop4" />
+      <stop
+         style="stop-color:#77ddff;stop-opacity:1;"
+         offset="1"
+         id="stop2" />
+    </linearGradient>
+    <filter
+       style="color-interpolation-filters:sRGB;"
+       inkscape:label="Drop Shadow"
+       id="filter13"
+       x="-0.025916759"
+       y="-0.045354329"
+       width="1.0545332"
+       height="1.1001575">
+      <feFlood
+         result="flood"
+         in="SourceGraphic"
+         flood-opacity="0.40000000000000002"
+         flood-color="rgb(0,0,0)"
+         id="feFlood11" />
+      <feGaussianBlur
+         result="blur"
+         in="SourceGraphic"
+         stdDeviation="4.000000"
+         id="feGaussianBlur11" />
+      <feOffset
+         result="offset"
+         in="blur"
+         dx="1.000000"
+         dy="2.000000"
+         id="feOffset11" />
+      <feComposite
+         result="comp1"
+         operator="in"
+         in="flood"
+         in2="offset"
+         id="feComposite12" />
+      <feComposite
+         result="comp2"
+         operator="over"
+         in="SourceGraphic"
+         in2="comp1"
+         id="feComposite13" />
+    </filter>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath22">
+      <path
+         id="path22"
+         style="display:inline;fill:#ffffff;fill-opacity:1;stroke-width:2.64583;stroke-linecap:round;stroke-linejoin:round;paint-order:stroke fill markers"
+         d="M 13.229167,26.458334 V 238.12501 H 357.18751 l 26.45834,-26.45834 V 26.458334 Z" />
+    </clipPath>
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient1"
+       id="linearGradient2"
+       x1="179.91666"
+       y1="148.16666"
+       x2="353.05997"
+       y2="148.16666"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="translate(0,-2.6458434)" />
+  </defs>
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="0.49497475"
+     inkscape:cx="723.26922"
+     inkscape:cy="565.68542"
+     inkscape:document-units="px"
+     inkscape:current-layer="layer3"
+     inkscape:document-rotation="0"
+     showgrid="false"
+     units="px"
+     fit-margin-top="0"
+     fit-margin-left="0"
+     fit-margin-right="0"
+     fit-margin-bottom="0"
+     inkscape:window-width="1920"
+     inkscape:window-height="1008"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:showpageshadow="2"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     showguides="true"
+     inkscape:lockguides="true">
+    <sodipodi:guide
+       position="179.91666,150.81251"
+       orientation="1,0"
+       id="guide5"
+       inkscape:locked="true" />
+  </sodipodi:namedview>
+  <metadata
+     id="metadata5">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <cc:license
+           rdf:resource="http://creativecommons.org/publicdomain/zero/1.0/" />
+      </cc:Work>
+      <cc:License
+         rdf:about="http://creativecommons.org/publicdomain/zero/1.0/">
+        <cc:permits
+           rdf:resource="http://creativecommons.org/ns#Reproduction" />
+        <cc:permits
+           rdf:resource="http://creativecommons.org/ns#Distribution" />
+        <cc:permits
+           rdf:resource="http://creativecommons.org/ns#DerivativeWorks" />
+      </cc:License>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:groupmode="layer"
+     id="layer3"
+     inkscape:label="背景">
+    <path
+       id="rect11-6"
+       style="display:inline;fill:#ffffff;fill-opacity:1;stroke-width:2.64583;stroke-linecap:round;stroke-linejoin:round;paint-order:stroke fill markers"
+       d="M 13.229167,26.458334 V 238.12501 H 357.18751 l 26.45834,-26.45834 V 26.458334 Z" />
+    <rect
+       style="fill:#ffaa44;fill-opacity:1;stroke-width:2.64583;stroke-linecap:round;stroke-linejoin:round;paint-order:stroke fill markers"
+       id="rect5-3"
+       width="13.229167"
+       height="13.229167"
+       x="92.604164"
+       y="92.604164" />
+    <rect
+       style="fill:#ffaa44;fill-opacity:1;stroke-width:2.64583;stroke-linecap:round;stroke-linejoin:round;paint-order:stroke fill markers"
+       id="rect5-3-2"
+       width="13.229167"
+       height="13.229167"
+       x="-119.06251"
+       y="66.145844"
+       transform="scale(-1,1)" />
+    <rect
+       style="fill:#ffaa44;fill-opacity:1;stroke-width:2.64583;stroke-linecap:round;stroke-linejoin:round;paint-order:stroke fill markers"
+       id="rect5-3-6"
+       width="13.229167"
+       height="13.229167"
+       x="-92.604164"
+       y="52.916668"
+       transform="scale(-1,1)" />
+    <rect
+       style="fill:#ff6666;fill-opacity:1;stroke-width:2.64583;stroke-linecap:round;stroke-linejoin:round;paint-order:stroke fill markers"
+       id="rect5"
+       width="13.229167"
+       height="13.229167"
+       x="-66.145836"
+       y="92.604172"
+       transform="scale(-1,1)" />
+    <rect
+       style="fill:#ff6666;fill-opacity:1;stroke-width:2.64583;stroke-linecap:round;stroke-linejoin:round;paint-order:stroke fill markers"
+       id="rect5-35"
+       width="13.229167"
+       height="13.229167"
+       x="-79.375"
+       y="119.06249"
+       transform="scale(-1,1)" />
+    <rect
+       style="fill:#77ddff;fill-opacity:1;stroke-width:2.64583;stroke-linecap:round;stroke-linejoin:round;paint-order:stroke fill markers"
+       id="rect5-5"
+       width="13.229167"
+       height="13.229167"
+       x="79.374992"
+       y="185.20836" />
+    <rect
+       style="fill:#77ddff;fill-opacity:1;stroke-width:2.64583;stroke-linecap:round;stroke-linejoin:round;paint-order:stroke fill markers"
+       id="rect5-5-7"
+       width="13.229167"
+       height="13.229167"
+       x="105.83334"
+       y="198.43753" />
+    <rect
+       style="fill:#77ddff;fill-opacity:1;stroke-width:2.64583;stroke-linecap:round;stroke-linejoin:round;paint-order:stroke fill markers"
+       id="rect5-5-2"
+       width="13.229167"
+       height="13.229167"
+       x="105.83334"
+       y="171.97919" />
+    <rect
+       style="fill:#55dd55;fill-opacity:1;stroke-width:2.64583;stroke-linecap:round;stroke-linejoin:round;paint-order:stroke fill markers"
+       id="rect5-7"
+       width="13.229167"
+       height="13.229167"
+       x="105.83334"
+       y="145.52084" />
+    <rect
+       style="fill:#ffdd55;fill-opacity:1;stroke-width:2.64583;stroke-linecap:round;stroke-linejoin:round;paint-order:stroke fill markers"
+       id="rect5-6"
+       width="13.229167"
+       height="13.229167"
+       x="-132.29164"
+       y="119.06249"
+       transform="scale(-1,1)" />
+    <rect
+       style="fill:#ffdd55;fill-opacity:1;stroke-width:2.64583;stroke-linecap:round;stroke-linejoin:round;paint-order:stroke fill markers"
+       id="rect5-6-9"
+       width="13.229167"
+       height="13.229167"
+       x="-158.75002"
+       y="105.83334"
+       transform="scale(-1,1)" />
+  </g>
+  <g
+     inkscape:label="ベース"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <path
+       id="rect11"
+       style="display:inline;fill:#222222;fill-opacity:1;stroke-width:2.64583;stroke-linecap:round;stroke-linejoin:round;paint-order:stroke fill markers;filter:url(#filter13)"
+       d="M 13.229167 26.458334 L 13.229167 238.12501 L 357.18751 238.12501 L 383.64585 211.66667 L 383.64585 26.458334 L 13.229167 26.458334 z M 99.218753 52.916668 L 125.67709 79.375002 L 99.218753 105.83334 L 72.760419 79.375002 L 99.218753 52.916668 z M 64.822919 87.312503 L 87.973961 110.46355 L 64.822919 133.61459 L 41.671876 110.46355 L 64.822919 87.312503 z M 137.58334 97.234378 L 154.1198 113.77084 L 137.58334 130.3073 L 121.04688 113.77084 L 137.58334 97.234378 z M 117.73959 132.29167 L 130.96875 145.52084 L 117.73959 158.75 L 104.51042 145.52084 L 117.73959 132.29167 z M 99.218753 171.97917 L 119.0625 191.82292 L 99.218753 211.66667 L 79.375002 191.82292 L 99.218753 171.97917 z " />
+  </g>
+  <g
+     inkscape:groupmode="layer"
+     id="layer2"
+     inkscape:label="ロゴ"
+     style="display:inline">
+    <text
+       xml:space="preserve"
+       style="font-weight:300;font-size:42.3333px;line-height:1.25;font-family:'キカカナ23';-inkscape-font-specification:'キカカナ23 Light';fill:#ffffff;fill-opacity:1;stroke-width:0.264583"
+       x="177.8"
+       y="145.52081"
+       id="text1"><tspan
+         sodipodi:role="line"
+         id="tspan1"
+         style="font-style:normal;font-variant:normal;font-weight:300;font-stretch:normal;font-size:42.3333px;font-family:'キカカナ23';-inkscape-font-specification:'キカカナ23 Light';fill:#ffffff;fill-opacity:1;stroke-width:0.264583"
+         x="177.8"
+         y="145.52081">Wakarana</tspan></text>
+  </g>
+</svg>
