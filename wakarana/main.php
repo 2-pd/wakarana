@@ -1053,7 +1053,12 @@ class wakarana_user {
             return FALSE;
         }
         
-        return $stmt->fetchColumn();
+        $custom_field_value = $stmt->fetchColumn();
+        if ($custom_field_value !== FALSE) {
+            return $custom_field_value;
+        } else {
+            return NULL;
+        }
     }
     
     
