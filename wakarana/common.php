@@ -3,7 +3,7 @@
  *
  *  Wakarana
 */
-    define("WAKARANA_VERSION", "23.09-2");
+    define("WAKARANA_VERSION", "23.10-1");
 /*
  *_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  *
@@ -21,6 +21,7 @@ class wakarana_common {
     
     protected $config;
     protected $db_obj;
+    protected $custom_fields;
     
     private $last_error_text;
     
@@ -38,6 +39,17 @@ class wakarana_common {
         if (empty($this->config)) {
             $this->print_error("設定ファイル ".$config_path." の読み込みに失敗しました。");
         }
+        
+        $custom_fields_path = $this->base_path."/wakarana_custom_fields.json";
+        if (file_exists($custom_fields_path)) {
+            $this->custom_fields = json_decode(file_get_contents($custom_fields_path), TRUE);
+            
+            if (is_null($this->custom_fields)) {
+                $this->print_error("カスタムフィールド設定ファイル ".$custom_fields_path." は破損しています。");
+            }
+        } else {
+            $this->print_error("カスタムフィールド設定ファイル ".$custom_fields_path." が存在しません。");
+        }
     }
     
     
@@ -49,6 +61,17 @@ class wakarana_common {
                 return $this->config;
             case "db_obj":
                 return $this->db_obj;
+            case "custom_fields":
+                return $this->custom_fields;
+        }
+    }
+    
+    
+    static function check_id_string ($id, $length = 60) {
+        if (gettype($id) === "string" && preg_match("/^[0-9A-Za-z_]{1,".$length."}$/u", $id)) {
+            return TRUE;
+        } else {
+            return FALSE;
         }
     }
     
@@ -99,6 +122,38 @@ class wakarana_common {
     function get_config_value ($key) {
         if (isset($this->config[$key])) {
             return $this->config[$key];
+        } else {
+            return NULL;
+        }
+    }
+    
+    
+    function get_custom_field_names () {
+        return array_keys($this->custom_fields);
+    }
+    
+    
+    function get_custom_field_maximum_length ($custom_field_name) {
+        if (isset($this->custom_fields[$custom_field_name])) {
+            return $this->custom_fields[$custom_field_name]["maximum_length"];
+        } else {
+            return NULL;
+        }
+    }
+    
+    
+    function get_custom_field_records_per_user ($custom_field_name) {
+        if (isset($this->custom_fields[$custom_field_name])) {
+            return $this->custom_fields[$custom_field_name]["records_per_user"];
+        } else {
+            return NULL;
+        }
+    }
+    
+    
+    function get_custom_field_allow_nonunique_value ($custom_field_name) {
+        if (isset($this->custom_fields[$custom_field_name])) {
+            return $this->custom_fields[$custom_field_name]["allow_nonunique_value"];
         } else {
             return NULL;
         }

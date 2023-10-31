@@ -32,6 +32,16 @@ wakaranaクラスとwakarana_configクラスの親クラス。このクラスの
 **$name** : クラス内変数名。
 
 
+#### ☆ wakarana_common::check_id_string($id, $length=60)
+文字列に、ユーザーIDやロール名などの識別名として使用できない文字が含まれないかどうかを検査する。  
+☆staticメソッド。  
+  
+**$id** : 検査する文字列  
+**$length** : 文字列の長さの上限。検査する文字列がこれより長い場合は使用できない文字列とみなす。   
+  
+**返り値** ： 識別名として使用可能な文字列ならTRUEを、それ以外の場合はFALSEを返す。
+
+
 #### ◆ wakarana_common::connect_db()
 wakarana_config.iniの設定に基づき、データベースに接続する。  
 ◆クラス内呼び出し専用であり、wakaranaクラスとwakarana_configクラスはこの関数を自動的に実行する。  
@@ -67,9 +77,39 @@ wakarana_config.iniの変数名一覧を取得する。
 #### wakarana_common::get_config_value($key)
 wakarana_config.iniの設定値を取得する。  
   
-**$key** : wakarana_config.iniの変数名    
+**$key** : wakarana_config.iniの変数名  
   
 **返り値** ： 指定した変数名が存在すればその設定値、なければNULLを返す。
+
+
+#### wakarana_common::get_custom_field_names()
+ユーザーデータに追加可能なカスタムフィールド名一覧を取得する。  
+  
+**返り値** ： wakarana_custom_fields.jsonのキー一覧を配列で返す。
+
+
+#### wakarana_common::get_custom_field_maximum_length($custom_field_name)
+指定したカスタムフィールドに保存可能な最大文字数を取得する。  
+  
+**$custom_field_name** : カスタムフィールド名  
+  
+**返り値** ： カスタムフィールド名がwakarana_custom_fields.jsonに存在すればその最大文字数、存在しなければNULLを返す。
+
+
+#### wakarana_common::get_custom_field_records_per_user($custom_field_name)
+指定したカスタムフィールドのユーザーあたりの上限件数を取得する。  
+  
+**$custom_field_name** : カスタムフィールド名  
+  
+**返り値** ： カスタムフィールド名がwakarana_custom_fields.jsonに存在すればその上限件数、存在しなければNULLを返す。
+
+
+#### wakarana_common::get_custom_field_allow_nonunique_value($custom_field_name)
+指定したカスタムフィールドで異なるユーザーが同一の値を持つことができるかを返す。  
+  
+**$custom_field_name** : カスタムフィールド名  
+  
+**返り値** ： カスタムフィールド名がwakarana_custom_fields.jsonに存在する場合、一意でない値を持てるならTRUE、持てないならFALSEを返す。カスタムフィールド名が存在しなければNULLを返す。
 
 
 
@@ -115,16 +155,6 @@ wakarana_common::__constructとwakarana_common::connect_dbを順に実行する�
 **$base_dir** : wakarana_config.iniのあるフォルダのパス。省略時はcommon.phpのあるフォルダを使用する。
 
 
-#### ☆ wakarana::check_id_string($id, $length=60)
-文字列にユーザーIDやロール名、権限名などの識別名として使用できない文字が含まれないかどうかを検査する。  
-☆staticメソッド。  
-  
-**$id** : 検査する文字列  
-**$length** : 文字列の長さの上限。検査する文字列がこれより長い場合は使用できない文字列とみなす。   
-  
-**返り値** ： 識別名として使用可能な文字列ならTRUEを、それ以外の場合はFALSEを返す。
-
-
 #### ☆ wakarana::hash_password($user_id, $password)
 パスワードのハッシュ値を生成する。  
 ☆staticメソッド。  
@@ -149,7 +179,7 @@ wakarana_common::__constructとwakarana_common::connect_dbを順に実行する�
 Wakarana_userインスタンスを生成する。  
 ◆クラス内呼び出し専用。  
   
-**$user_info** : ユーザー情報("user_id"(ユーザーID)、"user_name"(ユーザー名)、"password"(ハッシュ化されたパスワード)、"email_address"(メールアドレス)、"user_created"(アカウント作成日時)、"last_updated"(アカウント情報更新日時)、"last_access"(最終アクセス日時)、"status"(アカウントが使用可能か停止されているか)、"totp_key"(TOTPワンタイムパスワード生成キー))を格納した連想配列。
+**$user_info** : ユーザー情報("user_id"(ユーザーID)、"user_name"(ユーザー名)、"password"(ハッシュ化されたパスワード)、"user_created"(アカウント作成日時)、"last_updated"(アカウント情報更新日時)、"last_access"(最終アクセス日時)、"status"(アカウントが使用可能か停止されているか)、"totp_key"(TOTPワンタイムパスワード生成キー))を格納した連想配列。
 
 
 #### wakarana::get_user($user_id)
@@ -171,14 +201,13 @@ Wakarana_userインスタンスを生成する。
 **返り値** ： 成功した場合は、wakarana_userインスタンスを配列で返す。失敗した場合はFALSEを返す。
 
 
-#### wakarana::add_user($user_id, $password, $user_name="", $email_address=NULL, $status=WAKARANA_STATUS_NORMAL)
+#### wakarana::add_user($user_id, $password, $user_name="", $status=WAKARANA_STATUS_NORMAL)
 新しいユーザーを追加する。  
 既に存在するユーザーIDを指定した場合はエラーとなる。  
   
 **$user_id** ： 追加するユーザーのID。半角英数字及びアンダーバーが使用可能。  
 **$password** ： 追加するユーザーのパスワード  
 **$user_name** ： 追加するユーザーのハンドルネーム  
-**$email_address** ： 追加するユーザーのメールアドレス。省略可。  
 **$status** ： WAKARANA_STATUS_DISABLEを指定すると一時的に使用できないユーザーとして作成することができる。  
   
 **返り値** ： 成功した場合は追加したユーザーのwakarana_userインスタンスを返す。失敗した場合はFALSEを返す。
@@ -311,6 +340,32 @@ Wakarana_userインスタンスを生成する。
 **返り値** ： ログインが完了した場合はwakarana_userインスタンス、ユーザーアカウントが停止中の場合はその状態値(WAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_EMAIL_UNVERIFIED)、ユーザーIDが2要素認証の対象ユーザーでTOTPコードがNULLだった場合は仮トークン、それ以外の場合はFALSEを返す。
 
 
+#### wakarana::authenticate_with_email_address($email_address, $password, $totp_pin=NULL)
+ユーザーIDの代わりにメールアドレスを使用し、パスワードとTOTPコード(2要素認証を使用する場合)を照合する。トークンの生成と送信は行わない。  
+内部的にログイン試行ログの参照と登録は実施する。  
+  
+wakarana_config.iniで同じメールアドレスを複数アカウントに使用できるよう設定している場合、この関数は使用できない。  
+  
+**$email_address** ： メールアドレス  
+**$password** ： パスワード  
+**$totp_pin** ： 6桁のTOTPコード。2要素認証を使用しない場合と2要素認証の入力画面を分ける場合は省略。  
+  
+**返り値** ： 認証された場合はユーザーのwakarana_userインスタンス、ユーザーアカウントが停止中の場合はその状態値(WAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_EMAIL_UNVERIFIED)、ユーザーIDが2段階認証の対象ユーザーでTOTPコードがNULLだった場合は仮トークン、それ以外の場合はFALSEを返す。
+
+
+#### wakarana::login_with_email_address($email_address, $password, $totp_pin=NULL)
+ユーザーIDの代わりにメールアドレスを使用し、パスワードとTOTPコード(2要素認証を使用する場合)を照合、正しければログイントークンを生成してクライアント端末に送信する。  
+  
+この関数はHTTPヘッダーの出力を伴うため、この関数より前にHTTPヘッダー以外の何らかの文字が出力されていた場合はエラーとなる。  
+また、wakarana_config.iniで同じメールアドレスを複数アカウントに使用できるよう設定している場合、この関数は使用できない。  
+  
+**$email_address** ： メールアドレス  
+**$password** ： パスワード  
+**$totp_pin** ： 6桁のTOTPコード。2要素認証を使用しない場合と2要素認証の入力画面を分ける場合は省略。  
+  
+**返り値** ： ログインが完了した場合はwakarana_userインスタンス、ユーザーアカウントが停止中の場合はその状態値(WAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_EMAIL_UNVERIFIED)、ユーザーIDが2要素認証の対象ユーザーでTOTPコードがNULLだった場合は仮トークン、それ以外の場合はFALSEを返す。
+
+
 #### wakarana::delete_login_tokens($expire=-1)
 指定した経過時間より前に生成されたログイントークンを無効化する。  
   
@@ -370,6 +425,15 @@ Wakarana_userインスタンスを生成する。
 **$expire** ： 経過時間の秒数。-1を指定した場合はwakarana_config.iniで指定したパスワードリセット用トークンの有効秒数が代わりに使用される。  
   
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
+#### wakarana::search_users_with_custom_field($custom_field_name, $custom_field_value)
+カスタムフィールドの値からユーザーを逆引きする。  
+  
+**$custom_field_name** ： カスタムフィールド名  
+**$custom_field_value** ： カスタムフィールド値の文字列  
+  
+**返り値** ： 指定した値と一致するカスタムフィールドの値を持つユーザーがいれば、該当ユーザーらのwakarana_userインスタンスの配列、そうでない場合は空配列、エラーの場合は-1を返す。
 
 
 #### wakarana::delete_2sv_tokens($expire=-1)
@@ -500,7 +564,7 @@ TOTP生成鍵と現在時刻からワンタイムコードを生成する。
 コンストラクタ。wakarana::get_user実行時に呼び出されるものであり、直接インスタンス化するべきではない。  
   
 **$wakarana** : 呼び出し元のwakaranaインスタンス  
-**$user_info** : ユーザー情報("user_id"(ユーザーID)、"user_name"(ユーザー名)、"password"(ハッシュ化されたパスワード)、"email_address"(メールアドレス)、"user_created"(アカウント作成日時)、"last_updated"(アカウント情報更新日時)、"last_access"(最終アクセス日時)、"status"(アカウントが使用可能か停止されているか)、"totp_key"(TOTPワンタイムパスワード生成キー))を格納した連想配列。
+**$user_info** : ユーザー情報("user_id"(ユーザーID)、"user_name"(ユーザー名)、"password"(ハッシュ化されたパスワード)、"user_created"(アカウント作成日時)、"last_updated"(アカウント情報更新日時)、"last_access"(最終アクセス日時)、"status"(アカウントが使用可能か停止されているか)、"totp_key"(TOTPワンタイムパスワード生成キー))を格納した連想配列。
 
 
 #### ☆ wakarana_user::free($wakarana_user)
@@ -532,10 +596,16 @@ wakarana_userインスタンスはこの関数以外の方法(unsetや変数の�
 **返り値** ： 正しいパスワードだった場合はTRUE、それ以外の場合はFALSEを返す。
 
 
-#### wakarana_user::get_email_address()
-ユーザーのメールアドレスを取得する。  
+#### wakarana_user::get_primary_email_address()
+ユーザーのメインメールアドレスを取得する。  
   
-**返り値** ： メールアドレスが登録されていればメールアドレスを、なければNULLを返す。
+**返り値** ： メールアドレスが登録されていればメインメールアドレスを、なければNULLを返す。失敗した場合はFALSEを返す。
+
+
+#### wakarana_user::get_email_addresses()
+ユーザーのメールアドレス一覧を配列で取得する。  
+  
+**返り値** ： メールアドレスが登録されていればメールアドレスがアルファベット順に格納された配列を、なければ空配列を返す。失敗した場合はFALSEを返す。
 
 
 #### wakarana_user::get_created()
@@ -568,6 +638,22 @@ wakarana_userインスタンスはこの関数以外の方法(unsetや変数の�
 **返り値** ： 2要素認証が有効ならばTRUE、そうでない場合はFALSEを返す。
 
 
+#### wakarana_user::get_value($custom_field_name)
+ユーザーの指定したカスタムフィールドの単一の値を取得する。  
+  
+**$custom_field_name** ： カスタムフィールド名。2個以上の値の登録が可能なカスタムフィールドは指定できない。  
+  
+**返り値** ： 成功した場合はカスタムフィールドの値、失敗した場合はFALSEを返す。値が存在しない場合はNULLとみなす。
+
+
+#### wakarana_user::get_values($custom_field_name)
+ユーザーの指定したカスタムフィールドの値を配列で取得する。  
+  
+**$custom_field_name** ： カスタムフィールド名  
+  
+**返り値** ： カスタムフィールドの値を配列で返す。値が存在しない場合は空配列を、失敗した場合はFALSEを返す。
+
+
 #### wakarana_user::set_password($password)
 ユーザーのパスワードを変更する。  
   
@@ -584,10 +670,35 @@ wakarana_userインスタンスはこの関数以外の方法(unsetや変数の�
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
-#### wakarana_user::set_email_address($email_address)
-ユーザーのメールアドレスを変更する。  
+#### wakarana_user::add_email_address($email_address)
+ユーザーのメールアドレスを追加する。  
+ユーザーに対して最初に登録されたメールアドレスは自動的にメインメールアドレスとなる。  
   
-**$email_address** ： メールアドレス  
+**$email_address** ： 新しいメールアドレス  
+  
+**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
+#### wakarana_user::set_primary_email_address($email_address)
+登録済みのメールアドレスをユーザーのメインメールアドレスとして設定する。  
+新たなメインメールアドレスが設定されることにより、元のメインメールアドレスはメインメールアドレスではなくなる。  
+  
+**$email_address** ： 登録済みのメールアドレス  
+  
+**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
+#### wakarana_user::remove_email_address($email_address)
+ユーザーのメールアドレスを削除する。  
+この関数ではプライマリメールアドレスは削除できない。  
+  
+**$email_address** ： 削除するメールアドレス  
+  
+**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
+#### wakarana_user::remove_all_email_addresses()
+プライマリメールアドレスを含むユーザーのメールアドレスを全て削除する。  
   
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
@@ -615,10 +726,56 @@ wakarana_userインスタンスはこの関数以外の方法(unsetや変数の�
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
+#### wakarana_user::set_value($custom_field_name, $custom_field_value)
+ユーザーの指定したカスタムフィールドの単一の値を設定する。  
+  
+**$custom_field_name** ： カスタムフィールド名。2個以上の値の登録が可能なカスタムフィールドは指定できない。  
+**$custom_field_value** ： 値として保存する文字列    
+  
+**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
+#### wakarana_user::add_value($custom_field_name, $custom_field_value, $value_number=-1)
+ユーザーの指定したカスタムフィールドに値を追加する。  
+同一のユーザーに対して同じ値を複数追加することはできない。
+  
+**$custom_field_name** ： カスタムフィールド名  
+**$custom_field_value** ： 値として保存する文字列   
+**$value_number** ： 並び順番号。既に値が存在する並び順番号を指定した場合、それより後の値の並び順番号を後ろにずらして新しい値を挿入する。既存の項目数+1よりも大きい値は使用できない。  
+  
+**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
+#### wakarana_user::update_value($custom_field_name, $value_number, $custom_field_value)
+ユーザーの指定したカスタムフィールドにおいて既に存在している値を上書きする。  
+  
+**$custom_field_name** ： カスタムフィールド名  
+**$value_number** ： 上書きする値の並び順番号  
+**$custom_field_value** ： 値として保存する文字列  
+  
+**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
+#### wakarana_user::remove_value($custom_field_name, $number_or_value=NULL)
+ユーザーの指定したカスタムフィールドの値を削除する。  
+削除された値より後の値の並び順番号は1つ前にずれる。  
+  
+**$custom_field_name** ： カスタムフィールド名  
+**$number_or_value** ： 削除対象の並び順番号(1から順に付番されている整数値)または削除対象の値(文字列)。NULLを指定した場合はユーザーのそのカスタムフィールド値を全て削除する。  
+  
+**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
+#### wakarana_user::remove_all_values()
+ユーザーの全てのカスタムフィールドの値を削除する。  
+  
+**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
 #### wakarana_user::get_roles()
 ユーザーに割り当てられたロール名の一覧を取得する。ただし、ベースロールは取得しない。  
   
-**返り値** ： ロール名をアルファベット順に格納した配列を返す。ロールが存在しない場合は空配列を返す。
+**返り値** ： ロール名をアルファベット順に格納した配列を返す。ロールが存在しない場合は空配列を返す。失敗した場合はFALSEを返す。
 
 
 #### wakarana_user::add_role($role_name)
@@ -724,6 +881,16 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
 ユーザーのログイントークンを全て削除する。  
   
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。  
+
+
+#### wakarana_user::authenticate($password, $totp_pin=NULL)
+ユーザーに対するパスワードとTOTPコード(2要素認証を使用する場合)の照合を行う。  
+トークンの生成と送信は行わないが、内部的にログイン試行ログの参照と登録は実施する。  
+  
+**$password** ： パスワード  
+**$totp_pin** ： 6桁のTOTPコード。2要素認証を使用しない場合と2要素認証の入力画面を分ける場合は省略。  
+  
+**返り値** ： 認証された場合はTRUE、ユーザーアカウントが停止中の場合はその状態値(WAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_EMAIL_UNVERIFIED)、ユーザーIDが2段階認証の対象ユーザーでTOTPコードがNULLだった場合は仮トークン、それ以外の場合はFALSEを返す。
 
 
 #### wakarana_user::create_email_address_verification_token($email_address)
@@ -833,6 +1000,36 @@ wakarana_config.iniの設定値を変更する。
 
 #### wakarana_config::reset_config()
 wakarana_config.iniの設定値を全て既定値に戻す。  
+  
+**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
+#### ◆ wakarana_config::save_custom_fields()
+現在の設定値でcustom_fields.jsonを上書きする。  
+◆クラス内呼び出し専用。  
+  
+**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
+#### wakarana_config::add_custom_field($custom_field_name, $maximum_length=500, $records_per_user=1, $allow_nonunique_value=TRUE, $save_now=TRUE)
+カスタムフィールドを追加する。  
+既に存在するカスタムフィールド名を指定した場合はその設定を上書きする。  
+  
+**$custom_field_name** : カスタムフィールド名。半角英数字及びアンダーバーが使用可能。  
+**$maximum_length** : 保存可能な最大文字数(500以下)  
+**$records_per_user** : ユーザーあたりの上限件数(100以下)  
+**$allow_nonunique_value** : 異なるユーザーが同一の値を持つことを認めるか  
+**$save_now** : FALSEならcustom_fields.jsonへの上書きは保留する。  
+  
+**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
+#### wakarana_config::delete_custom_field($custom_field_name, $save_now=TRUE)
+カスタムフィールドを削除する。  
+この関数により既にデータベースに保存されている当該カスタムフィールドのデータが削除されるわけではない。  
+  
+**$custom_field_name** : カスタムフィールド名  
+**$save_now** : FALSEならcustom_fields.jsonへの上書きは保留する。  
   
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
 

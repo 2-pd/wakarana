@@ -17,7 +17,8 @@ define("WAKARANA_CONFIG_ORIGINAL",
             
             "allow_weak_password" => FALSE,
             
-            "allow_duplicate_email_address" => FALSE,
+            "allow_nonunique_email_address" => FALSE,
+            "email_addresses_per_user" => 5,
             "verification_email_expire" => 1800,
             
             "login_token_cookie_name" => "wakarana_login_token",
@@ -43,7 +44,7 @@ define("WAKARANA_CONFIG_ORIGINAL",
 
 
 class wakarana_config extends wakarana_common {
-    function save () {
+    protected function save () {
         $file_h = @fopen($this->base_path."/wakarana_config.ini","w");
         
         if (empty($file_h)) {
@@ -80,11 +81,12 @@ class wakarana_config extends wakarana_common {
         }
         fwrite($file_h,"\n");
         
-        if ($this->config["allow_duplicate_email_address"]) {
-            fwrite($file_h,"allow_duplicate_email_address=true\n");
+        if ($this->config["allow_nonunique_email_address"]) {
+            fwrite($file_h,"allow_nonunique_email_address=true\n");
         } else {
-            fwrite($file_h,"allow_duplicate_email_address=false\n");
+            fwrite($file_h,"allow_nonunique_email_address=false\n");
         }
+        fwrite($file_h,"email_addresses_per_user=".$this->config["email_addresses_per_user"]."\n");
         fwrite($file_h,"verification_email_expire=".$this->config["verification_email_expire"]."\n");
         fwrite($file_h,"\n");
         
@@ -127,17 +129,78 @@ class wakarana_config extends wakarana_common {
         $this->config[$key] = $value;
         
         if ($save_now) {
-            $this->save();
+            return $this->save();
+        } else {
+            return TRUE;
         }
-        
-        return TRUE;
     }
     
     
     function reset_config () {
         $this->config = WAKARANA_CONFIG_ORIGINAL;
         
-        $this->save();
+        return $this->save();
+    }
+    
+    
+    protected function save_custom_fields () {
+        if (@file_put_contents($this->base_path."/wakarana_custom_fields.json", json_encode($this->custom_fields)) !== FALSE) {
+            return TRUE;
+        } else {
+            $this->print_error("カスタムフィールド設定ファイルへの書き込みに失敗しました。");
+            return FALSE;
+        }
+    }
+    
+    
+    function add_custom_field ($custom_field_name, $maximum_length = 500, $records_per_user = 1, $allow_nonunique_value = TRUE, $save_now = TRUE) {
+        if (!self::check_id_string($custom_field_name)) {
+            $this->print_error("指定されたカスタムフィールド名が異常です。");
+            return FALSE;
+        }
+        
+        if ($maximum_length > 500 || $maximum_length < 1) {
+            $this->print_error("指定された最大文字数が異常です。カスタムフィールドの最大文字数は1〜500の範囲で指定してください。");
+            return FALSE;
+        }
+        
+        if ($records_per_user > 100 || $records_per_user < 1) {
+            $this->print_error("指定された最大件数が異常です。カスタムフィールドの最大件数は1〜100の範囲で指定してください。");
+            return FALSE;
+        }
+        
+        if (!is_bool($allow_nonunique_value)) {
+            $this->print_error("カスタムフィールド値の重複可否の設定値が異常です。");
+            return FALSE;
+        }
+        
+        $this->custom_fields[$custom_field_name] = array(
+            "maximum_length" => $maximum_length,
+            "records_per_user" => $records_per_user,
+            "allow_nonunique_value" => $allow_nonunique_value
+        );
+        
+        if ($save_now) {
+            return $this->save_custom_fields();
+        } else {
+            return TRUE;
+        }
+    }
+    
+    
+    function delete_custom_field($custom_field_name, $save_now = TRUE) {
+        if (!isset($this->custom_fields[$custom_field_name])) {
+            $this->print_error("指定されたカスタムフィールドは存在しません。");
+            return FALSE;
+        }
+        
+        unset($this->custom_fields[$custom_field_name]);
+        
+        if ($save_now) {
+            return $this->save_custom_fields();
+        } else {
+            return TRUE;
+        }
     }
     
     
@@ -146,9 +209,9 @@ class wakarana_config extends wakarana_common {
         
         try {
             if ($this->config["use_sqlite"]) {
-                $this->db_obj->exec("CREATE TABLE IF NOT EXISTS `wakarana_users`(`user_id` TEXT COLLATE NOCASE NOT NULL PRIMARY KEY, `password` TEXT NOT NULL, `user_name` TEXT COLLATE NOCASE, `email_address` TEXT, `user_created` TEXT NOT NULL, `last_updated` TEXT NOT NULL, `last_access` TEXT NOT NULL, `status` INTEGER NOT NULL, `totp_key` TEXT)");
+                $this->db_obj->exec("CREATE TABLE IF NOT EXISTS `wakarana_users`(`user_id` TEXT COLLATE NOCASE NOT NULL PRIMARY KEY, `password` TEXT NOT NULL, `user_name` TEXT COLLATE NOCASE, `user_created` TEXT NOT NULL, `last_updated` TEXT NOT NULL, `last_access` TEXT NOT NULL, `status` INTEGER NOT NULL, `totp_key` TEXT)");
             } else {
-                $this->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_users"("user_id" varchar(60) NOT NULL PRIMARY KEY, "password" varchar(128) NOT NULL, "user_name" varchar(240), "email_address" varchar(254), "user_created" timestamp NOT NULL, "last_updated" timestamp NOT NULL, "last_access" timestamp NOT NULL, "status" smallint NOT NULL, "totp_key" varchar(16))');
+                $this->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_users"("user_id" varchar(60) NOT NULL PRIMARY KEY, "password" varchar(128) NOT NULL, "user_name" varchar(240), "user_created" timestamp NOT NULL, "last_updated" timestamp NOT NULL, "last_access" timestamp NOT NULL, "status" smallint NOT NULL, "totp_key" varchar(16))');
             }
         } catch (PDOException $err) {
             $this->print_error("テーブル wakarana_users の作成処理に失敗しました。".$err->getMessage());
@@ -163,10 +226,47 @@ class wakarana_config extends wakarana_common {
                 $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_u1" ON "wakarana_users"(LOWER("user_name"))');
             }
             
-            $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_u2" ON "wakarana_users"("email_address")');
             $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_u3" ON "wakarana_users"("user_created")');
         } catch (PDOException $err) {
             $this->print_error("テーブル wakarana_users のインデックス作成処理に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        try {
+            if ($this->config["use_sqlite"]) {
+                $this->db_obj->exec("CREATE TABLE IF NOT EXISTS `wakarana_user_email_addresses`(`user_id` TEXT COLLATE NOCASE NOT NULL, `email_address` TEXT, `is_primary` INTEGER NOT NULL, PRIMARY KEY(`user_id`, `email_address`))");
+            } else {
+                $this->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_user_email_addresses"("user_id" varchar(60) NOT NULL, "email_address" varchar(254), "is_primary" boolean NOT NULL, PRIMARY KEY("user_id", "email_address"))');
+            }
+        } catch (PDOException $err) {
+            $this->print_error("テーブル wakarana_user_email_addresses の作成処理に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        try {
+            $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_e1" ON "wakarana_user_email_addresses"("user_id", "is_primary")');
+            $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_e2" ON "wakarana_user_email_addresses"("email_address")');
+        } catch (PDOException $err) {
+            $this->print_error("テーブル wakarana_user_email_addresses のインデックス作成処理に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        try {
+            if ($this->config["use_sqlite"]) {
+                $this->db_obj->exec("CREATE TABLE IF NOT EXISTS `wakarana_user_custom_fields`(`user_id` TEXT COLLATE NOCASE NOT NULL, `custom_field_name` TEXT NOT NULL, `value_number` INTEGER NOT NULL, `custom_field_value` TEXT, PRIMARY KEY(`user_id`, `custom_field_name`, `value_number`))");
+            } else {
+                $this->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_user_custom_fields"("user_id" varchar(60) NOT NULL, "custom_field_name" varchar(60) NOT NULL, "value_number" smallint NOT NULL, "custom_field_value" text, PRIMARY KEY("user_id", "custom_field_name", "value_number"))');
+            }
+        } catch (PDOException $err) {
+            $this->print_error("テーブル wakarana_user_custom_fields の作成処理に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        try {
+            $this->db_obj->exec('CREATE UNIQUE INDEX IF NOT EXISTS "wakarana_idx_c1" ON "wakarana_user_custom_fields"("user_id", "custom_field_name", "custom_field_value")');
+            $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_c2" ON "wakarana_user_custom_fields"("custom_field_name", "custom_field_value")');
+        } catch (PDOException $err) {
+            $this->print_error("テーブル wakarana_user_custom_fields のインデックス作成処理に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -278,8 +378,8 @@ class wakarana_config extends wakarana_common {
         }
         
         try {
-            $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_e1" ON "wakarana_email_address_verification"("email_address", "user_id")');
-            $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_e2" ON "wakarana_email_address_verification"("token_created")');
+            $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_ev1" ON "wakarana_email_address_verification"("email_address", "user_id")');
+            $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_ev2" ON "wakarana_email_address_verification"("token_created")');
         } catch (PDOException $err) {
             $this->print_error("テーブル wakarana_email_address_verification のインデックス作成処理に失敗しました。".$err->getMessage());
             return FALSE;
