@@ -1,6 +1,6 @@
 --------------------------------------------------------------------------------
 
-  PHPユーザーマネージャライブラリ「Wakarana」設計案　ページ(2)
+  PHPユーザーマネージャライブラリ「Wakarana」設計案　ページ(3)
 
 --------------------------------------------------------------------------------
 
@@ -37,7 +37,7 @@ wakaranaクラスとwakarana_configクラスの親クラス。このクラスの
 ☆staticメソッド。  
   
 **$id** : 検査する文字列  
-**$length** : 文字列の長さの上限。検査する文字列がこれより長い場合は使用できない文字列とみなす。   
+**$length** : 文字列の長さの上限。検査する文字列がこれより長い場合は使用できない文字列とみなす。  
   
 **返り値** ： 識別名として使用可能な文字列ならTRUEを、それ以外の場合はFALSEを返す。
 
@@ -190,6 +190,12 @@ Wakarana_userインスタンスを生成する。
 **返り値** ： ユーザーが存在する場合はwakarana_userクラスのインスタンス、存在しない場合はFALSEを返す。
 
 
+#### wakarana::count_user()
+ユーザーの総数を数える。  
+  
+**返り値** ： 登録されているユーザーの総数を返す。
+
+
 #### wakarana::get_all_users($start=0, $limit=100, $order_by=WAKARANA_ORDER_USER_CREATED, $asc=TRUE)
 全ユーザーの一覧を順に返す。  
   
@@ -213,46 +219,79 @@ Wakarana_userインスタンスを生成する。
 **返り値** ： 成功した場合は追加したユーザーのwakarana_userインスタンスを返す。失敗した場合はFALSEを返す。
 
 
-#### wakarana::get_roles()
-存在するロール名の一覧を取得する。  
+#### wakarana::get_role()
+ロールのwakarana_roleインスタンスを生成する。  
   
-**返り値** ： ロール名をアルファベット順に格納した配列を返す。ロールが存在しない場合は空配列を返す。
+**返り値** ： ロールが存在する場合はロールのwakarana_roleクラスのインスタンス、ロールが存在しない場合はFALSEを返す。
 
 
-#### wakarana::delete_role($role_name)
-指定したロールを完全に削除する。ただし、ベースロールは削除できない。  
+#### wakarana::get_all_roles()
+存在するロールの一覧を取得する。  
   
-**$role_name** ： ロール名  
-  
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** ： ロールのwakarana_roleインスタンスをロール名のアルファベット順に格納した配列を返す。ロールが存在しない場合は空配列を返す。失敗した場合はFALSEを返す。
 
 
-#### wakarana::get_permission_values($role_name)
-指定したロールに割り当てられている権限値の一覧を取得する。  
+#### wakarana::add_role($role_id, $role_name, $role_description="")
+ロールを新規作成する。  
   
-**$role_name** ： ロール名  
+**$role_id** ： ロールID。半角英数字及びアンダーバーが使用可能。アルファベット大文字は小文字に変換される。  
+**$role_name** ： ロールの表示名  
+**$role_description** : ロールについての説明文  
   
-**返り値** ： 権限名をキーとする連想配列を返す。権限が存在しない場合は空配列を返す。
+**返り値** ： 成功した場合は作成したロールのwakarana_roleインスタンスを、失敗した場合はFALSEを返す。
 
 
-#### wakarana::set_permission_value($role_name, $permission_name, $permission_value=TRUE)
-指定したロールの権限を追加・上書きする。  
-存在しないロール名を指定した場合は新しくロールが作成される。  
-ロール名に定数WAKARANA_BASE_ROLEを指定するとベースロールを設定できる。  
+#### wakarana::get_permission()
+権限のwakarana_permissionインスタンスを生成する。  
   
-**$role_name** ： ロール名。半角英数字及びアンダーバーが使用可能。アルファベット大文字は小文字に変換される。  
-**$permission_name** ： 権限名。半角英数字及びアンダーバーが使用可能。アルファベット大文字は小文字に変換される。  
-**$permission_value** : 設定値。TRUEは「1」、FALSEは「0」に変換される。  
-  
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** ： 権限が存在する場合は権限のwakarana_permissionクラスのインスタンス、権限が存在しない場合はFALSEを返す。
 
 
-#### wakarana::remove_permission_value($role_name=NULL, $permission_name=NULL)
-指定したロールの権限を剥奪する。  
-ロール名に定数WAKARANA_BASE_ROLEを指定するとベースロールを初期化できる。  
+#### wakarana::get_all_permissions()
+存在する権限の一覧を取得する。  
   
-**$role_name** ： ロール名。NULLまたは省略した場合、全てのロールから権限を剥奪する。  
-**$permission_name** ： 権限名。NULLまたは省略した場合、全ての権限を剥奪する。  
+**返り値** ： 権限のwakarana_permissionインスタンスを権限対象リソースIDのアルファベット順に格納した配列を返す。権限が存在しない場合は空配列を返す。失敗した場合はFALSEを返す。
+
+
+#### wakarana::get_all_permission_actions()
+全ての権限とそこに存在する動作の一覧を取得する。  
+  
+**返り値** ： 権限対象リソースIDをキーとし、値として動作識別名の配列を持った連想配列を返す。権限が存在しない場合は空配列を返す。失敗した場合はFALSEを返す。
+
+
+#### wakarana::add_permission($resource_id, $permission_name, $classify_actions=TRUE, $permission_description="")
+権限を新規作成する。  
+権限は権限の表示名ではなく権限対象リソースのIDで識別される。  
+権限対象リソースIDに「/」が含まれる場合、ユーザーが「/」以下を取り除いた権限対象リソースIDの権限を持っていれば、権限があるものとみなされる。  
+  
+**$resource_id** ： 権限対象リソースID。半角英数字及びアンダーバー、「/」が使用可能。アルファベット大文字は小文字に変換される。  
+**$permission_name** ： 権限の表示名  
+**$classify_actions** : 動作を識別するか。FALSEを指定すると動作「any」が自動作成される。  
+**$permission_description** : 権限についての説明文  
+  
+**返り値** ： 成功した場合は作成した権限のwakarana_permissionインスタンスを、失敗した場合はFALSEを返す。
+
+
+#### wakarana::get_permitted_value($permitted_value_id)
+権限値のwakarana_permitted_valueインスタンスを生成する。  
+  
+**$permitted_value_id** ： 権限値ID  
+  
+**返り値** ： 権限値が存在する場合は権限値のwakarana_permitted_valueクラスのインスタンスを、権限値が存在しない場合は空配列を返す。
+
+
+#### wakarana::get_all_permitted_values()
+存在する権限値の一覧を取得する。  
+  
+**返り値** ： 権限値のwakarana_permitted_valueインスタンスを権限値IDのアルファベット順に格納した配列を返す。権限が存在しない場合は空配列を返す。
+
+
+#### wakarana::add_permitted_value($permitted_value_id, $permitted_value_name, $permitted_value_description="")
+権限値を新規作成する。  
+  
+**$permitted_value_id** ： 権限値ID。半角英数字及びアンダーバーが使用可能。アルファベット大文字は小文字に変換される。  
+**$ppermitted_value_name** ： 権限値の表示名   
+**$permitted_value_description** : 権限値についての説明文  
   
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
@@ -386,7 +425,7 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
 アカウント登録前の新規ユーザーに対してメールアドレス確認トークンを生成し、データベースに登録する。  
 この関数によりメールが送信されるわけではない。  
   
-**$email_address** : トークンの送信先メールアドレス。   
+**$email_address** : トークンの送信先メールアドレス。  
   
 **返り値** ： 成功した場合はメールアドレス確認トークン、失敗した場合はFALSEを返す。同じメールアドレスでの複数のアカウント作成を許可しない設定の場合、既に使用されているメールアドレスならNULLを返す。
 
@@ -564,7 +603,7 @@ TOTP生成鍵と現在時刻からワンタイムコードを生成する。
 コンストラクタ。wakarana::get_user実行時に呼び出されるものであり、直接インスタンス化するべきではない。  
   
 **$wakarana** : 呼び出し元のwakaranaインスタンス  
-**$user_info** : ユーザー情報("user_id"(ユーザーID)、"user_name"(ユーザー名)、"password"(ハッシュ化されたパスワード)、"user_created"(アカウント作成日時)、"last_updated"(アカウント情報更新日時)、"last_access"(最終アクセス日時)、"status"(アカウントが使用可能か停止されているか)、"totp_key"(TOTPワンタイムパスワード生成キー))を格納した連想配列。
+**$user_info** : ユーザー情報("user_id"(ユーザーID)、"user_name"(ユーザー名)、"password"(ハッシュ化されたパスワード)、"user_created"(アカウント作成日時)、"last_updated"(アカウント情報更新日時)、"last_access"(最終アクセス日時)、"status"(アカウントが使用可能か停止されているか)、"totp_key"(TOTPワンタイムパスワード生成キー))を格納した連想配列
 
 
 #### ☆ wakarana_user::free($wakarana_user)
@@ -773,35 +812,43 @@ wakarana_userインスタンスはこの関数以外の方法(unsetや変数の�
 
 
 #### wakarana_user::get_roles()
-ユーザーに割り当てられたロール名の一覧を取得する。ただし、ベースロールは取得しない。  
+ユーザーに割り当てられたロールの一覧を取得する。ただし、ベースロールは取得しない。  
   
-**返り値** ： ロール名をアルファベット順に格納した配列を返す。ロールが存在しない場合は空配列を返す。失敗した場合はFALSEを返す。
+**返り値** ： ロールのwakarana_roleインスタンスをロール名のアルファベット順に格納した配列を返す。ロールが存在しない場合は空配列を返す。失敗した場合はFALSEを返す。
 
 
-#### wakarana_user::add_role($role_name)
+#### wakarana_user::add_role($role_id)
 ユーザーにロールを付与する。既にそのユーザーに付与されているロールを指定するとエラーとなる。  
   
-**$user_id** ： ユーザーID  
-**$role_name** ： ロール名。半角英数字及びアンダーバーが使用可能。アルファベット大文字は小文字に変換される。  
+**$role_id** ： ロールID  
   
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
-#### wakarana_user::remove_role($role_name=NULL)
+#### wakarana_user::remove_role($role_id=NULL)
 ユーザーからロールを剥奪する。ただし、ベースロールは剥奪できない。  
   
-**$role_name** ： ロール名。NULLまたは省略した場合、全てのロールを剥奪する。  
+**$role_id** ： ロールID。NULLまたは省略した場合、全てのロールを剥奪する。  
   
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
-#### wakarana_user::check_permission($permission_name)
+#### wakarana_user::check_permission($resource_id, $action="any")
 ユーザーに権限があるかを確認する。  
-特権管理者ロール(WAKARANA_ADMIN_ROLE)を持つユーザーの場合、割り当てられていないか「0」が割り当てられている権限の権限値を全て「-1」とみなす。  
+権限対象リソースIDに「/」が含まれる場合、「/」以下を取り除いた権限対象リソースIDの権限を持っていれば、権限があるものとみなす。  
   
-**$permission_name** ： 権限の名前  
+**$resource_id** ： 権限対象リソースID  
+**$action** ： 動作識別名  
   
-**返り値** ： ユーザーが持っている各ロールの権限値のうち最大のものを返す。どのロールにも権限がない場合は「0」とみなす。失敗した場合はFALSEを返す。
+**返り値** ： ユーザーが持つロールのいずれかに権限が割り当てられている場合はTRUE、それ以外の場合はFALSEを返す。
+
+
+#### wakarana_user::get_permitted_value($permitted_value_id)
+ユーザーに割り当てられている最大の権限値を取得する。  
+  
+**$permitted_value_id** ： 権限値ID  
+  
+**返り値** ： ユーザーが持つ全ロールに割り当てられた権限値の中で最大のものを返す。どのロールにも権限値が割り当てられていない場合や失敗した場合はFALSEを返す。
 
 
 #### wakarana_user::delete_all_tokens()
@@ -870,7 +917,7 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
 
 
 #### wakarana_user::delete_login_token($abbreviated_token)
-ユーザーの指定したログイントークンを削除する。   
+ユーザーの指定したログイントークンを削除する。  
   
 **$abbreviated_token** ： 削除対象のトークンの冒頭6文字  
   
@@ -948,7 +995,7 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
 
 
 #### wakarana_user::delete_one_time_tokens()
-ユーザーのワンタイムトークンを全て削除する。   
+ユーザーのワンタイムトークンを全て削除する。  
   
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
@@ -967,6 +1014,220 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
+### class wakarana_role
+ロールの情報を読み書きするためのクラス。1インスタンスごとに1ロールの情報が割り当てられる。
+
+#### wakarana_role::__construct($wakarana, $role_info)
+コンストラクタ。wakarana::get_roleの実行時に呼び出されるものであり、直接インスタンス化するべきではない。  
+  
+**$wakarana** : 呼び出し元のwakaranaインスタンス  
+**$role_info** : ロール情報("role_id"(ロールID)、"role_name"(ロール名)、"role_description"(ロールの説明文))を格納した連想配列
+
+
+#### wakarana_role::get_name()
+権限の表示名を取得する。  
+  
+**返り値** ： 権限の表示名を返す。
+
+
+#### wakarana_role::get_description()
+権限の説明文を取得する。  
+  
+**返り値** ： 権限についての説明文を返す。
+
+
+#### wakarana_role::set_role_info($role_name, $role_description="")
+ロールの情報を変更する。  
+  
+**$role_name** ： ロールの表示名  
+**$role_description** : ロールについての説明文  
+  
+**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
+#### wakarana_role::get_users()
+ロールが割り当てられているユーザーの一覧を取得する。  
+  
+**返り値** ： 成功した場合は、wakarana_userインスタンスをユーザーIDの順に配列で返す。失敗した場合はFALSEを返す。
+
+
+#### wakarana_role::get_permissions()
+ロールに割り当てられた権限の一覧を取得する。  
+  
+**返り値** ： 権限対象リソースIDをキーとし、値として動作識別名の配列を持った連想配列を返す。権限が存在しない場合は空配列を返す。失敗した場合はFALSEを返す。
+
+
+#### wakarana_role::check_permission($resource_id, $action="any")
+ロールに権限が割り当てられているかを確認する。  
+権限対象リソースIDに「/」が含まれる場合、「/」以下を取り除いた権限対象リソースIDの権限が存在すれば、権限が割り当てられているものとみなす。  
+  
+**$resource_id** ： 権限対象リソースID  
+**$action** ： 動作識別名  
+  
+**返り値** ： ロールに権限が割り当てられている場合はTRUE、それ以外の場合はFALSEを返す。
+
+
+#### wakarana_role::add_permission($resource_id, $action="any")
+ロールに権限を追加する。  
+特権管理者ロールは自動的に全ての権限が付与されるため、この関数は使用できない。  
+  
+**$resource_id** ： 権限対象リソースID  
+**$action** ： 動作識別名  
+  
+**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
+#### wakarana_role::remove_permission($resource_id, $action="any")
+ロールから権限を剥奪する。  
+特権管理者ロールでは権限が剥奪できないため、この関数は使用できない。  
+  
+**$resource_id** ： 権限対象リソースID  
+**$action** ： 動作識別名。NULLを指定した場合は全ての動作を削除する。  
+  
+**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
+#### wakarana_role::remove_all_permissions()
+ロールから全ての権限を剥奪する。  
+特権管理者ロールでは権限が剥奪できないため、この関数は使用できない。  
+  
+**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
+#### wakarana_role::get_permitted_values()
+ロールに割り当てられている権限値の一覧を取得する。  
+  
+**返り値** ： 権限値IDをキー、権限値を値とする連想配列を返す。権限値が存在しない場合は空配列を返す。失敗した場合はFALSEを返す。
+
+
+#### wakarana_role::get_permitted_value($permitted_value_id)
+ロールに割り当てられている権限値を取得する。  
+  
+**$permitted_value_id** ： 権限値ID  
+  
+**返り値** ： 権限値が存在する場合は権限値を、存在しない場合はNULLを返す。失敗した場合はFALSEを返す。
+
+
+#### wakarana_role::set_permitted_value($permitted_value_id, $permitted_value)
+ロールの権限値を設定する。  
+  
+**$permitted_value_id** ： 権限値ID。半角英数字及びアンダーバーが使用可能。アルファベット大文字は小文字に変換される。  
+**$permitted_value** : 権限値。TRUEは「1」、FALSEは「0」に変換される。  
+  
+**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
+#### wakarana_role::remove_permitted_value($permitted_value_id=NULL)
+ロールの権限値を削除する。  
+  
+**$permitted_value_id** ： 権限値ID。NULLまたは省略した場合、全ての権限値を削除する。  
+  
+**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
+#### wakarana_role::delete_role()
+ロールを完全に削除する。  
+ただし、ベースロールと特権管理者ロールは使用できない。  
+  
+**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
+### class wakarana_permission
+権限の情報を読み書きするためのクラス。1インスタンスごとに1権限の情報が割り当てられる。
+
+#### wakarana_permission::__construct($wakarana, $permission_info)
+コンストラクタ。wakarana::get_permissionの実行時に呼び出されるものであり、直接インスタンス化するべきではない。  
+  
+**$wakarana** : 呼び出し元のwakaranaインスタンス  
+**$permission_info** : 権限情報("resource_id"(権限対象リソースID)、"permission_name"(権限名)、"permission_description"(権限の説明文))を格納した連想配列
+
+
+#### wakarana_permission::get_name()
+権限の表示名を取得する。  
+  
+**返り値** ： 権限の表示名を返す。
+
+
+#### wakarana_permission::get_description()
+権限の説明文を取得する。  
+  
+**返り値** ： 権限についての説明文を返す。
+
+
+#### wakarana_permission::set_info($permission_name, $permission_description="")
+権限の情報を変更する。  
+  
+**$permission_name** ： 権限の表示名  
+**$permission_description** : 権限についての説明文  
+  
+**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
+#### wakarana_permission::get_actions()
+権限に存在する動作の一覧を取得する。  
+  
+**返り値** ： 動作識別名を配列で返す。失敗した場合はFALSEを返す。
+
+
+#### wakarana_permission::add_action($action)
+権限で使用可能な動作を追加する。  
+  
+**$action** ： 動作識別名  
+  
+**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
+#### wakarana_permission::delete_action($action=NULL)
+権限で使用可能な動作を削除する。削除された動作は全てのロールから剥奪される。  
+  
+**$action** ： 動作識別名。NULLまたは省略した場合は全ての動作が削除される。  
+  
+**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
+#### wakarana_permission::delete_permission()
+権限を全てのロールから剥奪して完全に削除する。  
+  
+**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
+### class wakarana_permitted_value
+権限値の情報を読み書きするためのクラス。1インスタンスごとに1権限値の情報が割り当てられる。
+
+#### wakarana_permitted_value::__construct($wakarana, $permitted_value_info)
+コンストラクタ。wakarana::get_permitted_valueの実行時に呼び出されるものであり、直接インスタンス化するべきではない。  
+  
+**$wakarana** : 呼び出し元のwakaranaインスタンス  
+**$permitted_value_info** : 権限値情報("permitted_value_id"(権限値ID)、"permitted_value_name"(権限値名)、"permitted_value_description"(権限値の説明文))を格納した連想配列
+
+
+#### wakarana_permitted_value::get_name()
+権限値の表示名を取得する。  
+  
+**返り値** ： 権限値の表示名を返す。
+
+
+#### wakarana_permitted_value::get_description()
+権限値の説明文を取得する。  
+  
+**返り値** ： 権限値についての説明文を返す。
+
+
+#### wakarana_permitted_value::set_info($permitted_value_name, $permitted_value_description="")
+権限値の情報を変更する。  
+  
+**$permitted_value_name** ： 権限値の表示名  
+**$permitted_value_description** : 権限値についての説明文  
+  
+**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
+#### wakarana_permitted_value::delete_permitted_value()
+権限値を全てのロールから剥奪して完全に削除する。  
+  
+**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
 
 ## config.php
 
@@ -979,7 +1240,6 @@ wakarana_config.iniの既定値一覧。
 
 ### class wakarana_config
 wakarana_commonの派生クラス。
-
 
 #### ◆ wakarana_config::save()
 現在の設定値でwakarana_config.iniを上書きする。  
