@@ -1,0 +1,105 @@
+--------------------------------------------------------------------------------
+
+  PHPユーザーマネージャライブラリ「Wakarana」設計案　ページ(1)
+
+--------------------------------------------------------------------------------
+【システム要件】
+PHP : 7以降
+SQLite : 3 (SQLiteを使用する場合)
+PostgreSQL : 10以降 (SQLiteを使用しない場合)
+
+_/_/_/_/ ファイル構成 _/_/_/_/
+
+/wakarana ・・・Wakarana本体
+└ common.php ・・・main.phpとconfig.phpの双方で使用する関数・定数等をまとめたファイル
+└ main.php ・・・wakaranaクラスとwakarana_userクラスを含むWakaranaのメインファイル
+└ config.php ・・・wakarana_configクラスを含み、Wakaranaのセットアップ処理で使用するファイル
+└ wakarana_config.ini ・・・Wakaranaの基本設定ファイル(別ディレクトリに設置する場合はwakaranaクラスのコンストラクタに引数を指定)
+└ wakarana_custom_fields.json ・・・カスタムフィールド設定ファイル(別ディレクトリに設置する場合はwakaranaクラスのコンストラクタに引数を指定)
+└ wakarana.db ・・・メインデータベースファイル(SQLite使用時のみ生成。wakarana_config.iniの設定で設置ディレクトリ及びファイル名は変更可能)
+
+
+_/_/_/_/ 基本設定ファイル wakarana_config.ini _/_/_/_/
+  display_errors　エラー文を出力するかどうか
+  
+  use_sqlite データベースにSQLiteを使用するかどうか(trueの場合はsqlite、falseの場合はPostgreSQLを使用する)
+  
+  db_host PostgreSQLのホスト名
+  db_user PostgreSQLのユーザー名
+  db_pass PostgreSQLのパスワード
+  db_db PostgreSQLのデータベース名
+  db_port PostgreSQLのポート番号
+  
+  sqlite_db_file SQLiteのデータベースファイルのパス(この設定ファルからの相対パス)
+  
+  allow_weak_password 弱いパスワード(空または10文字未満、大文字・小文字・数字のどれかを含んでいない)を許すかどうか
+  
+  allow_nonunique_email_address 同じメールアドレスでの複数のアカウント作成を許すかどうか(trueまたはfalse、trueの場合はメールアドレスなし(NULL)を許可しない)
+  email_addresses_per_user ユーザーごとに登録可能なメールアドレスの数
+  verification_email_expire メールアドレス確認トークンの有効時間(秒数で指定)
+  
+  login_token_cookie_name ログイントークンのCookie保存名
+  cookie_domain サブドメインと主ドメインでログインを共通化する場合、主ドメインを指定する(例: "example.jp"と"hoge.example.jp"でログインを共通化する場合は"example.jp"を指定する)
+  
+  login_tokens_per_user ユーザーごとのトークン保持可能数(超過した場合は、生成日時の古いトークンから順に削除される)
+  login_token_expire ログイン用トークンの有効時間(秒数で指定)
+  one_time_tokens_per_user ユーザーごとのワンタイムトークンの保持可能数(上記に同じ)
+  one_time_token_expire ワンタイムトークンの有効時間(秒数で指定)
+  
+  minimum_authenticate_interval ログイン試行後、次に試行できるようになるまでの期間(秒)
+  authenticate_logs_per_user ログイン試行ログのユーザーあたりの保持個数(0の場合はログを保存しない)
+  authenticate_log_retention_time ログイン試行ログの保持期間
+  
+  password_reset_token_expire パスワードリセット用トークンの有効時間(秒数で指定)
+  
+  totp_pin_expire TOTPワンタイムパスワードの有効時間(分)
+  two_step_verification_token_expire 2段階認証用一時トークンの有効期間(秒)
+  
+  proxy_count リバースプロキシを使用している環境ではその個数を指定する。
+
+<各変数のデフォルト値>
+display_errors=true
+
+use_sqlite=true
+sqlite_db_file="wakarana.db"
+
+pg_host="localhost"
+pg_user="postgres"
+pg_pass=""
+pg_db="wakarana"
+pg_port=5432
+
+allow_weak_password=false
+
+allow_nonunique_email_address=false
+email_addresses_per_user=5
+verification_email_expire=1800
+
+login_token_cookie_name="wakarana_login_token"
+cookie_domain=""
+
+login_tokens_per_user=4
+login_token_expire=2592000
+one_time_tokens_per_user=8
+one_time_token_expire=43200
+
+minimum_authenticate_interval=5
+authenticate_logs_per_user=20
+authenticate_log_retention_time=1209600
+
+password_reset_token_expire=1800
+
+totp_pin_expire=1
+two_step_verification_token_expire=600
+
+proxy_count=0
+
+
+_/_/_/_/ カスタムフィールド設定ファイル wakarana_custom_fields.json _/_/_/_/
+{
+    "カスタムフィールド名" : {
+        "maximum_length" : 最大文字数(500文字以内),
+        "records_per_user" : ユーザーあたりの上限件数(100件以内),
+        "allow_nonunique_value" : 異なるユーザーが同一の値を持つことを認めるか(trueまたはfalse)
+    }...
+}
