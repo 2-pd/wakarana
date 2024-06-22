@@ -16,6 +16,7 @@ _/_/_/_/ ファイル構成 _/_/_/_/
 └ config.php ・・・wakarana_configクラスを含み、Wakaranaのセットアップ処理で使用するファイル
 └ wakarana_config.ini ・・・Wakaranaの基本設定ファイル(別ディレクトリに設置する場合はwakaranaクラスのコンストラクタに引数を指定)
 └ wakarana_custom_fields.json ・・・カスタムフィールド設定ファイル(別ディレクトリに設置する場合はwakaranaクラスのコンストラクタに引数を指定)
+└ wakarana_email_domain_blacklist.conf ・・・メールドメインブラックリスト(各行に1つのドメインを記載したテキストファイル)
 └ wakarana.db ・・・メインデータベースファイル(SQLite使用時のみ生成。wakarana_config.iniの設定で設置ディレクトリ及びファイル名は変更可能)
 
 
@@ -98,7 +99,8 @@ proxy_count=0
 _/_/_/_/ カスタムフィールド設定ファイル wakarana_custom_fields.json _/_/_/_/
 {
     "カスタムフィールド名" : {
-        "maximum_length" : 最大文字数(500文字以内),
+        "is_numeric" : 数値型かどうか(trueまたはfalse),
+        "maximum_length" : 最大文字数(500文字以内、文字列型の場合のみ),
         "records_per_user" : ユーザーあたりの上限件数(100件以内),
         "allow_nonunique_value" : 異なるユーザーが同一の値を持つことを認めるか(trueまたはfalse)
     }...

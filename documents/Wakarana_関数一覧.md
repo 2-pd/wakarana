@@ -88,6 +88,14 @@ wakarana_config.iniの設定値を取得する。
 **返り値** ： wakarana_custom_fields.jsonのキー一覧を配列で返す。
 
 
+#### wakarana_common::get_custom_field_is_numeric($custom_field_name)
+指定したカスタムフィールドが数値型かどうかを取得する。  
+  
+**$custom_field_name** : カスタムフィールド名  
+  
+**返り値** ： カスタムフィールド名がwakarana_custom_fields.jsonに存在する場合、数値型であればTRUE、文字列型ならFALSEを返す。カスタムフィールド名が存在しなければNULLを返す。
+
+
 #### wakarana_common::get_custom_field_maximum_length($custom_field_name)
 指定したカスタムフィールドに保存可能な最大文字数を取得する。  
   
@@ -112,6 +120,20 @@ wakarana_config.iniの設定値を取得する。
 **返り値** ： カスタムフィールド名がwakarana_custom_fields.jsonに存在する場合、一意でない値を持てるならTRUE、持てないならFALSEを返す。カスタムフィールド名が存在しなければNULLを返す。
 
 
+#### wakarana_common::check_email_domain($domain_name)
+指定したドメインがメールドメインブラックリストに含まれないことを確認する。  
+  
+**$domain_name** : ドメイン名  
+  
+**返り値** ： ドメインがメールドメインブラックリストに含まれない場合はTRUE、含まれればFALSEを返す。
+
+
+#### wakarana_common::get_email_domain_blacklist()
+メールドメインブラックリストを配列で取得する。  
+  
+**返り値** ： メールドメインブラックリストのドメインを配列で返す。
+
+
 
 ## main.php
 
@@ -124,8 +146,8 @@ wakarana_config.iniの設定値を取得する。
 #### WAKARANA_STATUS_NORMAL
 「**1**」。wakarana_users.statusにおける有効なアカウント識別用。
 
-#### WAKARANA_STATUS_EMAIL_UNVERIFIED
-「**3**」。wakarana_users.statusにおけるメールアドレス未確認アカウント識別用。
+#### WAKARANA_STATUS_UNAPPROVED
+「**-1**」。wakarana_users.statusにおける未承認アカウント識別用。
 
 #### WAKARANA_ORDER_USER_ID
 「**user_id**」。ユーザー一覧の並び替え基準「ユーザーID」。
@@ -214,7 +236,7 @@ Wakarana_userインスタンスを生成する。
 **$user_id** ： 追加するユーザーのID。半角英数字及びアンダーバーが使用可能。  
 **$password** ： 追加するユーザーのパスワード  
 **$user_name** ： 追加するユーザーのハンドルネーム  
-**$status** ： WAKARANA_STATUS_DISABLEを指定すると一時的に使用できないユーザーとして作成することができる。  
+**$status** ： WAKARANA_STATUS_UNAPPROVEDを指定すると未承認ユーザー(ログイン不可)として作成することができる。  
   
 **返り値** ： 成功した場合は追加したユーザーのwakarana_userインスタンスを返す。失敗した場合はFALSEを返す。
 
@@ -364,7 +386,7 @@ Wakarana_userインスタンスを生成する。
 **$password** ： パスワード  
 **$totp_pin** ： 6桁のTOTPコード。2要素認証を使用しない場合と2要素認証の入力画面を分ける場合は省略。  
   
-**返り値** ： 認証された場合はユーザーのwakarana_userインスタンス、ユーザーアカウントが停止中の場合はその状態値(WAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_EMAIL_UNVERIFIED)、ユーザーIDが2段階認証の対象ユーザーでTOTPコードがNULLだった場合は仮トークン、それ以外の場合はFALSEを返す。
+**返り値** ： 認証された場合はユーザーのwakarana_userインスタンス、ユーザーアカウントが停止中の場合はその状態値(WAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_UNAPPROVED)、ユーザーIDが2段階認証の対象ユーザーでTOTPコードがNULLだった場合は仮トークン、それ以外の場合はFALSEを返す。
 
 
 #### wakarana::login($user_id, $password, $totp_pin=NULL)
@@ -376,7 +398,7 @@ Wakarana_userインスタンスを生成する。
 **$password** ： パスワード  
 **$totp_pin** ： 6桁のTOTPコード。2要素認証を使用しない場合と2要素認証の入力画面を分ける場合は省略。  
   
-**返り値** ： ログインが完了した場合はwakarana_userインスタンス、ユーザーアカウントが停止中の場合はその状態値(WAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_EMAIL_UNVERIFIED)、ユーザーIDが2要素認証の対象ユーザーでTOTPコードがNULLだった場合は仮トークン、それ以外の場合はFALSEを返す。
+**返り値** ： ログインが完了した場合はwakarana_userインスタンス、ユーザーアカウントが停止中の場合はその状態値(WAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_UNAPPROVED)、ユーザーIDが2要素認証の対象ユーザーでTOTPコードがNULLだった場合は仮トークン、それ以外の場合はFALSEを返す。
 
 
 #### wakarana::authenticate_with_email_address($email_address, $password, $totp_pin=NULL)
@@ -389,7 +411,7 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
 **$password** ： パスワード  
 **$totp_pin** ： 6桁のTOTPコード。2要素認証を使用しない場合と2要素認証の入力画面を分ける場合は省略。  
   
-**返り値** ： 認証された場合はユーザーのwakarana_userインスタンス、ユーザーアカウントが停止中の場合はその状態値(WAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_EMAIL_UNVERIFIED)、ユーザーIDが2段階認証の対象ユーザーでTOTPコードがNULLだった場合は仮トークン、それ以外の場合はFALSEを返す。
+**返り値** ： 認証された場合はユーザーのwakarana_userインスタンス、ユーザーアカウントが停止中の場合はその状態値(WAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_UNAPPROVED)、ユーザーIDが2段階認証の対象ユーザーでTOTPコードがNULLだった場合は仮トークン、それ以外の場合はFALSEを返す。
 
 
 #### wakarana::login_with_email_address($email_address, $password, $totp_pin=NULL)
@@ -402,7 +424,7 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
 **$password** ： パスワード  
 **$totp_pin** ： 6桁のTOTPコード。2要素認証を使用しない場合と2要素認証の入力画面を分ける場合は省略。  
   
-**返り値** ： ログインが完了した場合はwakarana_userインスタンス、ユーザーアカウントが停止中の場合はその状態値(WAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_EMAIL_UNVERIFIED)、ユーザーIDが2要素認証の対象ユーザーでTOTPコードがNULLだった場合は仮トークン、それ以外の場合はFALSEを返す。
+**返り値** ： ログインが完了した場合はwakarana_userインスタンス、ユーザーアカウントが停止中の場合はその状態値(WAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_UNAPPROVED)、ユーザーIDが2要素認証の対象ユーザーでTOTPコードがNULLだった場合は仮トークン、それ以外の場合はFALSEを返す。
 
 
 #### wakarana::delete_login_tokens($expire=-1)
@@ -421,41 +443,97 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
 **返り値** ： 指定したメールアドレスを登録しているユーザーがいれば、該当ユーザーらのwakarana_userインスタンスの配列、そうでない場合は空配列、エラーの場合は-1を返す。
 
 
-#### wakarana::create_email_address_verification_token($email_address)
-アカウント登録前の新規ユーザーに対してメールアドレス確認トークンを生成し、データベースに登録する。  
+#### wakarana::create_email_address_verification_code($email_address)
+アカウント登録前の新規ユーザーに対してメールアドレス確認コードを生成し、データベースに登録する。  
 この関数によりメールが送信されるわけではない。  
   
-**$email_address** : トークンの送信先メールアドレス。  
+**$email_address** : コードの送信先メールアドレス  
   
-**返り値** ： 成功した場合はメールアドレス確認トークン、失敗した場合はFALSEを返す。同じメールアドレスでの複数のアカウント作成を許可しない設定の場合、既に使用されているメールアドレスならNULLを返す。
+**返り値** ： 成功した場合はメールアドレス確認コード文字列を、失敗した場合はFALSEを返す。同じメールアドレスでの複数のアカウント作成を許可しない設定の場合、既に使用されているメールアドレスならNULLを返す。
 
 
-#### wakarana::email_address_verify($token, $delete_token=TRUE)
-メールアドレス確認トークンを照合し、トークン生成時に紐付けられたメールアドレスとユーザーを取得する。 
-トークンがアカウント登録前の新規ユーザーに対して生成されたものだった場合、メールアドレスのみを取得する。(ユーザー値はNULLとなる)  
+#### wakarana::email_address_verify($email_address, $code)
+メールアドレスと確認コードを照合する。使用済みのメールアドレス確認コードは削除される。  
   
-**$token** : メールアドレス確認トークン  
-**$delete_token** : TRUEの場合、使用済みのメールアドレス確認トークンを削除する。  
+**$email_address** : コードが紐付けられたメールアドレス  
+**$code** : メールアドレス確認コード  
   
-**返り値** ： 認証された場合はキー"user"(wakarana_userインスタンスまたはNULL)と"email_address"(メールアドレス)が含まれる連想配列を返し、それ以外の場合はFALSEを返す。
+**返り値** ： 認証された場合はwakarana_userインスタンス(既存ユーザーに対して生成された確認コードの場合)またはTRUE(新規ユーザーの場合)を返し、それ以外の場合はFALSEを返す。
 
 
-#### wakarana::delete_email_address_verification_tokens($expire=-1)
-指定した経過時間より前に生成されたメールアドレス確認トークンを無効化する。  
+#### wakarana::get_email_address_verification_code_expire($email_address, $code)
+メールアドレス確認コードの有効期限を取得する。  
   
-**$expire** ： 経過時間の秒数。-1を指定した場合はwakarana_config.iniで指定したメールアドレス確認トークンの有効秒数が代わりに使用される。  
+**$email_address** : コードが紐付けられたメールアドレス  
+**$code** : メールアドレス確認コード  
+  
+**返り値** ： 有効な確認コードだった場合はYYYY-MM-DD hh:mm:ss形式の有効期限、それ以外の場合はFALSEを返す。
+
+
+#### wakarana::delete_email_address_verification_codes($expire=-1)
+指定した経過時間より前に生成されたメールアドレス確認コードを無効化する。  
+  
+**$expire** ： 経過時間の秒数。-1を指定した場合はwakarana_config.iniで指定したメールアドレス確認コードの有効秒数が代わりに使用される。  
   
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
-#### wakarana::reset_password($token, $new_password, $delete_token=TRUE)
-パスワードリセット用トークンに紐付けられたアカウントのパスワードを再設定する。  
+#### wakarana::create_invite_code($expire, $remaining_number=NULL)
+ユーザー招待コードを生成する。  
+  
+**$expire** : 有効期限。YYYY-MM-DD hh:mm:ss形式の文字列。  
+**$remaining_number** : コードの使用可能回数。NULLを指定した場合は無限とみなす。  
+  
+**返り値** ： 成功した場合は招待コード文字列、失敗した場合はFALSEを返す。
+
+
+#### wakarana::check_invite_code($invite_code)
+ユーザー招待コードを検証する。  
+  
+**$invite_code** : 招待コード文字列  
+**$decrease_number** : TRUEを指定するか省略した場合、招待コードの残り回数が1つ減る。  
+  
+**返り値** ： 有効な招待コードだった場合はTRUE、それ以外の場合はFALSEを返す。
+
+
+#### wakarana::get_invite_codes()
+有効な全ての招待コードを取得する。  
+  
+**返り値** ： 成功した場合は、各招待コードの情報が格納された連想配列("invite_code"(招待コード本体)以外の項目はwakarana::get_invite_code_infoの返り値と同様)を発行日時の古い順に並べた配列を返す。失敗した場合はFALSEを返す。
+
+
+#### wakarana::get_invite_code_info($invite_code)
+ユーザー招待コードの情報(発行したユーザー、発行日時、有効期限、残り回数)を取得する。  
+  
+**$invite_code** : 招待コード文字列  
+  
+**返り値** ： 有効な招待コードだった場合は、ユーザー招待コードの情報を連想配列("user_id"(発行者のユーザーID)、"code_created"(YYYY-MM-DD hh:mm:ss形式の発行日時)、"code_expire"(YYYY-MM-DD hh:mm:ss形式の有効期限)、"remaining_number"(残り回数、無限の場合はNULL))で返す。それ以外の場合はFALSEを返す。
+
+
+#### wakarana::delete_invite_code($invite_code=NULL)
+ユーザー招待コードを削除する。  
+  
+**$invite_code** : 招待コード文字列。NULLを指定した場合は全ての招待コードを削除する。  
+  
+**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
+#### wakarana::reset_password($token, $new_password)
+パスワードリセット用トークンに紐付けられたアカウントのパスワードを再設定する。使用済みトークンは自動的に削除される。  
   
 **$token** : パスワードリセット用トークン  
 **$new_password** : 新しいパスワード  
 **$delete_token** : TRUEの場合、使用済みのパスワードリセット用トークンを削除する。
   
 **返り値** ： 成功した場合はトークンに紐付けられたユーザーのwakarana_userクラスのインスタンスを返し、それ以外の場合はFALSEを返す。
+
+
+#### wakarana::get_password_reset_token_expire($token)
+パスワードリセット用トークンの有効期限を取得する。  
+  
+**$token** : パスワードリセット用トークン  
+
+**返り値** ： 有効な確認コードだった場合はYYYY-MM-DD hh:mm:ss形式の有効期限、それ以外の場合はFALSEを返す。
 
 
 #### wakarana::delete_password_reset_tokens($expire=-1)
@@ -470,7 +548,7 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
 カスタムフィールドの値からユーザーを逆引きする。  
   
 **$custom_field_name** ： カスタムフィールド名  
-**$custom_field_value** ： カスタムフィールド値の文字列  
+**$custom_field_value** ： カスタムフィールド値  
   
 **返り値** ： 指定した値と一致するカスタムフィールドの値を持つユーザーがいれば、該当ユーザーらのwakarana_userインスタンスの配列、そうでない場合は空配列、エラーの場合は-1を返す。
 
@@ -489,7 +567,7 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
 **tmp_token** ： wakarana::authenticateにより発行される仮トークン  
 **$totp_pin** ： 6桁のTOTPコード  
   
-**返り値** ： 認証された場合はユーザーのwakarana_userインスタンス、ユーザーアカウントが停止中の場合はその状態値(WAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_EMAIL_UNVERIFIED)、それ以外の場合はFALSEを返す。
+**返り値** ： 認証された場合はユーザーのwakarana_userインスタンス、ユーザーアカウントが停止中の場合はその状態値(WAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_UNAPPROVED)、それ以外の場合はFALSEを返す。
 
 
 #### wakarana::totp_login($tmp_token, $totp_pin)
@@ -500,7 +578,7 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
 **tmp_token** ： wakarana::loginにより発行される仮トークン  
 **$totp_pin** ： 6桁のTOTPコード  
   
-**返り値** ： ログインが完了した場合はユーザーのwakarana_userインスタンス、ユーザーアカウントが停止中の場合はその状態値(WAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_EMAIL_UNVERIFIED)、それ以外の場合はFALSEを返す。
+**返り値** ： ログインが完了した場合はユーザーのwakarana_userインスタンス、ユーザーアカウントが停止中の場合はその状態値(WAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_UNAPPROVED)、それ以外の場合はFALSEを返す。
 
 
 #### wakarana::check($token=NULL, $update_last_access=TRUE)
@@ -668,7 +746,7 @@ wakarana_userインスタンスはこの関数以外の方法(unsetや変数の�
 #### wakarana_user::get_status()
 ユーザーの状態(アカウントが有効か停止されているか、等)を取得する。  
   
-**返り値** ： WAKARANA_STATUS_NORMALまたはWAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_EMAIL_UNVERIFIED。
+**返り値** ： WAKARANA_STATUS_NORMALまたはWAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_UNAPPROVED。
 
 
 #### wakarana_user::get_totp_enabled()
@@ -746,7 +824,7 @@ wakarana_userインスタンスはこの関数以外の方法(unsetや変数の�
 ユーザーアカウントの状態(有効、停止、等)を切り替える。  
 有効以外の状態を指定した場合、そのユーザーは自動的にログアウト状態となる。  
   
-**$status** : WAKARANA_STATUS_NORMALまたはWAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_EMAIL_UNVERIFIED。  
+**$status** : WAKARANA_STATUS_NORMAL(有効)またはWAKARANA_STATUS_DISABLE(無効)またはWAKARANA_STATUS_UNAPPROVED(未承認)。  
   
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
@@ -769,7 +847,7 @@ wakarana_userインスタンスはこの関数以外の方法(unsetや変数の�
 ユーザーの指定したカスタムフィールドの単一の値を設定する。  
   
 **$custom_field_name** ： カスタムフィールド名。2個以上の値の登録が可能なカスタムフィールドは指定できない。  
-**$custom_field_value** ： 値として保存する文字列    
+**$custom_field_value** ： 値として保存する文字列または数値    
   
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
@@ -779,7 +857,7 @@ wakarana_userインスタンスはこの関数以外の方法(unsetや変数の�
 同一のユーザーに対して同じ値を複数追加することはできない。
   
 **$custom_field_name** ： カスタムフィールド名  
-**$custom_field_value** ： 値として保存する文字列   
+**$custom_field_value** ： 値として保存する文字列または数値   
 **$value_number** ： 並び順番号。既に値が存在する並び順番号を指定した場合、それより後の値の並び順番号を後ろにずらして新しい値を挿入する。既存の項目数+1よりも大きい値は使用できない。  
   
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
@@ -790,7 +868,7 @@ wakarana_userインスタンスはこの関数以外の方法(unsetや変数の�
   
 **$custom_field_name** ： カスタムフィールド名  
 **$value_number** ： 上書きする値の並び順番号  
-**$custom_field_value** ： 値として保存する文字列  
+**$custom_field_value** ： 値として保存する文字列または数値  
   
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
@@ -843,6 +921,12 @@ wakarana_userインスタンスはこの関数以外の方法(unsetや変数の�
 **返り値** ： ユーザーが持つロールのいずれかに権限が割り当てられている場合はTRUE、それ以外の場合はFALSEを返す。
 
 
+#### wakarana_user::get_permissions()
+ユーザーに割り当てられた権限の一覧を取得する。  
+  
+**返り値** ： 権限対象リソースIDをキーとし、値として動作識別名の配列を持った連想配列を返す。権限が存在しない場合は空配列を返す。失敗した場合はFALSEを返す。
+
+
 #### wakarana_user::get_permitted_value($permitted_value_id)
 ユーザーに割り当てられている最大の権限値を取得する。  
   
@@ -852,7 +936,7 @@ wakarana_userインスタンスはこの関数以外の方法(unsetや変数の�
 
 
 #### wakarana_user::delete_all_tokens()
-ユーザーの各種トークン(ログイントークン、ワンタイムトークン、メールアドレス確認トークン、パスワードリセット用トークン、2段階認証用一時トークン)を全て削除する。  
+ユーザーの各種トークン(ログイントークン、ワンタイムトークン、メールアドレス確認コード、パスワードリセット用トークン、2段階認証用一時トークン)を全て削除する。  
   
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
@@ -937,23 +1021,23 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
 **$password** ： パスワード  
 **$totp_pin** ： 6桁のTOTPコード。2要素認証を使用しない場合と2要素認証の入力画面を分ける場合は省略。  
   
-**返り値** ： 認証された場合はTRUE、ユーザーアカウントが停止中の場合はその状態値(WAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_EMAIL_UNVERIFIED)、ユーザーIDが2段階認証の対象ユーザーでTOTPコードがNULLだった場合は仮トークン、それ以外の場合はFALSEを返す。
+**返り値** ： 認証された場合はTRUE、ユーザーアカウントが停止中の場合はその状態値(WAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_UNAPPROVED)、ユーザーIDが2段階認証の対象ユーザーでTOTPコードがNULLだった場合は仮トークン、それ以外の場合はFALSEを返す。
 
 
-#### wakarana_user::create_email_address_verification_token($email_address)
-メールアドレス確認トークンを生成し、ユーザーに割り当てる。  
-前に同じユーザーに対して生成されたメールアドレス確認トークンがデータベースに残っていた場合、古いトークンは削除される。  
+#### wakarana_user::create_email_address_verification_code($email_address)
+メールアドレス確認コードを生成し、ユーザーに割り当てる。  
+前に同じユーザーに対して生成されたメールアドレス確認コードがデータベースに残っていた場合、古いコードは削除される。  
 この関数によりメールが送信されるわけではない。  
   
-**$email_address** : トークンの送信先メールアドレス。  
+**$email_address** : コードの送信先メールアドレス。  
   
-**返り値** ： 成功した場合はメールアドレス確認トークン、失敗した場合はFALSEを返す。
+**返り値** ： 成功した場合はメールアドレス確認コード、失敗した場合はFALSEを返す。
 
 
-#### wakarana_user::delete_email_address_verification_token()
-ユーザーに対して発行されているメールアドレス確認トークンを削除する。  
+#### wakarana_user::delete_email_address_verification_code()
+ユーザーに対して発行されているメールアドレス確認コードを削除する。  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。  
+**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
 #### wakarana_user::create_password_reset_token()
@@ -1272,14 +1356,26 @@ wakarana_config.iniの設定値を全て既定値に戻す。
 
 
 #### wakarana_config::add_custom_field($custom_field_name, $maximum_length=500, $records_per_user=1, $allow_nonunique_value=TRUE, $save_now=TRUE)
-カスタムフィールドを追加する。  
+文字列型カスタムフィールドを追加する。  
 既に存在するカスタムフィールド名を指定した場合はその設定を上書きする。  
   
 **$custom_field_name** : カスタムフィールド名。半角英数字及びアンダーバーが使用可能。  
 **$maximum_length** : 保存可能な最大文字数(500以下)  
 **$records_per_user** : ユーザーあたりの上限件数(100以下)  
 **$allow_nonunique_value** : 異なるユーザーが同一の値を持つことを認めるか  
-**$save_now** : FALSEならcustom_fields.jsonへの上書きは保留する。  
+**$save_now** : FALSEならcustom_fields.jsonへの上書きは保留する  
+  
+**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
+#### wakarana_config::add_custom_numerical_field($custom_field_name, $records_per_user=1, $allow_nonunique_value=TRUE, $save_now=TRUE)
+数値型カスタムフィールドを追加する。  
+既に存在するカスタムフィールド名を指定した場合はその設定を上書きする。  
+  
+**$custom_field_name** : カスタムフィールド名。半角英数字及びアンダーバーが使用可能。  
+**$records_per_user** : ユーザーあたりの上限件数(100以下)  
+**$allow_nonunique_value** : 異なるユーザーが同一の値を持つことを認めるか  
+**$save_now** : FALSEならcustom_fields.jsonへの上書きは保留する  
   
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
@@ -1290,6 +1386,22 @@ wakarana_config.iniの設定値を全て既定値に戻す。
   
 **$custom_field_name** : カスタムフィールド名  
 **$save_now** : FALSEならcustom_fields.jsonへの上書きは保留する。  
+  
+**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
+### wakarana_config::add_email_domain_to_blacklist($damain_name)
+ドメインをメールドメインブラックリストに追加する。  
+  
+**$domain_name** : ブラックリストに追加するドメイン名  
+  
+**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
+### wakarana_config::remove_email_domain_from_blacklist($damain_name)
+ドメインをメールドメインブラックリストから除外する。  
+  
+**$domain_name** : ブラックリストから除外するドメイン名  
   
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
 

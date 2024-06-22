@@ -14,7 +14,7 @@ _/_/_/_/ データベース _/_/_/_/
   `user_created` timestamp [TEXT] (NOT NULL) アカウントの作成日時
   `last_updated` timestamp [TEXT] (NOT NULL) アカウント情報の最終更新日時
   `last_access` timestamp [TEXT] (NOT NULL) そのアカウントの最終利用日時
-  `status` smallint [INTEGER] (NOT NULL) アカウントが使用可能か停止されているか(0:停止, 1:有効, 2:ロックアウト(このバージョンでは実装見送り), 3:メールアドレス未認証)
+  `status` smallint [INTEGER] (NOT NULL) アカウントが使用可能か停止されているか(0:停止, 1:有効, -1:未承認)
   `totp_key` varchar(16) [TEXT] TOTPワンタイムパスワード生成キー
   
   UNIQUE INDEX `wakarana_idx_u0` LOWER(`user_id`) ※PostgreSQLのみ
@@ -43,6 +43,17 @@ _/_/_/_/ データベース _/_/_/_/
   PRIMARY KEY `user_id`, `custom_field_name`, `value_number`
   UNIQUE INDEX `wakarana_idx_c1` `user_id`, `custom_field_name`, `custom_field_value`
   INDEX `wakarana_idx_c2` `custom_field_name`, `custom_field_value`
+
+
+テーブル `wakarana_user_custom_numerical_fields`
+  `user_id` varchar(60) [TEXT COLLATE NOCASE] (NOT NULL) ユーザーID
+  `custom_field_name` varchar(60) [TEXT] (NOT NULL) カスタムフィールド名
+  `value_number` smallint [INTEGER] (NOT NULL) カスタムフィールド値が複数ある場合の並び順番号(1から付番)
+  `custom_field_value` double precision [REAL] カスタムフィールド値
+  
+  PRIMARY KEY `user_id`, `custom_field_name`, `value_number`
+  UNIQUE INDEX `wakarana_idx_cn1` `user_id`, `custom_field_name`, `custom_field_value`
+  INDEX `wakarana_idx_cn2` `custom_field_name`, `custom_field_value`
 
 
 テーブル `wakarana_login_tokens`
@@ -139,14 +150,26 @@ _/_/_/_/ データベース _/_/_/_/
   INDEX `wakarana_idx_a3` `authenticate_datetime`
 
 
-テーブル `wakarana_email_address_verification`
-  `token` varchar(43) [TEXT] (NOT NULL PRIMARY KEY) メールアドレス確認用トークン(上記と同じ)
+テーブル `wakarana_email_address_verification_codes`
   `user_id` varchar(60) [TEXT COLLATE NOCASE] (UNIQUE)ユーザーID(NULLの場合は、ユーザーID登録前のメールアドレス確認)
-  `email_address` varchar(254) [TEXT] (NOT NULL) メールアドレス(上記と同じ)
-  `token_created` timestamp [TEXT] (NOT NULL) そのトークンの生成日時
+  `email_address` varchar(254) [TEXT] (NOT NULL) メールアドレス
+  `verification_code` varchar(10) [TEXT] (NOT NULL) メールアドレス確認用コード
+  `code_created` timestamp [TEXT] (NOT NULL) コードの生成日時
   
-  INDEX `wakarana_idx_ev1` `email_address`, `user_id`
-  INDEX `wakarana_idx_ev2` `token_created`
+  INDEX `wakarana_idx_ev1` `email_address`, `verification_code`
+  INDEX `wakarana_idx_ev2` `code_created`
+
+
+テーブル `wakarana_invite_codes`
+  `invite_code` varchar(15) [TEXT] (NOT NULL PRIMARY KEY) 招待コード
+  `user_id` varchar(60) [TEXT COLLATE NOCASE] (NOT NULL) コードを発行したユーザーのユーザーID
+  `code_created` timestamp [TEXT] (NOT NULL) コードの生成日時
+  `code_expire` timestamp [TEXT] コードの有効期限(NULLの場合は無期限)
+  `remaining_number` integer [INTEGER] コードの残り使用可能回数(NULLの場合は無限)
+  
+  INDEX `wakarana_idx_i1` `user_id`, `code_created`
+  INDEX `wakarana_idx_i2` `code_expire`
+  INDEX `wakarana_idx_i3` `code_created`
 
 
 テーブル `wakarana_password_reset_tokens`
