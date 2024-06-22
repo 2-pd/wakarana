@@ -4,7 +4,7 @@ require_once(dirname(__FILE__)."/common.php");
 
 define("WAKARANA_STATUS_DISABLE", 0);
 define("WAKARANA_STATUS_NORMAL", 1);
-define("WAKARANA_STATUS_EMAIL_ADDRESS_UNVERIFIED", 3);
+define("WAKARANA_STATUS_UNAPPROVED", -1);
 
 define("WAKARANA_ORDER_USER_ID", "user_id");
 define("WAKARANA_ORDER_USER_NAME", "user_name");
@@ -341,7 +341,7 @@ class wakarana extends wakarana_common {
             return "0.0.0.0";
         }
         
-        if (preg_match("/^(((1[0-9]{2}|2([0-4][0-9]|5[0-5])|[1-9]?[0-9])\.){3}(1[0-9]{2}|2([0-4][0-9]|5[0-5])|[1-9]?[0-9])|([0-9a-f]{0,4}:){2,7}[0-9a-f]{0,4})$/u", $remote_addr) && !preg_match("/(::.*::|:::)/u", $remote_addr)) {
+        if (preg_match("/\A(((1[0-9]{2}|2([0-4][0-9]|5[0-5])|[1-9]?[0-9])\.){3}(1[0-9]{2}|2([0-4][0-9]|5[0-5])|[1-9]?[0-9])|([0-9a-f]{0,4}:){2,7}[0-9a-f]{0,4})\z/u", $remote_addr) && !preg_match("/(::.*::|:::)/u", $remote_addr)) {
             return $remote_addr;
         } else {
             $this->print_error("クライアント端末のIPアドレスが異常です。");

@@ -68,7 +68,7 @@ class wakarana_common {
     
     
     static function check_id_string ($id, $length = 60) {
-        if (gettype($id) === "string" && preg_match("/^[0-9A-Za-z_]{1,".$length."}$/u", $id)) {
+        if (gettype($id) === "string" && preg_match("/\A[0-9A-Za-z_]{1,".$length."}\z/u", $id)) {
             return TRUE;
         } else {
             return FALSE;
