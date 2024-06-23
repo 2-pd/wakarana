@@ -101,7 +101,7 @@ wakarana_config.iniの設定値を取得する。
   
 **$custom_field_name** : カスタムフィールド名  
   
-**返り値** ： カスタムフィールド名がwakarana_custom_fields.jsonに存在すればその最大文字数、存在しなければNULLを返す。
+**返り値** ： カスタムフィールド名がwakarana_custom_fields.jsonに存在すればその最大文字数、存在しないかカスタムフィールドが数値型ならばNULLを返す。
 
 
 #### wakarana_common::get_custom_field_records_per_user($custom_field_name)

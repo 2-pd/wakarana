@@ -133,8 +133,17 @@ class wakarana_common {
     }
     
     
-    function get_custom_field_maximum_length ($custom_field_name) {
+    function get_custom_field_is_numeric ($custom_field_name) {
         if (isset($this->custom_fields[$custom_field_name])) {
+            return $this->custom_fields[$custom_field_name]["is_numeric"];
+        } else {
+            return NULL;
+        }
+    }
+    
+    
+    function get_custom_field_maximum_length ($custom_field_name) {
+        if ($this->get_custom_field_is_numeric($custom_field_name) === FALSE) {
             return $this->custom_fields[$custom_field_name]["maximum_length"];
         } else {
             return NULL;

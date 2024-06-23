@@ -175,7 +175,38 @@ class wakarana_config extends wakarana_common {
         }
         
         $this->custom_fields[$custom_field_name] = array(
+            "is_numeric" => FALSE,
             "maximum_length" => $maximum_length,
+            "records_per_user" => $records_per_user,
+            "allow_nonunique_value" => $allow_nonunique_value
+        );
+        
+        if ($save_now) {
+            return $this->save_custom_fields();
+        } else {
+            return TRUE;
+        }
+    }
+    
+    
+    function add_custom_numerical_field ($custom_field_name, $records_per_user = 1, $allow_nonunique_value = TRUE, $save_now = TRUE) {
+        if (!self::check_id_string($custom_field_name)) {
+            $this->print_error("指定されたカスタムフィールド名が異常です。");
+            return FALSE;
+        }
+        
+        if ($records_per_user > 100 || $records_per_user < 1) {
+            $this->print_error("指定された最大件数が異常です。カスタムフィールドの最大件数は1〜100の範囲で指定してください。");
+            return FALSE;
+        }
+        
+        if (!is_bool($allow_nonunique_value)) {
+            $this->print_error("カスタムフィールド値の重複可否の設定値が異常です。");
+            return FALSE;
+        }
+        
+        $this->custom_fields[$custom_field_name] = array(
+            "is_numeric" => TRUE,
             "records_per_user" => $records_per_user,
             "allow_nonunique_value" => $allow_nonunique_value
         );
