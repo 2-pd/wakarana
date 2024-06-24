@@ -44,6 +44,24 @@ define("WAKARANA_CONFIG_ORIGINAL",
 
 
 class wakarana_config extends wakarana_common {
+    function __construct ($base_dir = NULL) {
+        $this->update_base_path($base_dir);
+        
+        if (!file_exists($this->base_path."/wakarana_config.ini")) {
+            $this->reset_config();
+        }
+        
+        if (!file_exists($this->base_path."/wakarana_custom_fields.json")) {
+            file_put_contents($this->base_path."/wakarana_custom_fields.json", "{}");
+        }
+        
+        if (!file_exists($this->base_path."/wakarana_email_domain_blacklist.conf")) {
+            touch($this->base_path."/wakarana_email_domain_blacklist.conf");
+        }
+        
+        parent::__construct($base_dir);
+    }
+    
     protected function save () {
         $file_h = @fopen($this->base_path."/wakarana_config.ini","w");
         

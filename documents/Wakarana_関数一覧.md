@@ -42,6 +42,11 @@ wakaranaクラスとwakarana_configクラスの親クラス。このクラスの
 **返り値** ： 識別名として使用可能な文字列ならTRUEを、それ以外の場合はFALSEを返す。
 
 
+#### ◆ wakarana_common::update_base_path($base_dir)
+インスタンス変数として保持しているベースフォルダのパスを更新する。  
+◆クラス内呼び出し専用であり、wakarana_common::__constructにより自動的に実行される。
+
+
 #### ◆ wakarana_common::connect_db()
 wakarana_config.iniの設定に基づき、データベースに接続する。  
 ◆クラス内呼び出し専用であり、wakaranaクラスとwakarana_configクラスはこの関数を自動的に実行する。  
@@ -1336,6 +1341,12 @@ wakarana_config.iniの既定値一覧。
 
 ### class wakarana_config
 wakarana_commonの派生クラス。
+
+#### wakarana_config::__construct($base_dir=NULL)
+ベースフォルダに各種設定ファイル(wakarana_config.ini、wakarana_custom_fields.json、wakarana_email_domain_blacklist.conf)がなければ作成し、wakarana_common::__constructを実行する。  
+  
+**$base_dir** : wakarana_config.iniのあるフォルダのパス。省略時はcommon.phpのあるフォルダを使用する。
+
 
 #### ◆ wakarana_config::save()
 現在の設定値でwakarana_config.iniを上書きする。  

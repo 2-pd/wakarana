@@ -27,10 +27,8 @@ class wakarana_common {
     
     
     function __construct ($base_dir = NULL) {
-        if (empty($base_dir)) {
-            $this->base_path = __DIR__;
-        } else {
-            $this->base_path = realpath($base_dir);
+        if (empty($this->base_path)) {
+            $this->update_base_path($base_dir);
         }
         
         $config_path = $this->base_path."/wakarana_config.ini";
@@ -72,6 +70,19 @@ class wakarana_common {
             return TRUE;
         } else {
             return FALSE;
+        }
+    }
+    
+    
+    protected function update_base_path ($base_dir) {
+        if (empty($base_dir)) {
+            $this->base_path = __DIR__;
+        } else {
+            $this->base_path = realpath($base_dir);
+            
+            if (!is_dir($this->base_path)) {
+                $this->print_error("指定されたベースフォルダは存在しません。");
+            }
         }
     }
     
