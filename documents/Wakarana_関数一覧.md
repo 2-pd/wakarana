@@ -125,6 +125,11 @@ wakarana_config.iniの設定値を取得する。
 **返り値** ： カスタムフィールド名がwakarana_custom_fields.jsonに存在する場合、一意でない値を持てるならTRUE、持てないならFALSEを返す。カスタムフィールド名が存在しなければNULLを返す。
 
 
+#### ◆ wakarana_common::load_email_domain_blacklist()
+メールドメインブラックリストがインスタンス変数に読み込まれていなければ、ファイルから読み込む。  
+◆クラス内呼び出し専用。
+
+
 #### wakarana_common::check_email_domain($domain_name)
 指定したドメインがメールドメインブラックリストに含まれないことを確認する。  
   
@@ -1345,7 +1350,7 @@ wakarana_commonの派生クラス。
 #### wakarana_config::__construct($base_dir=NULL)
 ベースフォルダに各種設定ファイル(wakarana_config.ini、wakarana_custom_fields.json、wakarana_email_domain_blacklist.conf)がなければ作成し、wakarana_common::__constructを実行する。  
   
-**$base_dir** : wakarana_config.iniのあるフォルダのパス。省略時はcommon.phpのあるフォルダを使用する。
+**$base_dir** : wakarana_config.iniのある(または作成する)フォルダのパス。省略時はcommon.phpのあるフォルダを使用する。
 
 
 #### ◆ wakarana_config::save()
@@ -1413,12 +1418,17 @@ wakarana_config.iniの設定値を全て既定値に戻す。
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
+#### ◆ wakarana_config::save_email_domain_blacklist()
+メールドメインブラックリストを上書き保存する。  
+◆クラス内呼び出し専用。
+
+
 ### wakarana_config::add_email_domain_to_blacklist($damain_name)
 ドメインをメールドメインブラックリストに追加する。  
   
 **$domain_name** : ブラックリストに追加するドメイン名  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** ： 成功した場合はTRUE、既にブラックリストに登録されているドメインだった場合や失敗した場合はFALSEを返す。
 
 
 ### wakarana_config::remove_email_domain_from_blacklist($damain_name)
@@ -1426,7 +1436,7 @@ wakarana_config.iniの設定値を全て既定値に戻す。
   
 **$domain_name** : ブラックリストから除外するドメイン名  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** ： 成功した場合はTRUE、もとからブラックリストに登録されていないドメインだった場合や失敗した場合はFALSEを返す。
 
 
 #### wakarana_config::setup_db()

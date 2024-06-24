@@ -253,6 +253,40 @@ class wakarana_config extends wakarana_common {
     }
     
     
+    protected function save_email_domain_blacklist () {
+        $email_domain_blacklist = implode("\n", $this->email_domain_blacklist);
+        
+        if(@file_put_contents($this->base_path."/wakarana_email_domain_blacklist.conf", $email_domain_blacklist) !== FALSE){
+            return TRUE;
+        } else {
+            $this->print_error("メールドメインブラックリストファイルへの書き込みに失敗しました。");
+            return FALSE;
+        }
+    }
+    
+    
+    function add_email_domain_to_blacklist ($damain_name) {
+        if ($this->check_email_domain($damain_name)) {
+            $this->email_domain_blacklist[] = mb_strtolower($damain_name);
+            
+            return $this->save_email_domain_blacklist();
+        } else {
+            return FALSE;
+        }
+    }
+    
+    
+    function remove_email_domain_from_blacklist ($damain_name) {
+        if (!$this->check_email_domain($damain_name)) {
+            $this->email_domain_blacklist = array_values(array_diff($this->email_domain_blacklist, array(mb_strtolower($damain_name))));
+            
+            return $this->save_email_domain_blacklist();
+        } else {
+            return FALSE;
+        }
+    }
+    
+    
     function setup_db () {
         $this->connect_db();
         

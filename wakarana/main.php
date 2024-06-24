@@ -341,7 +341,7 @@ class wakarana extends wakarana_common {
             return "0.0.0.0";
         }
         
-        if (preg_match("/\A(((1[0-9]{2}|2([0-4][0-9]|5[0-5])|[1-9]?[0-9])\.){3}(1[0-9]{2}|2([0-4][0-9]|5[0-5])|[1-9]?[0-9])|([0-9a-f]{0,4}:){2,7}[0-9a-f]{0,4})\z/u", $remote_addr) && !preg_match("/(::.*::|:::)/u", $remote_addr)) {
+        if (filter_var($remote_addr, FILTER_VALIDATE_IP) !== FALSE) {
             return $remote_addr;
         } else {
             $this->print_error("クライアント端末のIPアドレスが異常です。");
