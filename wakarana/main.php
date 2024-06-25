@@ -311,7 +311,7 @@ class wakarana extends wakarana_common {
     
     
     function delete_all_tokens () {
-        if($this->delete_login_tokens(0) && $this->delete_one_time_tokens(0) && $this->delete_email_address_verification_tokens(0) && $this->delete_password_reset_tokens(0) && $this->delete_2sv_tokens(0)){
+        if($this->delete_login_tokens(0) && $this->delete_one_time_tokens(0) && $this->delete_email_address_verification_codes(0) && $this->delete_password_reset_tokens(0) && $this->delete_2sv_tokens(0)){
             return TRUE;
         } else {
             return FALSE;
@@ -524,89 +524,122 @@ class wakarana extends wakarana_common {
     }
     
     
-    function create_email_address_verification_token ($email_address) {
-        if (!$this->config["allow_nonunique_email_address"] && !empty($this->search_users_with_email_address($email_address))) {
-            $this->print_error("使用できないメールアドレスです。現在の設定では同一メールアドレスでの復数アカウント作成は許可されていません。");
-            return NULL;
-        }
-        
-        $this->delete_email_address_verification_tokens();
-        
-        $token = self::create_token();
-        
-        $token_created = date("Y-m-d H:i:s");
-        
-        try {
-            $stmt = $this->db_obj->prepare('INSERT INTO "wakarana_email_address_verification"("token", "user_id", "email_address", "token_created") VALUES (\''.$token.'\', NULL, :email_address, \''.$token_created.'\')');
-            
-            $stmt->bindValue(":email_address", $email_address, PDO::PARAM_STR);
-            
-            $stmt->execute();
-        } catch (PDOException $err) {
-            $this->print_error("メールアドレス確認用トークンの生成に失敗しました。".$err->getMessage());
-            return FALSE;
-        }
-        
-        return $token;
-    }
-    
-    
-    function email_address_verify($token, $delete_token = TRUE) {
-        $this->delete_email_address_verification_tokens();
-        
-        try {
-            $stmt = $this->db_obj->prepare('SELECT "user_id", "email_address" FROM "wakarana_email_address_verification" WHERE "token" = :token');
-            
-            $stmt->bindValue(":token", $token, PDO::PARAM_STR);
-            
-            $stmt->execute();
-        } catch (PDOException $err) {
-            $this->print_error("メールアドレス確認用トークンの認証に失敗しました。".$err->getMessage());
-            return FALSE;
-        }
-        
-        $data = $stmt->fetch(PDO::FETCH_ASSOC);
-        
-        if (!empty($data)) {
-            if ($delete_token) {
-                try {
-                    $stmt = $this->db_obj->prepare('DELETE FROM "wakarana_email_address_verification" WHERE "token" = :token');
-                    
-                    $stmt->bindValue(":token", $token, PDO::PARAM_STR);
-                    
-                    $stmt->execute();
-                } catch (PDOException $err) {
-                    $this->print_error("使用済みのメールアドレス確認用トークンの削除に失敗しました。".$err->getMessage());
-                    return FALSE;
-                }
-            }
-            
-            if (!empty($data["user_id"])) {
-                $data["user"] = $this->get_user($data["user_id"]);
-                
-                if (empty($data["user"])) {
-                    return FALSE;
-                }
-            } else {
-                $data["user"] = NULL;
-            }
-            
-            return $data;
+    function check_email_address ($email_address) {
+        if (preg_match("/\A[A-Za-z0-9!#$%&'\*+\/=?^_`\{\|\}~\.\-]+@[A-Za-z0-9\-]+(\.[A-Za-z0-9\-]+)+\z/u", $email_address)) {
+            return $this->check_email_domain(substr($email_address, strpos($email_address, "@") + 1));
         } else {
             return FALSE;
         }
     }
     
     
-    function delete_email_address_verification_tokens ($expire = -1) {
+    function create_email_address_verification_code ($email_address) {
+        if (!$this->check_email_address($email_address)) {
+            $this->print_error("使用できないメールアドレスです。");
+            return FALSE;
+        }
+        
+        if (!$this->config["allow_nonunique_email_address"] && !empty($this->search_users_with_email_address($email_address))) {
+            $this->print_error("現在の設定では同一メールアドレスでの復数アカウント作成は許可されていません。");
+            return NULL;
+        }
+        
+        $this->delete_email_address_verification_codes();
+        
+        $verification_code = self::create_random_code(8);
+        
+        $code_created = date("Y-m-d H:i:s");
+        
+        try {
+            $stmt = $this->db_obj->prepare('INSERT INTO "wakarana_email_address_verification_codes"("user_id", "email_address", "verification_code", "code_created") VALUES (NULL, :email_address, \''.$verification_code.'\', \''.$code_created.'\')');
+            
+            $stmt->bindValue(":email_address", $email_address, PDO::PARAM_STR);
+            
+            $stmt->execute();
+        } catch (PDOException $err) {
+            $this->print_error("メールアドレス確認コードの生成に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        return $verification_code;
+    }
+    
+    
+    function email_address_verify ($email_address, $verification_code) {
+        $this->delete_email_address_verification_codes();
+        
+        try {
+            $stmt = $this->db_obj->prepare('SELECT "user_id" FROM "wakarana_email_address_verification_codes" WHERE "email_address" = :email_address AND "verification_code" = :verification_code');
+            
+            $stmt->bindValue(":email_address", $email_address, PDO::PARAM_STR);
+            $stmt->bindValue(":verification_code", $verification_code, PDO::PARAM_STR);
+            
+            $stmt->execute();
+        } catch (PDOException $err) {
+            $this->print_error("メールアドレス確認コードの認証に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        $data = $stmt->fetchColumn();
+        
+        if ($data !== FALSE) {
+            try {
+                $stmt = $this->db_obj->prepare('DELETE FROM "wakarana_email_address_verification_codes" WHERE "email_address" = :email_address AND "verification_code" = :verification_code');
+                
+                $stmt->bindValue(":email_address", $email_address, PDO::PARAM_STR);
+                $stmt->bindValue(":verification_code", $verification_code, PDO::PARAM_STR);
+                
+                $stmt->execute();
+            } catch (PDOException $err) {
+                $this->print_error("使用済みのメールアドレス確認コードの削除に失敗しました。".$err->getMessage());
+                return FALSE;
+            }
+            
+            if (!is_null($data)) {
+                return $this->get_user($data);
+            } else {
+                return TRUE;
+            }
+        } else {
+            return FALSE;
+        }
+    }
+    
+    
+    function get_email_address_verification_code_expire ($email_address, $verification_code) {
+        $this->delete_email_address_verification_codes();
+        
+        try {
+            $stmt = $this->db_obj->prepare('SELECT "code_created" FROM "wakarana_email_address_verification_codes" WHERE "email_address" = :email_address AND "verification_code" = :verification_code');
+            
+            $stmt->bindValue(":email_address", $email_address, PDO::PARAM_STR);
+            $stmt->bindValue(":verification_code", $verification_code, PDO::PARAM_STR);
+            
+            $stmt->execute();
+        } catch (PDOException $err) {
+            $this->print_error("メールアドレス確認コードの情報取得に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        $data = $stmt->fetchColumn();
+        
+        if ($data !== FALSE) {
+            return date("Y-m-d H:i:s", strtotime($data) + $this->config["verification_email_expire"]);
+        } else {
+            return FALSE;
+        }
+    }
+    
+    
+    function delete_email_address_verification_codes ($expire = -1) {
         if ($expire === -1) {
             $expire = $this->config["verification_email_expire"];
         }
         
         try {
-            $this->db_obj->exec('DELETE FROM "wakarana_email_address_verification" WHERE "token_created" <= \''.date("Y-m-d H:i:s", time() - $expire).'\'');
+            $this->db_obj->exec('DELETE FROM "wakarana_email_address_verification_codes" WHERE "code_created" <= \''.date("Y-m-d H:i:s", time() - $expire).'\'');
         } catch (PDOException $err) {
-            $this->print_error("メールアドレス確認用トークンの削除に失敗しました。".$err->getMessage());
+            $this->print_error("メールアドレス確認コードの削除に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -889,15 +922,15 @@ class wakarana extends wakarana_common {
     }
     
     
-    static function create_totp_key () {
-        $key_bin = random_bytes(10);
+    static function create_random_code ($code_length = 16) {
+        $key_bin = random_bytes($code_length * 5 / 8);
         
-        $totp_key = "";
-        for ($cnt = 0; $cnt < 16; $cnt++) {
-            $totp_key .= WAKARANA_BASE32_TABLE[self::bin_to_int($key_bin, $cnt * 5, 5)];
+        $random_code = "";
+        for ($cnt = 0; $cnt < $code_length; $cnt++) {
+            $random_code .= WAKARANA_BASE32_TABLE[self::bin_to_int($key_bin, $cnt * 5, 5)];
         }
         
-        return $totp_key;
+        return $random_code;
     }
     
     
@@ -1130,8 +1163,13 @@ class wakarana_user {
             return FALSE;
         }
         
+        if (!$this->wakarana->check_email_address($email_address)) {
+            $this->wakarana->print_error("使用できないメールアドレスです。");
+            return FALSE;
+        }
+        
         if (!$this->wakarana->config["allow_nonunique_email_address"] && !empty($this->wakarana->search_users_with_email_address($email_address))) {
-            $this->wakarana->print_error("使用できないメールアドレスです。現在の設定では同一メールアドレスの復数アカウントでの使用は許可されていません。");
+            $this->wakarana->print_error("現在の設定では同一メールアドレスの復数アカウントでの使用は許可されていません。");
             return FALSE;
         }
         
@@ -1234,8 +1272,8 @@ class wakarana_user {
     
     function enable_2_factor_auth ($totp_key = NULL) {
         if (empty($totp_key)) {
-            $totp_key = wakarana::create_totp_key();
-        } elseif (preg_match("/^[A-Z2-7]{16}$/", $totp_key) !== 1) {
+            $totp_key = wakarana::create_random_code();
+        } elseif (preg_match("/\A[A-Z2-7]{16}\z/", $totp_key) !== 1) {
             $this->wakarana->print_error("TOTP生成鍵が不正です。");
             return FALSE;
         }
@@ -1753,39 +1791,44 @@ class wakarana_user {
     }
     
     
-    function create_email_address_verification_token ($email_address) {
+    function create_email_address_verification_code ($email_address) {
+        if (!$this->wakarana->check_email_address($email_address)) {
+            $this->wakarana->print_error("使用できないメールアドレスです。");
+            return FALSE;
+        }
+        
         if (!$this->wakarana->config["allow_nonunique_email_address"] && !empty($this->wakarana->search_users_with_email_address($email_address))) {
-            $this->wakarana->print_error("使用できないメールアドレスです。現在の設定では同一メールアドレスでの復数アカウント作成は許可されていません。");
+            $this->wakarana->print_error("現在の設定では同一メールアドレスの復数アカウントでの使用は許可されていません。");
             return NULL;
         }
         
-        $this->wakarana->delete_email_address_verification_tokens();
+        $this->wakarana->delete_email_address_verification_codes();
         
-        $token = wakarana::create_token();
+        $verification_code = wakarana::create_random_code(8);
         
-        $token_created = date("Y-m-d H:i:s");
+        $code_created = date("Y-m-d H:i:s");
         
         try {
-            $stmt = $this->wakarana->db_obj->prepare('INSERT INTO "wakarana_email_address_verification"("token", "user_id", "email_address", "token_created") VALUES (\''.$token.'\', \''.$this->user_info["user_id"].'\', :email_address, \''.$token_created.'\') ON CONFLICT("user_id") DO UPDATE SET "token" = \''.$token.'\', "email_address" = :email_address_2, "token_created" = \''.$token_created.'\'');
+            $stmt = $this->wakarana->db_obj->prepare('INSERT INTO "wakarana_email_address_verification_codes"("user_id", "email_address", "verification_code", "code_created") VALUES (\''.$this->user_info["user_id"].'\', :email_address, \''.$verification_code.'\', \''.$code_created.'\') ON CONFLICT("user_id") DO UPDATE SET "email_address" = :email_address_2, "verification_code" = \''.$verification_code.'\', "code_created" = \''.$code_created.'\'');
             
             $stmt->bindValue(":email_address", $email_address, PDO::PARAM_STR);
             $stmt->bindValue(":email_address_2", $email_address, PDO::PARAM_STR);
             
             $stmt->execute();
         } catch (PDOException $err) {
-            $this->wakarana->print_error("メールアドレス確認用トークンの生成に失敗しました。".$err->getMessage());
+            $this->wakarana->print_error("メールアドレス確認コードの生成に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
-        return $token;
+        return $verification_code;
     }
     
     
-    function delete_email_address_verification_token () {
+    function delete_email_address_verification_code () {
         try {
-            $this->wakarana->db_obj->exec('DELETE FROM "wakarana_email_address_verification" WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
+            $this->wakarana->db_obj->exec('DELETE FROM "wakarana_email_address_verification_codes" WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
         } catch (PDOException $err) {
-            $this->wakarana->print_error("ユーザーのメールアドレス確認用トークンの削除に失敗しました。".$err->getMessage());
+            $this->wakarana->print_error("ユーザーのメールアドレス確認コードの削除に失敗しました。".$err->getMessage());
             return FALSE;
         }
         

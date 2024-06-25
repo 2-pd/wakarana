@@ -453,29 +453,37 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
 **返り値** ： 指定したメールアドレスを登録しているユーザーがいれば、該当ユーザーらのwakarana_userインスタンスの配列、そうでない場合は空配列、エラーの場合は-1を返す。
 
 
+#### wakarana::check_email_address($email_address)
+指定した文字列がメールアドレスの規格に沿ったものであり、かつ、そのドメインがメールドメインブラックリストに含まれないドメインであることを確認する。  
+  
+**$email_address** : メールアドレス  
+  
+**返り値** ： メールアドレスの規格に沿った文字列であり、かつ、メールドメインブラックリストに含まれないドメインの場合はTRUE、それ以外の場合はFALSEを返す。
+
+
 #### wakarana::create_email_address_verification_code($email_address)
 アカウント登録前の新規ユーザーに対してメールアドレス確認コードを生成し、データベースに登録する。  
 この関数によりメールが送信されるわけではない。  
   
 **$email_address** : コードの送信先メールアドレス  
   
-**返り値** ： 成功した場合はメールアドレス確認コード文字列を、失敗した場合はFALSEを返す。同じメールアドレスでの複数のアカウント作成を許可しない設定の場合、既に使用されているメールアドレスならNULLを返す。
+**返り値** ： 成功した場合は8桁のメールアドレス確認コード文字列を、失敗した場合はFALSEを返す。同じメールアドレスでの複数のアカウント作成を許可しない設定の場合、既に使用されているメールアドレスならNULLを返す。
 
 
-#### wakarana::email_address_verify($email_address, $code)
+#### wakarana::email_address_verify($email_address, $verification_code)
 メールアドレスと確認コードを照合する。使用済みのメールアドレス確認コードは削除される。  
   
 **$email_address** : コードが紐付けられたメールアドレス  
-**$code** : メールアドレス確認コード  
+**$verification_code** : メールアドレス確認コード  
   
 **返り値** ： 認証された場合はwakarana_userインスタンス(既存ユーザーに対して生成された確認コードの場合)またはTRUE(新規ユーザーの場合)を返し、それ以外の場合はFALSEを返す。
 
 
-#### wakarana::get_email_address_verification_code_expire($email_address, $code)
+#### wakarana::get_email_address_verification_code_expire($email_address, $verification_code)
 メールアドレス確認コードの有効期限を取得する。  
   
 **$email_address** : コードが紐付けられたメールアドレス  
-**$code** : メールアドレス確認コード  
+**$verification_code** : メールアドレス確認コード  
   
 **返り値** ： 有効な確認コードだった場合はYYYY-MM-DD hh:mm:ss形式の有効期限、それ以外の場合はFALSEを返す。
 
@@ -647,11 +655,13 @@ TOTPの規格に基づいて現在時刻のタイムスタンプで生成鍵と�
 **返り値** ： 1バイトの文字列に格納されたバイナリを返す。
 
 
-#### ☆ wakarana::create_totp_key()
-ランダムなTOTP生成鍵を作成する。この関数は作成したTOTP生成鍵をデータベースに保存しない。  
+#### ☆ wakarana::create_random_code($code_length=16)
+TOTP生成鍵として使用できるランダムなBASE32文字列を作成する。  
 ☆staticメソッド。  
   
-**返り値** ： 16桁のTOTP生成鍵を返す。
+**$code_length** : 作成する文字列の桁数。8の倍数でなければならない。  
+  
+**返り値** ： 16桁のランダムなBASE32文字列を返す。
 
 
 #### ◆☆ wakarana::base32_decode($base32_str)
@@ -1032,7 +1042,7 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
   
 **$email_address** : コードの送信先メールアドレス。  
   
-**返り値** ： 成功した場合はメールアドレス確認コード、失敗した場合はFALSEを返す。
+**返り値** ： 成功した場合は8桁のメールアドレス確認コード、失敗した場合はFALSEを返す。同じメールアドレスでの複数のアカウント作成を許可しない設定の場合、既に使用されているメールアドレスならNULLを返す。
 
 
 #### wakarana_user::delete_email_address_verification_code()
@@ -1047,7 +1057,7 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
 **$expire** : 有効期限。YYYY-MM-DD hh:mm:ss形式の文字列。NULLを指定した場合は無限とみなす。  
 **$remaining_number** : コードの使用可能回数。NULLを指定した場合は無限とみなす。  
   
-**返り値** ： 成功した場合は招待コード文字列、失敗した場合はFALSEを返す。
+**返り値** ： 成功した場合は16桁の招待コード文字列、失敗した場合はFALSEを返す。
 
 
 #### wakarana_user::get_invite_codes()

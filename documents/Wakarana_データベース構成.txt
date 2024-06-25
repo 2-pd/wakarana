@@ -153,7 +153,7 @@ _/_/_/_/ データベース _/_/_/_/
 テーブル `wakarana_email_address_verification_codes`
   `user_id` varchar(60) [TEXT COLLATE NOCASE] (UNIQUE)ユーザーID(NULLの場合は、ユーザーID登録前のメールアドレス確認)
   `email_address` varchar(254) [TEXT] (NOT NULL) メールアドレス
-  `verification_code` varchar(10) [TEXT] (NOT NULL) メールアドレス確認用コード
+  `verification_code` varchar(8) [TEXT] (NOT NULL) メールアドレス確認用コード
   `code_created` timestamp [TEXT] (NOT NULL) コードの生成日時
   
   INDEX `wakarana_idx_ev1` `email_address`, `verification_code`
@@ -161,7 +161,7 @@ _/_/_/_/ データベース _/_/_/_/
 
 
 テーブル `wakarana_invite_codes`
-  `invite_code` varchar(15) [TEXT] (NOT NULL PRIMARY KEY) 招待コード
+  `invite_code` varchar(16) [TEXT] (NOT NULL PRIMARY KEY) 招待コード
   `user_id` varchar(60) [TEXT COLLATE NOCASE] (NOT NULL) コードを発行したユーザーのユーザーID
   `code_created` timestamp [TEXT] (NOT NULL) コードの生成日時
   `code_expire` timestamp [TEXT] コードの有効期限(NULLの場合は無期限)

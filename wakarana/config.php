@@ -472,7 +472,7 @@ class wakarana_config extends wakarana_common {
             if ($this->config["use_sqlite"]) {
                 $this->db_obj->exec("CREATE TABLE IF NOT EXISTS `wakarana_email_address_verification_codes`(`user_id` TEXT COLLATE NOCASE UNIQUE, `email_address` TEXT NOT NULL, `verification_code` TEXT NOT NULL, `code_created` TEXT NOT NULL)");
             } else {
-                $this->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_email_address_verification_codes"("user_id" varchar(60) UNIQUE, "email_address" varchar(254) NOT NULL, "verification_code" varchar(10) NOT NULL, "code_created" timestamp NOT NULL)');
+                $this->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_email_address_verification_codes"("user_id" varchar(60) UNIQUE, "email_address" varchar(254) NOT NULL, "verification_code" varchar(8) NOT NULL, "code_created" timestamp NOT NULL)');
             }
         } catch (PDOException $err) {
             $this->print_error("テーブル wakarana_email_address_verification_codes の作成処理に失敗しました。".$err->getMessage());
@@ -491,7 +491,7 @@ class wakarana_config extends wakarana_common {
             if ($this->config["use_sqlite"]) {
                 $this->db_obj->exec("CREATE TABLE IF NOT EXISTS `wakarana_invite_codes`(`invite_code` TEXT NOT NULL PRIMARY KEY, `user_id` TEXT COLLATE NOCASE NOT NULL, `code_created` TEXT NOT NULL, `code_expire` TEXT, `remaining_number` INTEGER)");
             } else {
-                $this->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_invite_codes"("invite_code" varchar(15) NOT NULL PRIMARY KEY, "user_id" varchar(60) NOT NULL, "code_created" timestamp NOT NULL, "code_expire" timestamp, "remaining_number" integer)');
+                $this->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_invite_codes"("invite_code" varchar(16) NOT NULL PRIMARY KEY, "user_id" varchar(60) NOT NULL, "code_created" timestamp NOT NULL, "code_expire" timestamp, "remaining_number" integer)');
             }
         } catch (PDOException $err) {
             $this->print_error("テーブル wakarana_invite_codes の作成処理に失敗しました。".$err->getMessage());
