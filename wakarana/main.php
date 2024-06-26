@@ -647,7 +647,7 @@ class wakarana extends wakarana_common {
     }
     
     
-    function reset_password ($token, $new_password, $delete_token = TRUE) {
+    function reset_password ($token, $new_password) {
         $this->delete_password_reset_tokens();
         
         try {
@@ -664,20 +664,42 @@ class wakarana extends wakarana_common {
         $user = $this->get_user($stmt->fetchColumn());
         
         if ($user !== FALSE && $user->set_password($new_password)) {
-            if ($delete_token) {
-                try {
-                    $stmt = $this->db_obj->prepare('DELETE FROM "wakarana_password_reset_tokens" WHERE "token" = :token');
-                    
-                    $stmt->bindValue(":token", $token, PDO::PARAM_STR);
-                    
-                    $stmt->execute();
-                } catch (PDOException $err) {
-                    $this->print_error("使用済みのパスワード再設定用トークンの削除に失敗しました。".$err->getMessage());
-                    return FALSE;
-                }
+            try {
+                $stmt = $this->db_obj->prepare('DELETE FROM "wakarana_password_reset_tokens" WHERE "token" = :token');
+                
+                $stmt->bindValue(":token", $token, PDO::PARAM_STR);
+                
+                $stmt->execute();
+            } catch (PDOException $err) {
+                $this->print_error("使用済みのパスワード再設定用トークンの削除に失敗しました。".$err->getMessage());
+                return FALSE;
             }
             
             return $user;
+        } else {
+            return FALSE;
+        }
+    }
+    
+    
+    function get_password_reset_token_expire ($token) {
+        $this->delete_password_reset_tokens();
+        
+        try {
+            $stmt = $this->db_obj->prepare('SELECT "token_created" FROM "wakarana_password_reset_tokens" WHERE "token" = :token');
+            
+            $stmt->bindValue(":token", $token, PDO::PARAM_STR);
+            
+            $stmt->execute();
+        } catch (PDOException $err) {
+            $this->print_error("メールアドレス確認コードの情報取得に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        $data = $stmt->fetchColumn();
+        
+        if ($data !== FALSE) {
+            return date("Y-m-d H:i:s", strtotime($data) + $this->config["password_reset_token_expire"]);
         } else {
             return FALSE;
         }
