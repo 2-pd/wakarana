@@ -562,6 +562,14 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
 **返り値** ： 指定した値と一致するカスタムフィールドの値を持つユーザーがいれば、該当ユーザーらのwakarana_userインスタンスの配列、そうでない場合は空配列、エラーの場合は-1を返す。
 
 
+#### wakarana::delete_all_users_values($custom_field_name)
+全ユーザーを対象に、指定したカスタムフィールドの全データを削除する。  
+  
+**$custom_field_name** ： カスタムフィールド名  
+  
+**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
 #### wakarana::delete_2sv_tokens($expire=-1)
 指定した経過時間より前に生成された2段階認証用一時トークンを無効化する。  
   
@@ -661,7 +669,7 @@ TOTP生成鍵として使用できるランダムなBASE32文字列を作成す�
   
 **$code_length** : 作成する文字列の桁数。8の倍数でなければならない。  
   
-**返り値** ： 16桁のランダムなBASE32文字列を返す。
+**返り値** ： 指定された桁数のランダムなBASE32文字列を返す。
 
 
 #### ◆☆ wakarana::base32_decode($base32_str)
@@ -884,17 +892,27 @@ wakarana_userインスタンスはこの関数以外の方法(unsetや変数の�
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
-#### wakarana_user::remove_value($custom_field_name, $number_or_value=NULL)
-ユーザーの指定したカスタムフィールドの値を削除する。  
+#### wakarana_user::delete_value($custom_field_name, $value_number=NULL)
+ユーザーのカスタムフィールドから並び順番号を指定して値を削除する。  
 削除された値より後の値の並び順番号は1つ前にずれる。  
   
 **$custom_field_name** ： カスタムフィールド名  
-**$number_or_value** ： 削除対象の並び順番号(1から順に付番されている整数値)または削除対象の値(文字列)。NULLを指定した場合はユーザーのそのカスタムフィールド値を全て削除する。  
+**$value_number** ： 削除対象の並び順番号(1から順に付番されている整数値)。NULLを指定した場合はユーザーのそのカスタムフィールド値を全て削除する。  
   
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
-#### wakarana_user::remove_all_values()
+#### wakarana_user::remove_value($custom_field_name, $custom_field_value)
+ユーザーのカスタムフィールドから指定した値を削除する。  
+削除された値より後の値の並び順番号は1つ前にずれる。  
+  
+**$custom_field_name** ： カスタムフィールド名  
+**$custom_field_value** ： 削除対象の値  
+  
+**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
+#### wakarana_user::delete_all_values()
 ユーザーの全てのカスタムフィールドの値を削除する。  
   
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。

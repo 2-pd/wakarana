@@ -706,10 +706,16 @@ class wakarana extends wakarana_common {
             return FALSE;
         }
         
+        if ($this->custom_fields[$custom_field_name]["is_numeric"]) {
+            $table_name = "wakarana_user_custom_numerical_fields";
+        } else {
+            $table_name = "wakarana_user_custom_fields";
+        }
+        
         try {
-            $stmt = $this->db_obj->prepare('SELECT "wakarana_users".* FROM "wakarana_users", "wakarana_user_custom_fields" WHERE "wakarana_user_custom_fields"."custom_field_name" = \''.$custom_field_name.'\' AND "wakarana_user_custom_fields"."custom_field_value" = :custom_field_value AND "wakarana_users"."user_id" = "wakarana_user_custom_fields"."user_id"');
+            $stmt = $this->db_obj->prepare('SELECT "wakarana_users".* FROM "wakarana_users", "'.$table_name.'" WHERE "'.$table_name.'"."custom_field_name" = \''.$custom_field_name.'\' AND "'.$table_name.'"."custom_field_value" = :custom_field_value AND "wakarana_users"."user_id" = "'.$table_name.'"."user_id"');
             
-            $stmt->bindValue(":custom_field_value", $custom_field_value, PDO::PARAM_STR);
+            $stmt->bindValue(":custom_field_value", $custom_field_value);
             
             $stmt->execute();
         } catch (PDOException $err) {
@@ -725,6 +731,29 @@ class wakarana extends wakarana_common {
         }
         
         return $users;
+    }
+    
+    
+    function delete_all_users_values ($custom_field_name) {
+        if (!self::check_id_string($custom_field_name) || !isset($this->custom_fields[$custom_field_name])) {
+            $this->print_error("指定されたカスタムフィールドは存在しません。");
+            return FALSE;
+        }
+        
+        if ($this->custom_fields[$custom_field_name]["is_numeric"]) {
+            $table_name = "wakarana_user_custom_numerical_fields";
+        } else {
+            $table_name = "wakarana_user_custom_fields";
+        }
+        
+        try {
+            $this->db_obj->exec('DELETE FROM "'.$table_name.'" WHERE "custom_field_name" = \''.$custom_field_name.'\'');
+        } catch (PDOException $err) {
+            $this->print_error("カスタムフィールド値の削除に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        return TRUE;
     }
     
     
@@ -1079,8 +1108,14 @@ class wakarana_user {
             return FALSE;
         }
         
+        if ($this->wakarana->custom_fields[$custom_field_name]["is_numeric"]) {
+            $table_name = "wakarana_user_custom_numerical_fields";
+        } else {
+            $table_name = "wakarana_user_custom_fields";
+        }
+        
         try {
-            $stmt = $this->wakarana->db_obj->query('SELECT "custom_field_value" FROM "wakarana_user_custom_fields" WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "custom_field_name" = \''.$custom_field_name.'\'');
+            $stmt = $this->wakarana->db_obj->query('SELECT "custom_field_value" FROM "'.$table_name.'" WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "custom_field_name" = \''.$custom_field_name.'\'');
         } catch (PDOException $err) {
             $this->wakarana->print_error("カスタムフィールド値の取得に失敗しました。".$err->getMessage());
             return FALSE;
@@ -1101,8 +1136,14 @@ class wakarana_user {
             return FALSE;
         }
         
+        if ($this->wakarana->custom_fields[$custom_field_name]["is_numeric"]) {
+            $table_name = "wakarana_user_custom_numerical_fields";
+        } else {
+            $table_name = "wakarana_user_custom_fields";
+        }
+        
         try {
-            $stmt = $this->wakarana->db_obj->query('SELECT "custom_field_value" FROM "wakarana_user_custom_fields" WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "custom_field_name" = \''.$custom_field_name.'\' ORDER BY "value_number" ASC');
+            $stmt = $this->wakarana->db_obj->query('SELECT "custom_field_value" FROM "'.$table_name.'" WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "custom_field_name" = \''.$custom_field_name.'\' ORDER BY "value_number" ASC');
         } catch (PDOException $err) {
             $this->wakarana->print_error("カスタムフィールド値の取得に失敗しました。".$err->getMessage());
             return FALSE;
@@ -1320,18 +1361,33 @@ class wakarana_user {
             return FALSE;
         }
         
-        $custom_field_value = mb_substr($custom_field_value, 0, $this->wakarana->custom_fields[$custom_field_name]["maximum_length"]);
+        if ($this->wakarana->custom_fields[$custom_field_name]["is_numeric"]) {
+            $table_name = "wakarana_user_custom_numerical_fields";
+            
+            if (!is_numeric($custom_field_value)) {
+                $this->wakarana->print_error("数値型のカスタムフィールドに格納できない値が指定されました。");
+                return FALSE;
+            }
+        } else {
+            $table_name = "wakarana_user_custom_fields";
+            
+            $custom_field_value = mb_substr($custom_field_value, 0, $this->wakarana->custom_fields[$custom_field_name]["maximum_length"]);
+        }
         
-        if (!$this->wakarana->custom_fields[$custom_field_name]["allow_nonunique_value"] && !empty($this->wakarana->search_users_with_custom_field($custom_field_name, $custom_field_value))) {
-            $this->wakarana->print_error("使用できない値です。指定されたカスタムフィールドでは複数のアカウントに同じ値を設定することは許可されていません。");
-            return FALSE;
+        if (!$this->wakarana->custom_fields[$custom_field_name]["allow_nonunique_value"]) {
+            $other_users = $this->wakarana->search_users_with_custom_field($custom_field_name, $custom_field_value);
+            
+            if (!empty($other_users) && $other_users[0]->get_id() !== $this->get_id()) {
+                $this->wakarana->print_error("他のユーザーに割り当て済みの値です。指定されたカスタムフィールドでは複数のアカウントに同じ値を設定することは許可されていません。");
+                return FALSE;
+            }
         }
         
         try {
-            $stmt = $this->wakarana->db_obj->prepare('INSERT INTO "wakarana_user_custom_fields"("user_id", "custom_field_name", "value_number", "custom_field_value") VALUES (\''.$this->user_info["user_id"].'\', \''.$custom_field_name.'\', 1, :custom_field_value) ON CONFLICT("user_id", "custom_field_name", "value_number") DO UPDATE SET "custom_field_value" = :custom_field_value_2');
+            $stmt = $this->wakarana->db_obj->prepare('INSERT INTO "'.$table_name.'"("user_id", "custom_field_name", "value_number", "custom_field_value") VALUES (\''.$this->user_info["user_id"].'\', \''.$custom_field_name.'\', 1, :custom_field_value) ON CONFLICT("user_id", "custom_field_name", "value_number") DO UPDATE SET "custom_field_value" = :custom_field_value_2');
             
-            $stmt->bindValue(":custom_field_value", $custom_field_value, PDO::PARAM_STR);
-            $stmt->bindValue(":custom_field_value_2", $custom_field_value, PDO::PARAM_STR);
+            $stmt->bindValue(":custom_field_value", $custom_field_value);
+            $stmt->bindValue(":custom_field_value_2", $custom_field_value);
             
             $stmt->execute();
         } catch (PDOException $err) {
@@ -1365,7 +1421,18 @@ class wakarana_user {
             return FALSE;
         }
         
-        $custom_field_value = mb_substr($custom_field_value, 0, $this->wakarana->custom_fields[$custom_field_name]["maximum_length"]);
+        if ($this->wakarana->custom_fields[$custom_field_name]["is_numeric"]) {
+            $table_name = "wakarana_user_custom_numerical_fields";
+            
+            if (!is_numeric($custom_field_value)) {
+                $this->wakarana->print_error("数値型のカスタムフィールドに格納できない値が指定されました。");
+                return FALSE;
+            }
+        } else {
+            $table_name = "wakarana_user_custom_fields";
+            
+            $custom_field_value = mb_substr($custom_field_value, 0, $this->wakarana->custom_fields[$custom_field_name]["maximum_length"]);
+        }
         
         if (!$this->wakarana->custom_fields[$custom_field_name]["allow_nonunique_value"] && !empty($this->wakarana->search_users_with_custom_field($custom_field_name, $custom_field_value))) {
             $this->wakarana->print_error("使用できない値です。指定されたカスタムフィールドでは複数のアカウントに同じ値を設定することは許可されていません。");
@@ -1374,13 +1441,13 @@ class wakarana_user {
         
         try {
             if ($value_number <= $value_count) {
-                $this->wakarana->db_obj->exec('UPDATE "wakarana_user_custom_fields" SET "value_number" = "value_number" + '.$this->wakarana->custom_fields[$custom_field_name]["records_per_user"].' WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "custom_field_name" = \''.$custom_field_name.'\' AND "value_number" >= '.$value_number);
-                $this->wakarana->db_obj->exec('UPDATE "wakarana_user_custom_fields" SET "value_number" = "value_number" - '.($this->wakarana->custom_fields[$custom_field_name]["records_per_user"] - 1).' WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "custom_field_name" = \''.$custom_field_name.'\' AND "value_number" >= '.$this->wakarana->custom_fields[$custom_field_name]["records_per_user"]);
+                $this->wakarana->db_obj->exec('UPDATE "'.$table_name.'" SET "value_number" = "value_number" + '.$this->wakarana->custom_fields[$custom_field_name]["records_per_user"].' WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "custom_field_name" = \''.$custom_field_name.'\' AND "value_number" >= '.$value_number);
+                $this->wakarana->db_obj->exec('UPDATE "'.$table_name.'" SET "value_number" = "value_number" - '.($this->wakarana->custom_fields[$custom_field_name]["records_per_user"] - 1).' WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "custom_field_name" = \''.$custom_field_name.'\' AND "value_number" >= '.$this->wakarana->custom_fields[$custom_field_name]["records_per_user"]);
             }
             
-            $stmt = $this->wakarana->db_obj->prepare('INSERT INTO "wakarana_user_custom_fields"("user_id", "custom_field_name", "value_number", "custom_field_value") VALUES (\''.$this->user_info["user_id"].'\', \''.$custom_field_name.'\', '.$value_number.', :custom_field_value)');
+            $stmt = $this->wakarana->db_obj->prepare('INSERT INTO "'.$table_name.'"("user_id", "custom_field_name", "value_number", "custom_field_value") VALUES (\''.$this->user_info["user_id"].'\', \''.$custom_field_name.'\', '.$value_number.', :custom_field_value)');
             
-            $stmt->bindValue(":custom_field_value", $custom_field_value, PDO::PARAM_STR);
+            $stmt->bindValue(":custom_field_value", $custom_field_value);
             
             $stmt->execute();
         } catch (PDOException $err) {
@@ -1398,17 +1465,27 @@ class wakarana_user {
             return FALSE;
         }
         
-        $custom_field_value = mb_substr($custom_field_value, 0, $this->wakarana->custom_fields[$custom_field_name]["maximum_length"]);
+        if ($this->wakarana->custom_fields[$custom_field_name]["is_numeric"]) {
+            $table_name = "wakarana_user_custom_numerical_fields";
+        } else {
+            $table_name = "wakarana_user_custom_fields";
+            
+            $custom_field_value = mb_substr($custom_field_value, 0, $this->wakarana->custom_fields[$custom_field_name]["maximum_length"]);
+        }
         
-        if (!$this->wakarana->custom_fields[$custom_field_name]["allow_nonunique_value"] && !empty($this->wakarana->search_users_with_custom_field($custom_field_name, $custom_field_value))) {
-            $this->wakarana->print_error("使用できない値です。指定されたカスタムフィールドでは複数のアカウントに同じ値を設定することは許可されていません。");
-            return FALSE;
+        if (!$this->wakarana->custom_fields[$custom_field_name]["allow_nonunique_value"]) {
+            $other_users = $this->wakarana->search_users_with_custom_field($custom_field_name, $custom_field_value);
+            
+            if (!empty($other_users) && $other_users[0]->get_id() !== $this->get_id()) {
+                $this->wakarana->print_error("他のユーザーに割り当て済みの値です。指定されたカスタムフィールドでは複数のアカウントに同じ値を設定することは許可されていません。");
+                return FALSE;
+            }
         }
         
         try {
-            $stmt = $this->wakarana->db_obj->prepare('UPDATE "wakarana_user_custom_fields" SET "custom_field_value" = :custom_field_value WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "custom_field_name" = \''.$custom_field_name.'\' AND "value_number" = '.intval($value_number));
+            $stmt = $this->wakarana->db_obj->prepare('UPDATE "'.$table_name.'" SET "custom_field_value" = :custom_field_value WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "custom_field_name" = \''.$custom_field_name.'\' AND "value_number" = '.intval($value_number));
             
-            $stmt->bindValue(":custom_field_value", $custom_field_value, PDO::PARAM_STR);
+            $stmt->bindValue(":custom_field_value", $custom_field_value);
             
             $stmt->execute();
         } catch (PDOException $err) {
@@ -1420,37 +1497,32 @@ class wakarana_user {
     }
     
     
-    function remove_value ($custom_field_name, $number_or_value = NULL) {
+    function delete_value ($custom_field_name, $value_number = NULL) {
         if (!wakarana::check_id_string($custom_field_name) || !isset($this->wakarana->custom_fields[$custom_field_name])) {
             $this->wakarana->print_error("指定されたカスタムフィールドは存在しません。");
             return FALSE;
         }
         
-        if (empty($number_or_value)) {
+        if ($this->wakarana->custom_fields[$custom_field_name]["is_numeric"]) {
+            $table_name = "wakarana_user_custom_numerical_fields";
+        } else {
+            $table_name = "wakarana_user_custom_fields";
+        }
+        
+        if (is_null($value_number)) {
             $value_number_q = '';
         } else {
-            if (is_int($number_or_value)) {
-                $value_number = $number_or_value;
-            } else {
-                $index = array_search($number_or_value, $this->get_values($custom_field_name));
-                
-                if ($index === FALSE) {
-                    $this->wakarana->print_error("指定されたカスタムフィールド値は存在しません。");
-                    return FALSE;
-                }
-                
-                $value_number = $index + 1;
-            }
+            $value_number = intval($value_number);
             
             $value_number_q = ' AND "value_number" = '.$value_number;
         }
         
         try {
-            $this->wakarana->db_obj->exec('DELETE FROM "wakarana_user_custom_fields" WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "custom_field_name" = \''.$custom_field_name.'\''.$value_number_q);
+            $this->wakarana->db_obj->exec('DELETE FROM "'.$table_name.'" WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "custom_field_name" = \''.$custom_field_name.'\''.$value_number_q);
             
-            if (!empty($number_or_value)) {
-                $this->wakarana->db_obj->exec('UPDATE "wakarana_user_custom_fields" SET "value_number" = "value_number" + '.$this->wakarana->custom_fields[$custom_field_name]["records_per_user"].' WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "custom_field_name" = \''.$custom_field_name.'\' AND "value_number" > '.$value_number);
-                $this->wakarana->db_obj->exec('UPDATE "wakarana_user_custom_fields" SET "value_number" = "value_number" - '.($this->wakarana->custom_fields[$custom_field_name]["records_per_user"] + 1).' WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "custom_field_name" = \''.$custom_field_name.'\' AND "value_number" >= '.$this->wakarana->custom_fields[$custom_field_name]["records_per_user"]);
+            if (!is_null($value_number)) {
+                $this->wakarana->db_obj->exec('UPDATE "'.$table_name.'" SET "value_number" = "value_number" + '.$this->wakarana->custom_fields[$custom_field_name]["records_per_user"].' WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "custom_field_name" = \''.$custom_field_name.'\' AND "value_number" > '.$value_number);
+                $this->wakarana->db_obj->exec('UPDATE "'.$table_name.'" SET "value_number" = "value_number" - '.($this->wakarana->custom_fields[$custom_field_name]["records_per_user"] + 1).' WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "custom_field_name" = \''.$custom_field_name.'\' AND "value_number" >= '.$this->wakarana->custom_fields[$custom_field_name]["records_per_user"]);
             }
         } catch (PDOException $err) {
             $this->wakarana->print_error("カスタムフィールド値の削除に失敗しました。".$err->getMessage());
@@ -1461,9 +1533,29 @@ class wakarana_user {
     }
     
     
-    function remove_all_values () {
+    function remove_value ($custom_field_name, $custom_field_value) {
+        if (!wakarana::check_id_string($custom_field_name) || !isset($this->wakarana->custom_fields[$custom_field_name])) {
+            $this->wakarana->print_error("指定されたカスタムフィールドは存在しません。");
+            return FALSE;
+        }
+        
+        $index = array_search($custom_field_value, $this->get_values($custom_field_name));
+        
+        if ($index === FALSE) {
+            $this->wakarana->print_error("指定されたカスタムフィールド値は存在しません。");
+            return FALSE;
+        }
+        
+        $value_number = $index + 1;
+        
+        return $this->delete_value($custom_field_name, $value_number);
+    }
+    
+    
+    function delete_all_values () {
         try {
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_user_custom_fields" WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
+            $this->wakarana->db_obj->exec('DELETE FROM "wakarana_user_custom_numerical_fields" WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
         } catch (PDOException $err) {
             $this->wakarana->print_error("カスタムフィールド値の削除に失敗しました。".$err->getMessage());
             return FALSE;
@@ -1569,7 +1661,7 @@ class wakarana_user {
     
     
     function delete_all_tokens () {
-        if($this->delete_login_tokens() && $this->delete_one_time_tokens() && $this->delete_email_address_verification_token() && $this->delete_password_reset_token() && $this->delete_2sv_token()){
+        if($this->delete_login_tokens() && $this->delete_one_time_tokens() && $this->delete_email_address_verification_code() && $this->delete_password_reset_token() && $this->delete_2sv_token()){
             return TRUE;
         } else {
             return FALSE;
@@ -1971,7 +2063,7 @@ class wakarana_user {
     
     
     function delete_user () {
-        if (!$this->delete_all_tokens() || !$this->remove_role() || !$this->remove_all_email_addresses() || !$this->remove_all_values() || !$this->delete_auth_logs()){
+        if (!$this->delete_all_tokens() || !$this->remove_role() || !$this->remove_all_email_addresses() || !$this->delete_all_values() || !$this->delete_auth_logs()){
             return FALSE;
         }
         
