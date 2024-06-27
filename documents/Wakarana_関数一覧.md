@@ -474,7 +474,7 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
 メールアドレスと確認コードを照合する。使用済みのメールアドレス確認コードは削除される。  
   
 **$email_address** : コードが紐付けられたメールアドレス  
-**$verification_code** : メールアドレス確認コード  
+**$verification_code** : メールアドレス確認コード。大文字小文字を区別しない。  
   
 **返り値** ： 認証された場合はwakarana_userインスタンス(既存ユーザーに対して生成された確認コードの場合)またはTRUE(新規ユーザーの場合)を返し、それ以外の場合はFALSEを返す。
 
@@ -483,7 +483,7 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
 メールアドレス確認コードの有効期限を取得する。  
   
 **$email_address** : コードが紐付けられたメールアドレス  
-**$verification_code** : メールアドレス確認コード  
+**$verification_code** : メールアドレス確認コード。大文字小文字を区別しない。  
   
 **返り値** ： 有効な確認コードだった場合はYYYY-MM-DD hh:mm:ss形式の有効期限、それ以外の場合はFALSEを返す。
 
@@ -499,7 +499,7 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
 #### wakarana::check_invite_code($invite_code)
 ユーザー招待コードを検証する。  
   
-**$invite_code** : 招待コード文字列  
+**$invite_code** : 招待コード文字列。大文字小文字を区別しない。  
 **$decrease_number** : TRUEを指定するか省略した場合、招待コードの残り回数が1つ減る。  
   
 **返り値** ： 有効な招待コードだった場合はTRUE、それ以外の場合はFALSEを返す。
@@ -508,13 +508,13 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
 #### wakarana::get_invite_codes()
 有効な全ての招待コードを取得する。  
   
-**返り値** ： 成功した場合は、各招待コードの情報が格納された連想配列("invite_code"(招待コード本体)以外の項目はwakarana::get_invite_code_infoの返り値と同様)を発行日時の古い順に並べた配列を返す。失敗した場合はFALSEを返す。
+**返り値** ： 成功した場合は、各招待コードの情報が格納された連想配列("invite_code"(招待コード本体)以外の項目はwakarana::get_invite_code_infoの返り値と同様)を発行日時の古い順に並べた配列(招待コードがない場合は空配列)を返す。失敗した場合はFALSEを返す。
 
 
 #### wakarana::get_invite_code_info($invite_code)
 ユーザー招待コードの情報(発行したユーザー、発行日時、有効期限、残り回数)を取得する。  
   
-**$invite_code** : 招待コード文字列  
+**$invite_code** : 招待コード文字列。大文字小文字を区別しない。  
   
 **返り値** ： 有効な招待コードだった場合は、ユーザー招待コードの情報を連想配列("user_id"(発行者のユーザーID)、"code_created"(YYYY-MM-DD hh:mm:ss形式の発行日時)、"code_expire"(YYYY-MM-DD hh:mm:ss形式の有効期限)、"remaining_number"(残り回数、無限の場合はNULL))で返す。それ以外の場合はFALSEを返す。
 
@@ -523,6 +523,12 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
 ユーザー招待コードを削除する。  
   
 **$invite_code** : 招待コード文字列。NULLを指定した場合は全ての招待コードを削除する。  
+  
+**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
+#### wakarana::delete_expired_invite_codes()
+有効期限切れのユーザー招待コードをデータベースから削除する。  
   
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
@@ -1068,10 +1074,10 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
-#### wakarana_user::create_invite_code($expire=NULL, $remaining_number=NULL)
+#### wakarana_user::create_invite_code($code_expire=NULL, $remaining_number=NULL)
 ユーザー招待コードを生成する。  
   
-**$expire** : 有効期限。YYYY-MM-DD hh:mm:ss形式の文字列。NULLを指定した場合は無限とみなす。  
+**$code_expire** : 有効期限。YYYY-MM-DD hh:mm:ss形式の文字列。NULLを指定した場合は無限とみなす。  
 **$remaining_number** : コードの使用可能回数。NULLを指定した場合は無限とみなす。  
   
 **返り値** ： 成功した場合は16桁の招待コード文字列、失敗した場合はFALSEを返す。
@@ -1080,7 +1086,7 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
 #### wakarana_user::get_invite_codes()
 ユーザーが発行した有効な全ての招待コードを取得する。  
   
-**返り値** ： 成功した場合は、各招待コードの情報が格納された連想配列("invite_code"(招待コード本体)以外の項目はwakarana::get_invite_code_infoの返り値と同様)を発行日時の古い順に並べた配列を返す。失敗した場合はFALSEを返す。
+**返り値** ： 成功した場合は、各招待コードの情報が格納された連想配列("invite_code"(招待コード本体)以外の項目はwakarana::get_invite_code_infoの返り値と同様)を発行日時の古い順に並べた配列(招待コードがない場合は空配列)を返す。失敗した場合はFALSEを返す。
 
 
 #### wakarana_user::delete_invite_codes()
