@@ -189,11 +189,13 @@ class wakarana_common {
         }
     }
     
+    
     function check_email_domain ($domain_name) {
         $this->load_email_domain_blacklist();
         
         return !in_array(mb_strtolower(trim($domain_name)), $this->email_domain_blacklist);
     }
+    
     
     function get_email_domain_blacklist () {
         $this->load_email_domain_blacklist();
