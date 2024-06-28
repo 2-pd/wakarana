@@ -471,21 +471,21 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
 
 
 #### wakarana::email_address_verify($email_address, $verification_code)
-メールアドレスと確認コードを照合する。使用済みのメールアドレス確認コードは削除される。  
+メールアドレスと、新規ユーザー登録用に生成された確認コードとを照合する。使用済みのメールアドレス確認コードは削除される。  
   
 **$email_address** : コードが紐付けられたメールアドレス  
 **$verification_code** : メールアドレス確認コード。大文字小文字を区別しない。  
   
-**返り値** ： 認証された場合はwakarana_userインスタンス(既存ユーザーに対して生成された確認コードの場合)またはTRUE(新規ユーザーの場合)を返し、それ以外の場合はFALSEを返す。
+**返り値** ： 認証された場合はTRUEを返し、それ以外の場合はFALSEを返す。
 
 
 #### wakarana::get_email_address_verification_code_expire($email_address, $verification_code)
-メールアドレス確認コードの有効期限を取得する。  
+新規ユーザー登録用に生成されたメールアドレス確認コードの有効期限を取得する。  
   
 **$email_address** : コードが紐付けられたメールアドレス  
 **$verification_code** : メールアドレス確認コード。大文字小文字を区別しない。  
   
-**返り値** ： 有効な確認コードだった場合はYYYY-MM-DD hh:mm:ss形式の有効期限、それ以外の場合はFALSEを返す。
+**返り値** ： 新規ユーザー登録用の有効な確認コードだった場合はYYYY-MM-DD hh:mm:ss形式の有効期限、それ以外の場合はFALSEを返す。
 
 
 #### wakarana::delete_email_address_verification_codes($expire=-1)
@@ -1068,6 +1068,25 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
 **返り値** ： 成功した場合は8桁のメールアドレス確認コード、失敗した場合はFALSEを返す。同じメールアドレスでの複数のアカウント作成を許可しない設定の場合、既に使用されているメールアドレスならNULLを返す。
 
 
+#### wakarana_user::email_address_verify($email_address, $verification_code, $verification_only=FALSE)
+メールアドレスと、ユーザーのメールアドレス追加用に生成された確認コードとを照合し、認証された場合はユーザーにメールアドレスを追加する。使用済みのメールアドレス確認コードは削除される。  
+  
+**$email_address** : コードが紐付けられたメールアドレス  
+**$verification_code** : メールアドレス確認コード。大文字小文字を区別しない。  
+**$verification_only** : TRUEを指定した場合、認証のみを実行してメールアドレスの追加を行わない  
+  
+**返り値** ： 認証された場合はTRUEを返し、それ以外の場合はFALSEを返す。
+
+
+#### wakarana_user::get_email_address_verification_code_expire($email_address, $verification_code)
+ユーザーのメールアドレス追加用に生成されたメールアドレス確認コードの有効期限を取得する。  
+  
+**$email_address** : コードが紐付けられたメールアドレス  
+**$verification_code** : メールアドレス確認コード。大文字小文字を区別しない。  
+  
+**返り値** ： ユーザーに割り当てられた有効な確認コードだった場合はYYYY-MM-DD hh:mm:ss形式の有効期限、それ以外の場合はFALSEを返す。
+
+
 #### wakarana_user::delete_email_address_verification_code()
 ユーザーに対して発行されているメールアドレス確認コードを削除する。  
   
@@ -1456,7 +1475,7 @@ wakarana_config.iniの設定値を全て既定値に戻す。
 ◆クラス内呼び出し専用。
 
 
-### wakarana_config::add_email_domain_to_blacklist($damain_name)
+#### wakarana_config::add_email_domain_to_blacklist($damain_name)
 ドメインをメールドメインブラックリストに追加する。  
   
 **$domain_name** : ブラックリストに追加するドメイン名  
@@ -1464,7 +1483,7 @@ wakarana_config.iniの設定値を全て既定値に戻す。
 **返り値** ： 成功した場合はTRUE、既にブラックリストに登録されているドメインだった場合や失敗した場合はFALSEを返す。
 
 
-### wakarana_config::remove_email_domain_from_blacklist($damain_name)
+#### wakarana_config::remove_email_domain_from_blacklist($damain_name)
 ドメインをメールドメインブラックリストから除外する。  
   
 **$domain_name** : ブラックリストから除外するドメイン名  
