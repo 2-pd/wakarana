@@ -3,7 +3,7 @@
  *
  *  Wakarana
 */
-    define("WAKARANA_VERSION", "23.10-1");
+    define("WAKARANA_VERSION", "24.06-1");
 /*
  *_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  *
@@ -22,15 +22,14 @@ class wakarana_common {
     protected $config;
     protected $db_obj;
     protected $custom_fields;
+    protected $email_domain_blacklist;
     
     private $last_error_text;
     
     
     function __construct ($base_dir = NULL) {
-        if (empty($base_dir)) {
-            $this->base_path = __DIR__;
-        } else {
-            $this->base_path = realpath($base_dir);
+        if (empty($this->base_path)) {
+            $this->update_base_path($base_dir);
         }
         
         $config_path = $this->base_path."/wakarana_config.ini";
@@ -50,6 +49,8 @@ class wakarana_common {
         } else {
             $this->print_error("カスタムフィールド設定ファイル ".$custom_fields_path." が存在しません。");
         }
+        
+        $this->email_domain_blacklist = NULL;
     }
     
     
@@ -68,10 +69,23 @@ class wakarana_common {
     
     
     static function check_id_string ($id, $length = 60) {
-        if (gettype($id) === "string" && preg_match("/^[0-9A-Za-z_]{1,".$length."}$/u", $id)) {
+        if (gettype($id) === "string" && preg_match("/\A[0-9A-Za-z_]{1,".$length."}\z/u", $id)) {
             return TRUE;
         } else {
             return FALSE;
+        }
+    }
+    
+    
+    protected function update_base_path ($base_dir) {
+        if (empty($base_dir)) {
+            $this->base_path = __DIR__;
+        } else {
+            $this->base_path = realpath($base_dir);
+            
+            if (!is_dir($this->base_path)) {
+                $this->print_error("指定されたベースフォルダは存在しません。");
+            }
         }
     }
     
@@ -133,8 +147,17 @@ class wakarana_common {
     }
     
     
-    function get_custom_field_maximum_length ($custom_field_name) {
+    function get_custom_field_is_numeric ($custom_field_name) {
         if (isset($this->custom_fields[$custom_field_name])) {
+            return $this->custom_fields[$custom_field_name]["is_numeric"];
+        } else {
+            return NULL;
+        }
+    }
+    
+    
+    function get_custom_field_maximum_length ($custom_field_name) {
+        if ($this->get_custom_field_is_numeric($custom_field_name) === FALSE) {
             return $this->custom_fields[$custom_field_name]["maximum_length"];
         } else {
             return NULL;
@@ -157,5 +180,26 @@ class wakarana_common {
         } else {
             return NULL;
         }
+    }
+    
+    
+    protected function load_email_domain_blacklist () {
+        if (is_null($this->email_domain_blacklist)) {
+            $this->email_domain_blacklist = file($this->base_path."/wakarana_email_domain_blacklist.conf", FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        }
+    }
+    
+    
+    function check_email_domain ($domain_name) {
+        $this->load_email_domain_blacklist();
+        
+        return !in_array(mb_strtolower(trim($domain_name)), $this->email_domain_blacklist);
+    }
+    
+    
+    function get_email_domain_blacklist () {
+        $this->load_email_domain_blacklist();
+        
+        return $this->email_domain_blacklist;
     }
 }

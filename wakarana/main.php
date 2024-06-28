@@ -4,7 +4,7 @@ require_once(dirname(__FILE__)."/common.php");
 
 define("WAKARANA_STATUS_DISABLE", 0);
 define("WAKARANA_STATUS_NORMAL", 1);
-define("WAKARANA_STATUS_EMAIL_ADDRESS_UNVERIFIED", 3);
+define("WAKARANA_STATUS_UNAPPROVED", -1);
 
 define("WAKARANA_ORDER_USER_ID", "user_id");
 define("WAKARANA_ORDER_USER_NAME", "user_name");
@@ -311,7 +311,7 @@ class wakarana extends wakarana_common {
     
     
     function delete_all_tokens () {
-        if($this->delete_login_tokens(0) && $this->delete_one_time_tokens(0) && $this->delete_email_address_verification_tokens(0) && $this->delete_password_reset_tokens(0) && $this->delete_2sv_tokens(0)){
+        if($this->delete_login_tokens(0) && $this->delete_one_time_tokens(0) && $this->delete_email_address_verification_codes(0) && $this->delete_invite_code() && $this->delete_password_reset_tokens(0) && $this->delete_2sv_tokens(0)){
             return TRUE;
         } else {
             return FALSE;
@@ -341,7 +341,7 @@ class wakarana extends wakarana_common {
             return "0.0.0.0";
         }
         
-        if (preg_match("/^(((1[0-9]{2}|2([0-4][0-9]|5[0-5])|[1-9]?[0-9])\.){3}(1[0-9]{2}|2([0-4][0-9]|5[0-5])|[1-9]?[0-9])|([0-9a-f]{0,4}:){2,7}[0-9a-f]{0,4})$/u", $remote_addr) && !preg_match("/(::.*::|:::)/u", $remote_addr)) {
+        if (filter_var($remote_addr, FILTER_VALIDATE_IP) !== FALSE) {
             return $remote_addr;
         } else {
             $this->print_error("クライアント端末のIPアドレスが異常です。");
@@ -524,89 +524,126 @@ class wakarana extends wakarana_common {
     }
     
     
-    function create_email_address_verification_token ($email_address) {
-        if (!$this->config["allow_nonunique_email_address"] && !empty($this->search_users_with_email_address($email_address))) {
-            $this->print_error("使用できないメールアドレスです。現在の設定では同一メールアドレスでの復数アカウント作成は許可されていません。");
-            return NULL;
-        }
-        
-        $this->delete_email_address_verification_tokens();
-        
-        $token = self::create_token();
-        
-        $token_created = date("Y-m-d H:i:s");
-        
-        try {
-            $stmt = $this->db_obj->prepare('INSERT INTO "wakarana_email_address_verification"("token", "user_id", "email_address", "token_created") VALUES (\''.$token.'\', NULL, :email_address, \''.$token_created.'\')');
-            
-            $stmt->bindValue(":email_address", $email_address, PDO::PARAM_STR);
-            
-            $stmt->execute();
-        } catch (PDOException $err) {
-            $this->print_error("メールアドレス確認用トークンの生成に失敗しました。".$err->getMessage());
-            return FALSE;
-        }
-        
-        return $token;
-    }
-    
-    
-    function email_address_verify($token, $delete_token = TRUE) {
-        $this->delete_email_address_verification_tokens();
-        
-        try {
-            $stmt = $this->db_obj->prepare('SELECT "user_id", "email_address" FROM "wakarana_email_address_verification" WHERE "token" = :token');
-            
-            $stmt->bindValue(":token", $token, PDO::PARAM_STR);
-            
-            $stmt->execute();
-        } catch (PDOException $err) {
-            $this->print_error("メールアドレス確認用トークンの認証に失敗しました。".$err->getMessage());
-            return FALSE;
-        }
-        
-        $data = $stmt->fetch(PDO::FETCH_ASSOC);
-        
-        if (!empty($data)) {
-            if ($delete_token) {
-                try {
-                    $stmt = $this->db_obj->prepare('DELETE FROM "wakarana_email_address_verification" WHERE "token" = :token');
-                    
-                    $stmt->bindValue(":token", $token, PDO::PARAM_STR);
-                    
-                    $stmt->execute();
-                } catch (PDOException $err) {
-                    $this->print_error("使用済みのメールアドレス確認用トークンの削除に失敗しました。".$err->getMessage());
-                    return FALSE;
-                }
-            }
-            
-            if (!empty($data["user_id"])) {
-                $data["user"] = $this->get_user($data["user_id"]);
-                
-                if (empty($data["user"])) {
-                    return FALSE;
-                }
-            } else {
-                $data["user"] = NULL;
-            }
-            
-            return $data;
+    function check_email_address ($email_address) {
+        if (preg_match("/\A[A-Za-z0-9!#$%&'\*+\/=?^_`\{\|\}~\.\-]+@[A-Za-z0-9\-]+(\.[A-Za-z0-9\-]+)+\z/u", $email_address)) {
+            return $this->check_email_domain(substr($email_address, strpos($email_address, "@") + 1));
         } else {
             return FALSE;
         }
     }
     
     
-    function delete_email_address_verification_tokens ($expire = -1) {
+    function create_email_address_verification_code ($email_address) {
+        if (!$this->check_email_address($email_address)) {
+            $this->print_error("使用できないメールアドレスです。");
+            return FALSE;
+        }
+        
+        if (!$this->config["allow_nonunique_email_address"] && !empty($this->search_users_with_email_address($email_address))) {
+            $this->print_error("現在の設定では同一メールアドレスでの復数アカウント作成は許可されていません。");
+            return NULL;
+        }
+        
+        $this->delete_email_address_verification_codes();
+        
+        $verification_code = self::create_random_code(8);
+        
+        $code_created = date("Y-m-d H:i:s");
+        
+        try {
+            $stmt = $this->db_obj->prepare('INSERT INTO "wakarana_email_address_verification_codes"("user_id", "email_address", "verification_code", "code_created") VALUES (NULL, :email_address, \''.$verification_code.'\', \''.$code_created.'\')');
+            
+            $stmt->bindValue(":email_address", $email_address, PDO::PARAM_STR);
+            
+            $stmt->execute();
+        } catch (PDOException $err) {
+            $this->print_error("メールアドレス確認コードの生成に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        return $verification_code;
+    }
+    
+    
+    function email_address_verify ($email_address, $verification_code) {
+        $this->delete_email_address_verification_codes();
+        
+        $verification_code = strtoupper($verification_code);
+        
+        try {
+            $stmt = $this->db_obj->prepare('SELECT "user_id" FROM "wakarana_email_address_verification_codes" WHERE "email_address" = :email_address AND "verification_code" = :verification_code');
+            
+            $stmt->bindValue(":email_address", $email_address, PDO::PARAM_STR);
+            $stmt->bindValue(":verification_code", $verification_code, PDO::PARAM_STR);
+            
+            $stmt->execute();
+        } catch (PDOException $err) {
+            $this->print_error("メールアドレス確認コードの認証に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        $data = $stmt->fetchColumn();
+        
+        if ($data !== FALSE) {
+            try {
+                $stmt = $this->db_obj->prepare('DELETE FROM "wakarana_email_address_verification_codes" WHERE "email_address" = :email_address AND "verification_code" = :verification_code');
+                
+                $stmt->bindValue(":email_address", $email_address, PDO::PARAM_STR);
+                $stmt->bindValue(":verification_code", $verification_code, PDO::PARAM_STR);
+                
+                $stmt->execute();
+            } catch (PDOException $err) {
+                $this->print_error("使用済みのメールアドレス確認コードの削除に失敗しました。".$err->getMessage());
+                return FALSE;
+            }
+            
+            if (!is_null($data)) {
+                return $this->get_user($data);
+            } else {
+                return TRUE;
+            }
+        } else {
+            return FALSE;
+        }
+    }
+    
+    
+    function get_email_address_verification_code_expire ($email_address, $verification_code) {
+        $this->delete_email_address_verification_codes();
+        
+        $verification_code = strtoupper($verification_code);
+        
+        try {
+            $stmt = $this->db_obj->prepare('SELECT "code_created" FROM "wakarana_email_address_verification_codes" WHERE "email_address" = :email_address AND "verification_code" = :verification_code');
+            
+            $stmt->bindValue(":email_address", $email_address, PDO::PARAM_STR);
+            $stmt->bindValue(":verification_code", $verification_code, PDO::PARAM_STR);
+            
+            $stmt->execute();
+        } catch (PDOException $err) {
+            $this->print_error("メールアドレス確認コードの情報取得に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        $data = $stmt->fetchColumn();
+        
+        if ($data !== FALSE) {
+            return date("Y-m-d H:i:s", strtotime($data) + $this->config["verification_email_expire"]);
+        } else {
+            return FALSE;
+        }
+    }
+    
+    
+    function delete_email_address_verification_codes ($expire = -1) {
         if ($expire === -1) {
             $expire = $this->config["verification_email_expire"];
         }
         
         try {
-            $this->db_obj->exec('DELETE FROM "wakarana_email_address_verification" WHERE "token_created" <= \''.date("Y-m-d H:i:s", time() - $expire).'\'');
+            $this->db_obj->exec('DELETE FROM "wakarana_email_address_verification_codes" WHERE "code_created" <= \''.date("Y-m-d H:i:s", time() - $expire).'\'');
         } catch (PDOException $err) {
-            $this->print_error("メールアドレス確認用トークンの削除に失敗しました。".$err->getMessage());
+            $this->print_error("メールアドレス確認コードの削除に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -614,7 +651,108 @@ class wakarana extends wakarana_common {
     }
     
     
-    function reset_password ($token, $new_password, $delete_token = TRUE) {
+    function check_invite_code ($invite_code) {
+        $this->delete_expired_invite_codes();
+        
+        $invite_code = strtoupper($invite_code);
+        
+        try {
+            $stmt = $this->db_obj->prepare('SELECT COUNT(*) FROM "wakarana_invite_codes" WHERE "invite_code" = :invite_code');
+            
+            $stmt->bindValue(":invite_code", $invite_code, PDO::PARAM_STR);
+            
+            $stmt->execute();
+        } catch (PDOException $err) {
+            $this->print_error("招待コードの認証に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        $data = $stmt->fetchColumn();
+        
+        if (!empty($data)) {
+            $this->delete_invite_code($invite_code);
+            
+            return TRUE;
+        } else {
+            return FALSE;
+        }
+    }
+    
+    
+    function get_invite_codes () {
+        $this->delete_expired_invite_codes();
+        
+        try {
+            $stmt = $this->db_obj->query('SELECT * FROM "wakarana_invite_codes" ORDER BY "code_created" ASC');
+        } catch (PDOException $err) {
+            $this->print_error("招待コード一覧の取得に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+    
+    
+    function get_invite_code_info ($invite_code) {
+        $this->delete_expired_invite_codes();
+        
+        $invite_code = strtoupper($invite_code);
+        
+        try {
+            $stmt = $this->db_obj->prepare('SELECT * FROM "wakarana_invite_codes" WHERE "invite_code" = :invite_code');
+            
+            $stmt->bindValue(":invite_code", $invite_code, PDO::PARAM_STR);
+            
+            $stmt->execute();
+        } catch (PDOException $err) {
+            $this->print_error("招待コード情報の取得に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+    
+    
+    function delete_invite_code ($invite_code = NULL) {
+        if (is_null($invite_code)) {
+            try {
+                $this->db_obj->exec('DELETE FROM "wakarana_invite_codes"');
+            } catch (PDOException $err) {
+                $this->print_error("招待コードの削除に失敗しました。".$err->getMessage());
+                return FALSE;
+            }
+        } else {
+            $invite_code = strtoupper($invite_code);
+            
+            try {
+                $stmt = $this->db_obj->prepare('DELETE FROM "wakarana_invite_codes" WHERE "invite_code" = :invite_code');
+                
+                $stmt->bindValue(":invite_code", $invite_code, PDO::PARAM_STR);
+                
+                $stmt->execute();
+            } catch (PDOException $err) {
+                $this->print_error("招待コードの削除に失敗しました。".$err->getMessage());
+                return FALSE;
+            }
+        }
+        
+        return TRUE;
+    }
+    
+    
+    function delete_expired_invite_codes () {
+        try {
+            $this->db_obj->exec('DELETE FROM "wakarana_invite_codes" WHERE "code_expire" <= \''.date("Y-m-d H:i:s").'\'');
+        } catch (PDOException $err) {
+            $this->print_error("有効期限切れ招待コードの削除に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        return TRUE;
+    }
+    
+    
+    function reset_password ($token, $new_password) {
         $this->delete_password_reset_tokens();
         
         try {
@@ -631,20 +769,42 @@ class wakarana extends wakarana_common {
         $user = $this->get_user($stmt->fetchColumn());
         
         if ($user !== FALSE && $user->set_password($new_password)) {
-            if ($delete_token) {
-                try {
-                    $stmt = $this->db_obj->prepare('DELETE FROM "wakarana_password_reset_tokens" WHERE "token" = :token');
-                    
-                    $stmt->bindValue(":token", $token, PDO::PARAM_STR);
-                    
-                    $stmt->execute();
-                } catch (PDOException $err) {
-                    $this->print_error("使用済みのパスワード再設定用トークンの削除に失敗しました。".$err->getMessage());
-                    return FALSE;
-                }
+            try {
+                $stmt = $this->db_obj->prepare('DELETE FROM "wakarana_password_reset_tokens" WHERE "token" = :token');
+                
+                $stmt->bindValue(":token", $token, PDO::PARAM_STR);
+                
+                $stmt->execute();
+            } catch (PDOException $err) {
+                $this->print_error("使用済みのパスワード再設定用トークンの削除に失敗しました。".$err->getMessage());
+                return FALSE;
             }
             
             return $user;
+        } else {
+            return FALSE;
+        }
+    }
+    
+    
+    function get_password_reset_token_expire ($token) {
+        $this->delete_password_reset_tokens();
+        
+        try {
+            $stmt = $this->db_obj->prepare('SELECT "token_created" FROM "wakarana_password_reset_tokens" WHERE "token" = :token');
+            
+            $stmt->bindValue(":token", $token, PDO::PARAM_STR);
+            
+            $stmt->execute();
+        } catch (PDOException $err) {
+            $this->print_error("メールアドレス確認コードの情報取得に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        $data = $stmt->fetchColumn();
+        
+        if ($data !== FALSE) {
+            return date("Y-m-d H:i:s", strtotime($data) + $this->config["password_reset_token_expire"]);
         } else {
             return FALSE;
         }
@@ -673,10 +833,16 @@ class wakarana extends wakarana_common {
             return FALSE;
         }
         
+        if ($this->custom_fields[$custom_field_name]["is_numeric"]) {
+            $table_name = "wakarana_user_custom_numerical_fields";
+        } else {
+            $table_name = "wakarana_user_custom_fields";
+        }
+        
         try {
-            $stmt = $this->db_obj->prepare('SELECT "wakarana_users".* FROM "wakarana_users", "wakarana_user_custom_fields" WHERE "wakarana_user_custom_fields"."custom_field_name" = \''.$custom_field_name.'\' AND "wakarana_user_custom_fields"."custom_field_value" = :custom_field_value AND "wakarana_users"."user_id" = "wakarana_user_custom_fields"."user_id"');
+            $stmt = $this->db_obj->prepare('SELECT "wakarana_users".* FROM "wakarana_users", "'.$table_name.'" WHERE "'.$table_name.'"."custom_field_name" = \''.$custom_field_name.'\' AND "'.$table_name.'"."custom_field_value" = :custom_field_value AND "wakarana_users"."user_id" = "'.$table_name.'"."user_id"');
             
-            $stmt->bindValue(":custom_field_value", $custom_field_value, PDO::PARAM_STR);
+            $stmt->bindValue(":custom_field_value", $custom_field_value);
             
             $stmt->execute();
         } catch (PDOException $err) {
@@ -692,6 +858,29 @@ class wakarana extends wakarana_common {
         }
         
         return $users;
+    }
+    
+    
+    function delete_all_users_values ($custom_field_name) {
+        if (!self::check_id_string($custom_field_name) || !isset($this->custom_fields[$custom_field_name])) {
+            $this->print_error("指定されたカスタムフィールドは存在しません。");
+            return FALSE;
+        }
+        
+        if ($this->custom_fields[$custom_field_name]["is_numeric"]) {
+            $table_name = "wakarana_user_custom_numerical_fields";
+        } else {
+            $table_name = "wakarana_user_custom_fields";
+        }
+        
+        try {
+            $this->db_obj->exec('DELETE FROM "'.$table_name.'" WHERE "custom_field_name" = \''.$custom_field_name.'\'');
+        } catch (PDOException $err) {
+            $this->print_error("カスタムフィールド値の削除に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        return TRUE;
     }
     
     
@@ -889,15 +1078,15 @@ class wakarana extends wakarana_common {
     }
     
     
-    static function create_totp_key () {
-        $key_bin = random_bytes(10);
+    static function create_random_code ($code_length = 16) {
+        $key_bin = random_bytes($code_length * 5 / 8);
         
-        $totp_key = "";
-        for ($cnt = 0; $cnt < 16; $cnt++) {
-            $totp_key .= WAKARANA_BASE32_TABLE[self::bin_to_int($key_bin, $cnt * 5, 5)];
+        $random_code = "";
+        for ($cnt = 0; $cnt < $code_length; $cnt++) {
+            $random_code .= WAKARANA_BASE32_TABLE[self::bin_to_int($key_bin, $cnt * 5, 5)];
         }
         
-        return $totp_key;
+        return $random_code;
     }
     
     
@@ -1046,8 +1235,14 @@ class wakarana_user {
             return FALSE;
         }
         
+        if ($this->wakarana->custom_fields[$custom_field_name]["is_numeric"]) {
+            $table_name = "wakarana_user_custom_numerical_fields";
+        } else {
+            $table_name = "wakarana_user_custom_fields";
+        }
+        
         try {
-            $stmt = $this->wakarana->db_obj->query('SELECT "custom_field_value" FROM "wakarana_user_custom_fields" WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "custom_field_name" = \''.$custom_field_name.'\'');
+            $stmt = $this->wakarana->db_obj->query('SELECT "custom_field_value" FROM "'.$table_name.'" WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "custom_field_name" = \''.$custom_field_name.'\'');
         } catch (PDOException $err) {
             $this->wakarana->print_error("カスタムフィールド値の取得に失敗しました。".$err->getMessage());
             return FALSE;
@@ -1068,8 +1263,14 @@ class wakarana_user {
             return FALSE;
         }
         
+        if ($this->wakarana->custom_fields[$custom_field_name]["is_numeric"]) {
+            $table_name = "wakarana_user_custom_numerical_fields";
+        } else {
+            $table_name = "wakarana_user_custom_fields";
+        }
+        
         try {
-            $stmt = $this->wakarana->db_obj->query('SELECT "custom_field_value" FROM "wakarana_user_custom_fields" WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "custom_field_name" = \''.$custom_field_name.'\' ORDER BY "value_number" ASC');
+            $stmt = $this->wakarana->db_obj->query('SELECT "custom_field_value" FROM "'.$table_name.'" WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "custom_field_name" = \''.$custom_field_name.'\' ORDER BY "value_number" ASC');
         } catch (PDOException $err) {
             $this->wakarana->print_error("カスタムフィールド値の取得に失敗しました。".$err->getMessage());
             return FALSE;
@@ -1130,8 +1331,13 @@ class wakarana_user {
             return FALSE;
         }
         
+        if (!$this->wakarana->check_email_address($email_address)) {
+            $this->wakarana->print_error("使用できないメールアドレスです。");
+            return FALSE;
+        }
+        
         if (!$this->wakarana->config["allow_nonunique_email_address"] && !empty($this->wakarana->search_users_with_email_address($email_address))) {
-            $this->wakarana->print_error("使用できないメールアドレスです。現在の設定では同一メールアドレスの復数アカウントでの使用は許可されていません。");
+            $this->wakarana->print_error("現在の設定では同一メールアドレスの復数アカウントでの使用は許可されていません。");
             return FALSE;
         }
         
@@ -1234,8 +1440,8 @@ class wakarana_user {
     
     function enable_2_factor_auth ($totp_key = NULL) {
         if (empty($totp_key)) {
-            $totp_key = wakarana::create_totp_key();
-        } elseif (preg_match("/^[A-Z2-7]{16}$/", $totp_key) !== 1) {
+            $totp_key = wakarana::create_random_code();
+        } elseif (preg_match("/\A[A-Z2-7]{16}\z/", $totp_key) !== 1) {
             $this->wakarana->print_error("TOTP生成鍵が不正です。");
             return FALSE;
         }
@@ -1282,18 +1488,33 @@ class wakarana_user {
             return FALSE;
         }
         
-        $custom_field_value = mb_substr($custom_field_value, 0, $this->wakarana->custom_fields[$custom_field_name]["maximum_length"]);
+        if ($this->wakarana->custom_fields[$custom_field_name]["is_numeric"]) {
+            $table_name = "wakarana_user_custom_numerical_fields";
+            
+            if (!is_numeric($custom_field_value)) {
+                $this->wakarana->print_error("数値型のカスタムフィールドに格納できない値が指定されました。");
+                return FALSE;
+            }
+        } else {
+            $table_name = "wakarana_user_custom_fields";
+            
+            $custom_field_value = mb_substr($custom_field_value, 0, $this->wakarana->custom_fields[$custom_field_name]["maximum_length"]);
+        }
         
-        if (!$this->wakarana->custom_fields[$custom_field_name]["allow_nonunique_value"] && !empty($this->wakarana->search_users_with_custom_field($custom_field_name, $custom_field_value))) {
-            $this->wakarana->print_error("使用できない値です。指定されたカスタムフィールドでは複数のアカウントに同じ値を設定することは許可されていません。");
-            return FALSE;
+        if (!$this->wakarana->custom_fields[$custom_field_name]["allow_nonunique_value"]) {
+            $other_users = $this->wakarana->search_users_with_custom_field($custom_field_name, $custom_field_value);
+            
+            if (!empty($other_users) && $other_users[0]->get_id() !== $this->get_id()) {
+                $this->wakarana->print_error("他のユーザーに割り当て済みの値です。指定されたカスタムフィールドでは複数のアカウントに同じ値を設定することは許可されていません。");
+                return FALSE;
+            }
         }
         
         try {
-            $stmt = $this->wakarana->db_obj->prepare('INSERT INTO "wakarana_user_custom_fields"("user_id", "custom_field_name", "value_number", "custom_field_value") VALUES (\''.$this->user_info["user_id"].'\', \''.$custom_field_name.'\', 1, :custom_field_value) ON CONFLICT("user_id", "custom_field_name", "value_number") DO UPDATE SET "custom_field_value" = :custom_field_value_2');
+            $stmt = $this->wakarana->db_obj->prepare('INSERT INTO "'.$table_name.'"("user_id", "custom_field_name", "value_number", "custom_field_value") VALUES (\''.$this->user_info["user_id"].'\', \''.$custom_field_name.'\', 1, :custom_field_value) ON CONFLICT("user_id", "custom_field_name", "value_number") DO UPDATE SET "custom_field_value" = :custom_field_value_2');
             
-            $stmt->bindValue(":custom_field_value", $custom_field_value, PDO::PARAM_STR);
-            $stmt->bindValue(":custom_field_value_2", $custom_field_value, PDO::PARAM_STR);
+            $stmt->bindValue(":custom_field_value", $custom_field_value);
+            $stmt->bindValue(":custom_field_value_2", $custom_field_value);
             
             $stmt->execute();
         } catch (PDOException $err) {
@@ -1327,7 +1548,18 @@ class wakarana_user {
             return FALSE;
         }
         
-        $custom_field_value = mb_substr($custom_field_value, 0, $this->wakarana->custom_fields[$custom_field_name]["maximum_length"]);
+        if ($this->wakarana->custom_fields[$custom_field_name]["is_numeric"]) {
+            $table_name = "wakarana_user_custom_numerical_fields";
+            
+            if (!is_numeric($custom_field_value)) {
+                $this->wakarana->print_error("数値型のカスタムフィールドに格納できない値が指定されました。");
+                return FALSE;
+            }
+        } else {
+            $table_name = "wakarana_user_custom_fields";
+            
+            $custom_field_value = mb_substr($custom_field_value, 0, $this->wakarana->custom_fields[$custom_field_name]["maximum_length"]);
+        }
         
         if (!$this->wakarana->custom_fields[$custom_field_name]["allow_nonunique_value"] && !empty($this->wakarana->search_users_with_custom_field($custom_field_name, $custom_field_value))) {
             $this->wakarana->print_error("使用できない値です。指定されたカスタムフィールドでは複数のアカウントに同じ値を設定することは許可されていません。");
@@ -1336,13 +1568,13 @@ class wakarana_user {
         
         try {
             if ($value_number <= $value_count) {
-                $this->wakarana->db_obj->exec('UPDATE "wakarana_user_custom_fields" SET "value_number" = "value_number" + '.$this->wakarana->custom_fields[$custom_field_name]["records_per_user"].' WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "custom_field_name" = \''.$custom_field_name.'\' AND "value_number" >= '.$value_number);
-                $this->wakarana->db_obj->exec('UPDATE "wakarana_user_custom_fields" SET "value_number" = "value_number" - '.($this->wakarana->custom_fields[$custom_field_name]["records_per_user"] - 1).' WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "custom_field_name" = \''.$custom_field_name.'\' AND "value_number" >= '.$this->wakarana->custom_fields[$custom_field_name]["records_per_user"]);
+                $this->wakarana->db_obj->exec('UPDATE "'.$table_name.'" SET "value_number" = "value_number" + '.$this->wakarana->custom_fields[$custom_field_name]["records_per_user"].' WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "custom_field_name" = \''.$custom_field_name.'\' AND "value_number" >= '.$value_number);
+                $this->wakarana->db_obj->exec('UPDATE "'.$table_name.'" SET "value_number" = "value_number" - '.($this->wakarana->custom_fields[$custom_field_name]["records_per_user"] - 1).' WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "custom_field_name" = \''.$custom_field_name.'\' AND "value_number" >= '.$this->wakarana->custom_fields[$custom_field_name]["records_per_user"]);
             }
             
-            $stmt = $this->wakarana->db_obj->prepare('INSERT INTO "wakarana_user_custom_fields"("user_id", "custom_field_name", "value_number", "custom_field_value") VALUES (\''.$this->user_info["user_id"].'\', \''.$custom_field_name.'\', '.$value_number.', :custom_field_value)');
+            $stmt = $this->wakarana->db_obj->prepare('INSERT INTO "'.$table_name.'"("user_id", "custom_field_name", "value_number", "custom_field_value") VALUES (\''.$this->user_info["user_id"].'\', \''.$custom_field_name.'\', '.$value_number.', :custom_field_value)');
             
-            $stmt->bindValue(":custom_field_value", $custom_field_value, PDO::PARAM_STR);
+            $stmt->bindValue(":custom_field_value", $custom_field_value);
             
             $stmt->execute();
         } catch (PDOException $err) {
@@ -1360,17 +1592,27 @@ class wakarana_user {
             return FALSE;
         }
         
-        $custom_field_value = mb_substr($custom_field_value, 0, $this->wakarana->custom_fields[$custom_field_name]["maximum_length"]);
+        if ($this->wakarana->custom_fields[$custom_field_name]["is_numeric"]) {
+            $table_name = "wakarana_user_custom_numerical_fields";
+        } else {
+            $table_name = "wakarana_user_custom_fields";
+            
+            $custom_field_value = mb_substr($custom_field_value, 0, $this->wakarana->custom_fields[$custom_field_name]["maximum_length"]);
+        }
         
-        if (!$this->wakarana->custom_fields[$custom_field_name]["allow_nonunique_value"] && !empty($this->wakarana->search_users_with_custom_field($custom_field_name, $custom_field_value))) {
-            $this->wakarana->print_error("使用できない値です。指定されたカスタムフィールドでは複数のアカウントに同じ値を設定することは許可されていません。");
-            return FALSE;
+        if (!$this->wakarana->custom_fields[$custom_field_name]["allow_nonunique_value"]) {
+            $other_users = $this->wakarana->search_users_with_custom_field($custom_field_name, $custom_field_value);
+            
+            if (!empty($other_users) && $other_users[0]->get_id() !== $this->get_id()) {
+                $this->wakarana->print_error("他のユーザーに割り当て済みの値です。指定されたカスタムフィールドでは複数のアカウントに同じ値を設定することは許可されていません。");
+                return FALSE;
+            }
         }
         
         try {
-            $stmt = $this->wakarana->db_obj->prepare('UPDATE "wakarana_user_custom_fields" SET "custom_field_value" = :custom_field_value WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "custom_field_name" = \''.$custom_field_name.'\' AND "value_number" = '.intval($value_number));
+            $stmt = $this->wakarana->db_obj->prepare('UPDATE "'.$table_name.'" SET "custom_field_value" = :custom_field_value WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "custom_field_name" = \''.$custom_field_name.'\' AND "value_number" = '.intval($value_number));
             
-            $stmt->bindValue(":custom_field_value", $custom_field_value, PDO::PARAM_STR);
+            $stmt->bindValue(":custom_field_value", $custom_field_value);
             
             $stmt->execute();
         } catch (PDOException $err) {
@@ -1382,37 +1624,32 @@ class wakarana_user {
     }
     
     
-    function remove_value ($custom_field_name, $number_or_value = NULL) {
+    function delete_value ($custom_field_name, $value_number = NULL) {
         if (!wakarana::check_id_string($custom_field_name) || !isset($this->wakarana->custom_fields[$custom_field_name])) {
             $this->wakarana->print_error("指定されたカスタムフィールドは存在しません。");
             return FALSE;
         }
         
-        if (empty($number_or_value)) {
+        if ($this->wakarana->custom_fields[$custom_field_name]["is_numeric"]) {
+            $table_name = "wakarana_user_custom_numerical_fields";
+        } else {
+            $table_name = "wakarana_user_custom_fields";
+        }
+        
+        if (is_null($value_number)) {
             $value_number_q = '';
         } else {
-            if (is_int($number_or_value)) {
-                $value_number = $number_or_value;
-            } else {
-                $index = array_search($number_or_value, $this->get_values($custom_field_name));
-                
-                if ($index === FALSE) {
-                    $this->wakarana->print_error("指定されたカスタムフィールド値は存在しません。");
-                    return FALSE;
-                }
-                
-                $value_number = $index + 1;
-            }
+            $value_number = intval($value_number);
             
             $value_number_q = ' AND "value_number" = '.$value_number;
         }
         
         try {
-            $this->wakarana->db_obj->exec('DELETE FROM "wakarana_user_custom_fields" WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "custom_field_name" = \''.$custom_field_name.'\''.$value_number_q);
+            $this->wakarana->db_obj->exec('DELETE FROM "'.$table_name.'" WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "custom_field_name" = \''.$custom_field_name.'\''.$value_number_q);
             
-            if (!empty($number_or_value)) {
-                $this->wakarana->db_obj->exec('UPDATE "wakarana_user_custom_fields" SET "value_number" = "value_number" + '.$this->wakarana->custom_fields[$custom_field_name]["records_per_user"].' WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "custom_field_name" = \''.$custom_field_name.'\' AND "value_number" > '.$value_number);
-                $this->wakarana->db_obj->exec('UPDATE "wakarana_user_custom_fields" SET "value_number" = "value_number" - '.($this->wakarana->custom_fields[$custom_field_name]["records_per_user"] + 1).' WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "custom_field_name" = \''.$custom_field_name.'\' AND "value_number" >= '.$this->wakarana->custom_fields[$custom_field_name]["records_per_user"]);
+            if (!is_null($value_number)) {
+                $this->wakarana->db_obj->exec('UPDATE "'.$table_name.'" SET "value_number" = "value_number" + '.$this->wakarana->custom_fields[$custom_field_name]["records_per_user"].' WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "custom_field_name" = \''.$custom_field_name.'\' AND "value_number" > '.$value_number);
+                $this->wakarana->db_obj->exec('UPDATE "'.$table_name.'" SET "value_number" = "value_number" - '.($this->wakarana->custom_fields[$custom_field_name]["records_per_user"] + 1).' WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "custom_field_name" = \''.$custom_field_name.'\' AND "value_number" >= '.$this->wakarana->custom_fields[$custom_field_name]["records_per_user"]);
             }
         } catch (PDOException $err) {
             $this->wakarana->print_error("カスタムフィールド値の削除に失敗しました。".$err->getMessage());
@@ -1423,9 +1660,29 @@ class wakarana_user {
     }
     
     
-    function remove_all_values () {
+    function remove_value ($custom_field_name, $custom_field_value) {
+        if (!wakarana::check_id_string($custom_field_name) || !isset($this->wakarana->custom_fields[$custom_field_name])) {
+            $this->wakarana->print_error("指定されたカスタムフィールドは存在しません。");
+            return FALSE;
+        }
+        
+        $index = array_search($custom_field_value, $this->get_values($custom_field_name));
+        
+        if ($index === FALSE) {
+            $this->wakarana->print_error("指定されたカスタムフィールド値は存在しません。");
+            return FALSE;
+        }
+        
+        $value_number = $index + 1;
+        
+        return $this->delete_value($custom_field_name, $value_number);
+    }
+    
+    
+    function delete_all_values () {
         try {
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_user_custom_fields" WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
+            $this->wakarana->db_obj->exec('DELETE FROM "wakarana_user_custom_numerical_fields" WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
         } catch (PDOException $err) {
             $this->wakarana->print_error("カスタムフィールド値の削除に失敗しました。".$err->getMessage());
             return FALSE;
@@ -1531,7 +1788,7 @@ class wakarana_user {
     
     
     function delete_all_tokens () {
-        if($this->delete_login_tokens() && $this->delete_one_time_tokens() && $this->delete_email_address_verification_token() && $this->delete_password_reset_token() && $this->delete_2sv_token()){
+        if($this->delete_login_tokens() && $this->delete_one_time_tokens() && $this->delete_email_address_verification_code() && $this->delete_invite_codes() && $this->delete_password_reset_token() && $this->delete_2sv_token()){
             return TRUE;
         } else {
             return FALSE;
@@ -1753,39 +2010,107 @@ class wakarana_user {
     }
     
     
-    function create_email_address_verification_token ($email_address) {
+    function create_email_address_verification_code ($email_address) {
+        if (!$this->wakarana->check_email_address($email_address)) {
+            $this->wakarana->print_error("使用できないメールアドレスです。");
+            return FALSE;
+        }
+        
         if (!$this->wakarana->config["allow_nonunique_email_address"] && !empty($this->wakarana->search_users_with_email_address($email_address))) {
-            $this->wakarana->print_error("使用できないメールアドレスです。現在の設定では同一メールアドレスでの復数アカウント作成は許可されていません。");
+            $this->wakarana->print_error("現在の設定では同一メールアドレスの復数アカウントでの使用は許可されていません。");
             return NULL;
         }
         
-        $this->wakarana->delete_email_address_verification_tokens();
+        $this->wakarana->delete_email_address_verification_codes();
         
-        $token = wakarana::create_token();
+        $verification_code = wakarana::create_random_code(8);
         
-        $token_created = date("Y-m-d H:i:s");
+        $code_created = date("Y-m-d H:i:s");
         
         try {
-            $stmt = $this->wakarana->db_obj->prepare('INSERT INTO "wakarana_email_address_verification"("token", "user_id", "email_address", "token_created") VALUES (\''.$token.'\', \''.$this->user_info["user_id"].'\', :email_address, \''.$token_created.'\') ON CONFLICT("user_id") DO UPDATE SET "token" = \''.$token.'\', "email_address" = :email_address_2, "token_created" = \''.$token_created.'\'');
+            $stmt = $this->wakarana->db_obj->prepare('INSERT INTO "wakarana_email_address_verification_codes"("user_id", "email_address", "verification_code", "code_created") VALUES (\''.$this->user_info["user_id"].'\', :email_address, \''.$verification_code.'\', \''.$code_created.'\') ON CONFLICT("user_id") DO UPDATE SET "email_address" = :email_address_2, "verification_code" = \''.$verification_code.'\', "code_created" = \''.$code_created.'\'');
             
             $stmt->bindValue(":email_address", $email_address, PDO::PARAM_STR);
             $stmt->bindValue(":email_address_2", $email_address, PDO::PARAM_STR);
             
             $stmt->execute();
         } catch (PDOException $err) {
-            $this->wakarana->print_error("メールアドレス確認用トークンの生成に失敗しました。".$err->getMessage());
+            $this->wakarana->print_error("メールアドレス確認コードの生成に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
-        return $token;
+        return $verification_code;
     }
     
     
-    function delete_email_address_verification_token () {
+    function delete_email_address_verification_code () {
         try {
-            $this->wakarana->db_obj->exec('DELETE FROM "wakarana_email_address_verification" WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
+            $this->wakarana->db_obj->exec('DELETE FROM "wakarana_email_address_verification_codes" WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
         } catch (PDOException $err) {
-            $this->wakarana->print_error("ユーザーのメールアドレス確認用トークンの削除に失敗しました。".$err->getMessage());
+            $this->wakarana->print_error("ユーザーのメールアドレス確認コードの削除に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        return TRUE;
+    }
+    
+    
+    function create_invite_code ($code_expire = NULL, $remaining_number = NULL) {
+        $this->wakarana->delete_expired_invite_codes();
+        
+        if (is_null($code_expire)) {
+            $code_expire_q = "NULL";
+        } else {
+            if (!preg_match("/\A[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01]) ([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]\z/u", $code_expire)) {
+                $this->wakarana->print_error("異常な有効期限が指定されました。");
+                return FALSE;
+            }
+            
+            $code_expire_q = "'".$code_expire."'";
+        }
+        
+        if (empty($remaining_number)) {
+            $remaining_number_q = "NULL";
+        } else {
+            $remaining_number_q = intval($remaining_number);
+        }
+        
+        $invite_code = wakarana::create_random_code();
+        
+        $code_created = date("Y-m-d H:i:s");
+        
+        try {
+            $this->wakarana->db_obj->exec('INSERT INTO "wakarana_invite_codes"("invite_code", "user_id", "code_created", "code_expire", "remaining_number") VALUES (\''.$invite_code.'\', \''.$this->user_info["user_id"].'\', \''.$code_created.'\', '.$code_expire_q.', '.$remaining_number_q.')');
+        } catch (PDOException $err) {
+            $this->wakarana->print_error("招待コードの生成に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        return $invite_code;
+    }
+    
+    
+    function get_invite_codes () {
+        $this->wakarana->delete_expired_invite_codes();
+        
+        try {
+            $stmt = $this->wakarana->db_obj->query('SELECT * FROM "wakarana_invite_codes" WHERE "user_id" = \''.$this->user_info["user_id"].'\' ORDER BY "code_created" ASC');
+        } catch (PDOException $err) {
+            $this->wakarana->print_error("ユーザーの招待コード一覧の取得に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+    
+    
+    function delete_invite_codes () {
+        $this->wakarana->delete_expired_invite_codes();
+        
+        try {
+            $stmt = $this->wakarana->db_obj->query('DELETE FROM "wakarana_invite_codes" WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
+        } catch (PDOException $err) {
+            $this->wakarana->print_error("ユーザーが発行した招待コードの削除に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -1928,7 +2253,7 @@ class wakarana_user {
     
     
     function delete_user () {
-        if (!$this->delete_all_tokens() || !$this->remove_role() || !$this->remove_all_email_addresses() || !$this->remove_all_values() || !$this->delete_auth_logs()){
+        if (!$this->delete_all_tokens() || !$this->remove_role() || !$this->remove_all_email_addresses() || !$this->delete_all_values() || !$this->delete_auth_logs()){
             return FALSE;
         }
         

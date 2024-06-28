@@ -1,7 +1,3 @@
-<Files ~ "\.ini$">
-  deny from all 
-</Files>
-
-<Files ~ "\.db$">
-  deny from all 
+<Files ~ "\.(ini|db|json|conf)$">
+  deny from all
 </Files>
