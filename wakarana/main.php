@@ -75,6 +75,18 @@ class wakarana extends wakarana_common {
     }
     
     
+    function count_user() {
+        try {
+            $stmt = $this->db_obj->query('SELECT COUNT(*) FROM "wakarana_users"');
+        } catch (PDOException $err) {
+            $this->print_error("ユーザー数の取得に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        return $stmt->fetchColumn();
+    }
+    
+    
     function get_all_users ($start = 0, $limit = 100, $order_by = WAKARANA_ORDER_USER_CREATED, $asc = TRUE) {
         $start = intval($start);
         $limit = intval($limit);
@@ -566,12 +578,17 @@ class wakarana extends wakarana_common {
     
     
     function email_address_verify ($email_address, $verification_code) {
+        if (!$this->check_email_address($email_address)) {
+            $this->print_error("使用できないメールアドレスです。");
+            return FALSE;
+        }
+        
         $this->delete_email_address_verification_codes();
         
         $verification_code = strtoupper($verification_code);
         
         try {
-            $stmt = $this->db_obj->prepare('SELECT "user_id" FROM "wakarana_email_address_verification_codes" WHERE "email_address" = :email_address AND "verification_code" = :verification_code');
+            $stmt = $this->db_obj->prepare('SELECT COUNT(*) FROM "wakarana_email_address_verification_codes" WHERE "email_address" = :email_address AND "verification_code" = :verification_code AND "user_id" IS NULL');
             
             $stmt->bindValue(":email_address", $email_address, PDO::PARAM_STR);
             $stmt->bindValue(":verification_code", $verification_code, PDO::PARAM_STR);
@@ -584,7 +601,7 @@ class wakarana extends wakarana_common {
         
         $data = $stmt->fetchColumn();
         
-        if ($data !== FALSE) {
+        if (!empty($data)) {
             try {
                 $stmt = $this->db_obj->prepare('DELETE FROM "wakarana_email_address_verification_codes" WHERE "email_address" = :email_address AND "verification_code" = :verification_code');
                 
@@ -597,11 +614,7 @@ class wakarana extends wakarana_common {
                 return FALSE;
             }
             
-            if (!is_null($data)) {
-                return $this->get_user($data);
-            } else {
-                return TRUE;
-            }
+            return TRUE;
         } else {
             return FALSE;
         }
@@ -614,7 +627,7 @@ class wakarana extends wakarana_common {
         $verification_code = strtoupper($verification_code);
         
         try {
-            $stmt = $this->db_obj->prepare('SELECT "code_created" FROM "wakarana_email_address_verification_codes" WHERE "email_address" = :email_address AND "verification_code" = :verification_code');
+            $stmt = $this->db_obj->prepare('SELECT "code_created" FROM "wakarana_email_address_verification_codes" WHERE "email_address" = :email_address AND "verification_code" = :verification_code AND "user_id" IS NULL');
             
             $stmt->bindValue(":email_address", $email_address, PDO::PARAM_STR);
             $stmt->bindValue(":verification_code", $verification_code, PDO::PARAM_STR);
@@ -2040,6 +2053,81 @@ class wakarana_user {
         }
         
         return $verification_code;
+    }
+    
+    
+    function email_address_verify ($email_address, $verification_code, $verification_only = FALSE) {
+        if (!$this->wakarana->check_email_address($email_address)) {
+            $this->wakarana->print_error("使用できないメールアドレスです。");
+            return FALSE;
+        }
+        
+        $this->wakarana->delete_email_address_verification_codes();
+        
+        $verification_code = strtoupper($verification_code);
+        
+        try {
+            $stmt = $this->wakarana->db_obj->prepare('SELECT COUNT(*) FROM "wakarana_email_address_verification_codes" WHERE "email_address" = :email_address AND "verification_code" = :verification_code AND "user_id" = \''.$this->user_info["user_id"].'\'');
+            
+            $stmt->bindValue(":email_address", $email_address, PDO::PARAM_STR);
+            $stmt->bindValue(":verification_code", $verification_code, PDO::PARAM_STR);
+            
+            $stmt->execute();
+        } catch (PDOException $err) {
+            $this->wakarana->print_error("メールアドレス確認コードの認証に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        $data = $stmt->fetchColumn();
+        
+        if (!empty($data)) {
+            try {
+                $stmt = $this->wakarana->db_obj->prepare('DELETE FROM "wakarana_email_address_verification_codes" WHERE "email_address" = :email_address AND "verification_code" = :verification_code');
+                
+                $stmt->bindValue(":email_address", $email_address, PDO::PARAM_STR);
+                $stmt->bindValue(":verification_code", $verification_code, PDO::PARAM_STR);
+                
+                $stmt->execute();
+            } catch (PDOException $err) {
+                $this->wakarana->print_error("使用済みのメールアドレス確認コードの削除に失敗しました。".$err->getMessage());
+                return FALSE;
+            }
+            
+            if (!$verification_only) {
+                return $this->add_email_address($email_address);
+            } else {
+                return TRUE;
+            }
+        } else {
+            return FALSE;
+        }
+    }
+    
+    
+    function get_email_address_verification_code_expire ($email_address, $verification_code) {
+        $this->wakarana->delete_email_address_verification_codes();
+        
+        $verification_code = strtoupper($verification_code);
+        
+        try {
+            $stmt = $this->wakarana->db_obj->prepare('SELECT "code_created" FROM "wakarana_email_address_verification_codes" WHERE "email_address" = :email_address AND "verification_code" = :verification_code AND "user_id" = \''.$this->user_info["user_id"].'\'');
+            
+            $stmt->bindValue(":email_address", $email_address, PDO::PARAM_STR);
+            $stmt->bindValue(":verification_code", $verification_code, PDO::PARAM_STR);
+            
+            $stmt->execute();
+        } catch (PDOException $err) {
+            $this->wakarana->print_error("メールアドレス確認コードの情報取得に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        $data = $stmt->fetchColumn();
+        
+        if ($data !== FALSE) {
+            return date("Y-m-d H:i:s", strtotime($data) + $this->wakarana->config["verification_email_expire"]);
+        } else {
+            return FALSE;
+        }
     }
     
     
