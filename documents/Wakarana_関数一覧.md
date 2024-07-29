@@ -273,6 +273,15 @@ Wakarana_userインスタンスを生成する。
 **返り値** ： 成功した場合は作成したロールのwakarana_roleインスタンスを、失敗した場合はFALSEを返す。
 
 
+#### ☆ wakarana::check_resource_id_string($resource_id)
+文字列にリソースIDとして使用できない文字が含まれないかどうかを検査する。  
+☆staticメソッド。  
+  
+**$resource_id** : 検査する文字列  
+  
+**返り値** ： リソースIDとして使用可能な文字列ならTRUEを、それ以外の場合はFALSEを返す。
+
+
 #### wakarana::get_permission()
 権限のwakarana_permissionインスタンスを生成する。  
   
@@ -292,11 +301,11 @@ Wakarana_userインスタンスを生成する。
 
 
 #### wakarana::add_permission($resource_id, $permission_name, $classify_actions=TRUE, $permission_description="")
-権限を新規作成する。  
-権限は権限の表示名ではなく権限対象リソースのIDで識別される。  
-権限対象リソースIDに「/」が含まれる場合、ユーザーが「/」以下を取り除いた権限対象リソースIDの権限を持っていれば、権限があるものとみなされる。  
+権限を新規作成する。権限は権限の表示名ではなく権限対象リソースのIDで識別される。  
+権限対象リソースIDに「/」が含まれる場合、作成される権限は「/」以下を取り除いたリソースIDの権限の子権限となり、ユーザーが親権限を持っていれば、自動的に子権限も持っているものとみなされる。  
+存在しない親権限に子権限を作成することは出来ない。
   
-**$resource_id** ： 権限対象リソースID。半角英数字及びアンダーバー、「/」が使用可能。アルファベット大文字は小文字に変換される。  
+**$resource_id** ： 権限対象リソースID。半角英数字及びアンダーバー、「/」が使用可能(ただし、「/」はリソースIDの先頭や末尾に使用したり、複数文字連続させることはできない)。アルファベット大文字は小文字に変換される。  
 **$permission_name** ： 権限の表示名  
 **$classify_actions** : 動作を識別するか。FALSEを指定すると動作「any」が自動作成される。  
 **$permission_description** : 権限についての説明文  
@@ -897,6 +906,16 @@ wakarana_userインスタンスはこの関数以外の方法(unsetや変数の�
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
+#### wakarana_user::increment_value($custom_field_name, $value_number, $increments=1)
+ユーザーの指定した数値カスタムフィールドの値に指定した値を加算する。  
+  
+**$custom_field_name** ： カスタムフィールド名  
+**$value_number** ： 上書きする値の並び順番号  
+**$increments** ： 加算する値  
+  
+**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
 #### wakarana_user::delete_value($custom_field_name, $value_number=NULL)
 ユーザーのカスタムフィールドから並び順番号を指定して値を削除する。  
 削除された値より後の値の並び順番号は1つ前にずれる。  
@@ -1323,28 +1342,37 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
 
 #### wakarana_permission::get_actions()
 権限に存在する動作の一覧を取得する。  
+親権限に存在する動作も区別なく合わせて取得される。  
   
 **返り値** ： 動作識別名を配列で返す。失敗した場合はFALSEを返す。
 
 
 #### wakarana_permission::add_action($action)
 権限で使用可能な動作を追加する。  
+親権限に存在する動作は既に存在しているものとして扱われる。  
   
 **$action** ： 動作識別名  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** ： 成功した場合はTRUE、既に動作が存在している場合や失敗した場合はFALSEを返す。
 
 
 #### wakarana_permission::delete_action($action=NULL)
 権限で使用可能な動作を削除する。削除された動作は全てのロールから剥奪される。  
+親権限に存在する動作を削除することは出来ない。  
   
 **$action** ： 動作識別名。NULLまたは省略した場合は全ての動作が削除される。  
   
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
+#### wakarana_permission::get_descendant_permissions()
+権限の子孫権限一覧を取得する。  
+  
+**返り値** ： 子孫の権限のwakarana_permissionインスタンスを配列で返す。
+
+
 #### wakarana_permission::delete_permission()
-権限を全てのロールから剥奪して完全に削除する。  
+権限を全てのロールから剥奪して完全に削除する。子孫権限が存在する場合、それらも同様に削除される。  
   
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
