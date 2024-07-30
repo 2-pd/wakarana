@@ -186,6 +186,15 @@ class wakarana extends wakarana_common {
     }
     
     
+    static function check_resource_id_string ($resource_id) {
+        if (gettype($resource_id) === "string" && strlen($resource_id) <= 120 && preg_match("/\A[0-9A-Za-z_]+(\/[0-9A-Za-z_]+)*\z/u", $resource_id)) {
+            return TRUE;
+        } else {
+            return FALSE;
+        }
+    }
+    
+    
     function delete_role ($role_name) {
         if ($role_name === WAKARANA_BASE_ROLE) {
             $this->print_error("ベースロールを削除することはできません。");
