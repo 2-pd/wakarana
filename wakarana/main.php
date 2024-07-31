@@ -18,6 +18,7 @@ define("WAKARANA_BASE32_TABLE", array("A", "B", "C", "D", "E", "F", "G", "H", "I
 
 class wakarana extends wakarana_common {
     public $user_ids = array();
+    public $role_ids = array();
     
     
     function __construct ($base_dir = NULL) {
@@ -174,6 +175,39 @@ class wakarana extends wakarana_common {
     }
     
     
+    protected function new_wakarana_role ($role_info) {
+        if (!isset($this->role_ids[$role_info["role_id"]])) {
+            $this->role_ids[$role_info["role_id"]] = new wakarana_role($this, $role_info);
+        }
+        
+        return $this->role_ids[$role_info["role_id"]];
+    }
+    
+    
+    function get_role ($role_id) {
+        if (!self::check_id_string($role_id)) {
+            return FALSE;
+        }
+        
+        $role_id = strtolower($role_id);
+        
+        try {
+            $stmt = $this->db_obj->query('SELECT * FROM "wakarana_roles" WHERE "role_id" = \''.$role_id.'\'');
+        } catch (PDOException $err) {
+            $this->print_error("ロール情報の取得に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        $role_info = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!empty($role_info)) {
+            return $this->new_wakarana_role($role_info);
+        } else {
+            return FALSE;
+        }
+    }
+    
+    
     function get_roles () {
         try {
             $stmt = $this->db_obj->query('SELECT DISTINCT "role_name" FROM "wakarana_permission_values" WHERE "role_name" != \''.WAKARANA_BASE_ROLE.'\' ORDER BY "role_name" ASC');
@@ -183,6 +217,30 @@ class wakarana extends wakarana_common {
         }
         
         return $stmt->fetchAll(PDO::FETCH_COLUMN);
+    }
+    
+    
+    function add_role ($role_id, $role_name, $role_description = "") {
+        if (!self::check_id_string($role_id)) {
+            $this->print_error("ロールIDに使用できない文字列が指定されました。");
+            return FALSE;
+        }
+        
+        $role_id = strtolower($role_id);
+        
+        try {
+            $stmt = $this->db_obj->prepare('INSERT INTO "wakarana_roles"("role_id", "role_name", "role_description") VALUES (\''.$role_id.'\', :role_name, :role_description)');
+            
+            $stmt->bindValue(":role_name", mb_substr($role_name, 0, 120), PDO::PARAM_STR);
+            $stmt->bindValue(":role_description", $role_description, PDO::PARAM_STR);
+            
+            $stmt->execute();
+        } catch (PDOException $err) {
+            $this->print_error("ロールの作成に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        return $this->get_role($role_id);
     }
     
     
@@ -2367,5 +2425,32 @@ class wakarana_user {
         unset($this->user_info);
         
         return TRUE;
+    }
+}
+
+
+class wakarana_role {
+    protected $wakarana;
+    protected $role_info;
+    
+    
+    function __construct ($wakarana, $role_info) {
+        $this->wakarana = $wakarana;
+        $this->role_info= $role_info;
+    }
+    
+    
+    function get_id () {
+        return $this->role_info["role_id"];
+    }
+    
+    
+    function get_name () {
+        return $this->role_info["role_name"];
+    }
+    
+    
+    function get_description () {
+        return $this->role_info["role_description"];
     }
 }
