@@ -1244,7 +1244,7 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
 **返り値** ： ロールについての説明文を返す。
 
 
-#### wakarana_role::set_role_info($role_name, $role_description="")
+#### wakarana_role::set_info($role_name, $role_description="")
 ロールの情報を変更する。  
   
 **$role_name** ： ロールの表示名  

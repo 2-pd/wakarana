@@ -2460,4 +2460,24 @@ class wakarana_role {
     function get_description () {
         return $this->role_info["role_description"];
     }
+    
+    
+    function set_info ($role_name, $role_description = "") {
+        try {
+            $stmt = $this->wakarana->db_obj->prepare('UPDATE "wakarana_roles" SET "role_name" = :role_name, "role_description" = :role_description WHERE "role_id" = \''.$this->role_info["role_id"].'\'');
+            
+            $stmt->bindValue(":role_name", mb_substr($role_name, 0, 120), PDO::PARAM_STR);
+            $stmt->bindValue(":role_description", $role_description, PDO::PARAM_STR);
+            
+            $stmt->execute();
+        } catch (PDOException $err) {
+            $this->wakarana->print_error("ロール情報の変更に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        $this->role_info["role_name"] = $role_name;
+        $this->role_info["role_description"] = $role_description;
+        
+        return TRUE;
+    }
 }
