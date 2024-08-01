@@ -669,6 +669,14 @@ class wakarana_config extends wakarana_common {
             return FALSE;
         }
         
+        try {
+            $this->db_obj->exec('INSERT INTO "wakarana_roles"("role_id", "role_name", "role_description") VALUES (\'__BASE__\', \'ベースロール\', \'\') ON CONFLICT ("role_id") DO NOTHING');
+            $this->db_obj->exec('INSERT INTO "wakarana_roles"("role_id", "role_name", "role_description") VALUES (\'__ADMIN__\', \'特権管理者ロール\', \'\') ON CONFLICT ("role_id") DO NOTHING');
+        } catch (PDOException $err) {
+            $this->print_error("初期ロールの追加処理に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
         $this->disconnect_db();
         
         return TRUE;
