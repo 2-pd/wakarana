@@ -19,6 +19,7 @@ define("WAKARANA_BASE32_TABLE", array("A", "B", "C", "D", "E", "F", "G", "H", "I
 class wakarana extends wakarana_common {
     public $user_ids = array();
     public $role_ids = array();
+    public $permitted_value_ids = array();
     
     
     function __construct ($base_dir = NULL) {
@@ -285,91 +286,60 @@ class wakarana extends wakarana_common {
     }
     
     
-    function get_permission_values ($role_name) {
-        if (!self::check_id_string($role_name)) {
-            return FALSE;
+    protected function new_wakarana_permitted_value ($permitted_value_info) {
+        if (!isset($this->permitted_value_ids[$permitted_value_info["permitted_value_id"]])) {
+            $this->permitted_value_ids[$permitted_value_info["permitted_value_id"]] = new wakarana_permitted_value($this, $permitted_value_info);
         }
         
-        if ($role_name !== WAKARANA_ADMIN_ROLE) {
-            $role_name = strtolower($role_name);
-        }
-        
-        try {
-            $stmt = $this->db_obj->query('SELECT "permission_name", "permission_value" FROM "wakarana_permission_values" WHERE "role_name" = \''.$role_name.'\' ORDER BY "permission_name" ASC');
-        } catch (PDOException $err) {
-            $this->print_error("権限値の一覧の取得に失敗しました。".$err->getMessage());
-            return FALSE;
-        }
-        
-        return $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
+        return $this->permitted_value_ids[$permitted_value_info["permitted_value_id"]];
     }
     
     
-    function set_permission_value ($role_name, $permission_name, $permission_value = TRUE) {
-        if (!self::check_id_string($role_name) || !self::check_id_string($permission_name, 120)) {
-            $this->print_error("識別名にに使用できない文字列が指定されました。");
+    function get_permitted_value ($permitted_value_id) {
+        if (!self::check_id_string($permitted_value_id)) {
             return FALSE;
         }
         
-        if ($role_name !== WAKARANA_ADMIN_ROLE && $role_name !== WAKARANA_BASE_ROLE) {
-            $role_name = strtolower($role_name);
-        }
-        
-        $permission_name = strtolower($permission_name);
-        $permission_value = intval($permission_value);
+        $permitted_value_id = strtolower($permitted_value_id);
         
         try {
-            $this->db_obj->exec('INSERT INTO "wakarana_permission_values"("role_name", "permission_name", "permission_value") VALUES (\''.$role_name.'\', \''.$permission_name.'\','.$permission_value.') ON CONFLICT ("role_name", "permission_name") DO UPDATE SET "role_name" = \''.$role_name.'\', "permission_name" = \''.$permission_name.'\', "permission_value" = '.$permission_value.'');
+            $stmt = $this->db_obj->query('SELECT * FROM "wakarana_permitted_values" WHERE "permitted_value_id" = \''.$permitted_value_id.'\'');
         } catch (PDOException $err) {
-            $this->print_error("権限値の設定に失敗しました。".$err->getMessage());
+            $this->print_error("権限値情報の取得に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
-        return TRUE;
+        $permitted_value_info = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!empty($permitted_value_info)) {
+            return $this->new_wakarana_permitted_value($permitted_value_info);
+        } else {
+            return FALSE;
+        }
     }
     
     
-    function remove_permission_value ($role_name = NULL, $permission_name = NULL) {
-        if (!empty($role_name)) {
-            if (!self::check_id_string($role_name)) {
-                return FALSE;
-            }
-            
-            if ($role_name !== WAKARANA_ADMIN_ROLE && $role_name !== WAKARANA_BASE_ROLE) {
-                $role_name = strtolower($role_name);
-            }
-            
-            $role_name_q = '"role_name" = \''.$role_name.'\'';
-        } else {
-            $role_name_q = '';
-        }
-        
-        if (!empty($permission_name)) {
-            if (!self::check_id_string($permission_name, 120)) {
-                return FALSE;
-            }
-            
-            $permission_name_q = '"permission_name" = \''.strtolower($permission_name, 120).'\'';
-        } else {
-            $permission_name_q = '';
-        }
-        
-        if (!empty($role_name) && !empty($permission_name)) {
-            $q = ' WHERE '.$role_name_q.' AND '.$permission_name_q;
-        } elseif (empty($role_name) && empty($permission_name)) {
-            $q = '';
-        } else {
-            $q = ' WHERE '.$role_name_q.$permission_name_q;
-        }
-        
-        try {
-            $this->db_obj->exec('DELETE FROM "wakarana_permission_values"'.$q);
-        } catch (PDOException $err) {
-            $this->print_error("権限の削除に失敗しました。".$err->getMessage());
+    function add_permitted_value ($permitted_value_id, $permitted_value_name, $permitted_value_description = "") {
+        if (!self::check_id_string($permitted_value_id)) {
+            $this->print_error("権限値変数IDに使用できない文字列が指定されました。");
             return FALSE;
         }
         
-        return TRUE;
+        $permitted_value_id = strtolower($permitted_value_id);
+        
+        try {
+            $stmt = $this->db_obj->prepare('INSERT INTO "wakarana_permitted_values"("permitted_value_id", "permitted_value_name", "permitted_value_description") VALUES (\''.$permitted_value_id.'\', :permitted_value_name, :permitted_value_description)');
+            
+            $stmt->bindValue(":permitted_value_name", mb_substr($permitted_value_name, 0, 120), PDO::PARAM_STR);
+            $stmt->bindValue(":permitted_value_description", $permitted_value_description, PDO::PARAM_STR);
+            
+            $stmt->execute();
+        } catch (PDOException $err) {
+            $this->print_error("権限値変数の作成に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        return $this->get_permitted_value($permitted_value_id);
     }
     
     
@@ -2443,7 +2413,7 @@ class wakarana_role {
     
     function __construct ($wakarana, $role_info) {
         $this->wakarana = $wakarana;
-        $this->role_info= $role_info;
+        $this->role_info = $role_info;
     }
     
     
@@ -2477,6 +2447,53 @@ class wakarana_role {
         
         $this->role_info["role_name"] = $role_name;
         $this->role_info["role_description"] = $role_description;
+        
+        return TRUE;
+    }
+}
+
+
+class wakarana_permitted_value {
+    protected $wakarana;
+    protected $permitted_value_info;
+    
+    
+    function __construct ($wakarana, $permitted_value_info) {
+        $this->wakarana = $wakarana;
+        $this->permitted_value_info = $permitted_value_info;
+    }
+    
+    
+    function get_id () {
+        return $this->permitted_value_info["permitted_value_id"];
+    }
+    
+    
+    function get_name () {
+        return $this->permitted_value_info["permitted_value_name"];
+    }
+    
+    
+    function get_description () {
+        return $this->permitted_value_info["permitted_value_description"];
+    }
+    
+    
+    function set_info ($permitted_value_name, $permitted_value_description = "") {
+        try {
+            $stmt = $this->wakarana->db_obj->prepare('UPDATE "wakarana_permitted_values" SET "permitted_value_name" = :permitted_value_name, "permitted_value_description" = :permitted_value_description WHERE "permitted_value_id" = \''.$this->permitted_value_info["permitted_value_id"].'\'');
+            
+            $stmt->bindValue(":permitted_value_name", mb_substr($permitted_value_name, 0, 120), PDO::PARAM_STR);
+            $stmt->bindValue(":permitted_value_description", $permitted_value_description, PDO::PARAM_STR);
+            
+            $stmt->execute();
+        } catch (PDOException $err) {
+            $this->wakarana->print_error("権限情報の変更に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        $this->permitted_value_info["permitted_value_name"] = $permitted_value_name;
+        $this->permitted_value_info["permitted_value_description"] = $permitted_value_description;
         
         return TRUE;
     }
