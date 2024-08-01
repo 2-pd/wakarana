@@ -208,15 +208,22 @@ class wakarana extends wakarana_common {
     }
     
     
-    function get_roles () {
+    function get_all_roles () {
         try {
-            $stmt = $this->db_obj->query('SELECT DISTINCT "role_name" FROM "wakarana_permission_values" WHERE "role_name" != \''.WAKARANA_BASE_ROLE.'\' ORDER BY "role_name" ASC');
+            $stmt = $this->db_obj->query('SELECT * FROM "wakarana_roles" ORDER BY "role_id" ASC');
         } catch (PDOException $err) {
             $this->print_error("ロールの取得に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
-        return $stmt->fetchAll(PDO::FETCH_COLUMN);
+        $roles_info = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        $roles = array();
+        foreach ($roles_info as $role_info) {
+            $roles[] = $this->new_wakarana_role($role_info);
+        }
+        
+        return $roles;
     }
     
     

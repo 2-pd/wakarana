@@ -267,9 +267,9 @@ wakarana_roleインスタンスを生成する。
 
 
 #### wakarana::get_all_roles()
-存在するロールの一覧を取得する。  
+存在するロールの一覧(ベースロールと特権管理者ロールを含む)を取得する。  
   
-**返り値** ： ロールのwakarana_roleインスタンスをロール名のアルファベット順に格納した配列を返す。ロールが存在しない場合は空配列を返す。失敗した場合はFALSEを返す。
+**返り値** ： ロールのwakarana_roleインスタンスをロールIDのアルファベット順に格納した配列を返す。失敗した場合はFALSEを返す。
 
 
 #### wakarana::add_role($role_id, $role_name, $role_description="")
