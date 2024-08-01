@@ -502,9 +502,9 @@ class wakarana_config extends wakarana_common {
         
         try {
             if ($this->config["use_sqlite"]) {
-                $this->db_obj->exec("CREATE TABLE IF NOT EXISTS `wakarana_permitted_values`(`permitted_value_id` TEXT NOT NULL PRIMARY KEY, `value_name` TEXT NOT NULL, `permitted_value_description` TEXT)");
+                $this->db_obj->exec("CREATE TABLE IF NOT EXISTS `wakarana_permitted_values`(`permitted_value_id` TEXT NOT NULL PRIMARY KEY, `permitted_value_name` TEXT NOT NULL, `permitted_value_description` TEXT)");
             } else {
-                $this->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_permitted_values"("permitted_value_id" varchar(60) NOT NULL PRIMARY KEY, "value_name" varchar(120) NOT NULL, "permitted_value_description" text)');
+                $this->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_permitted_values"("permitted_value_id" varchar(60) NOT NULL PRIMARY KEY, "permitted_value_name" varchar(120) NOT NULL, "permitted_value_description" text)');
             }
         } catch (PDOException $err) {
             $this->print_error("テーブル wakarana_permitted_values の作成処理に失敗しました。".$err->getMessage());
@@ -512,7 +512,7 @@ class wakarana_config extends wakarana_common {
         }
         
         try {
-            $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_v1" ON "wakarana_permitted_values"("value_name", "permitted_value_id")');
+            $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_v1" ON "wakarana_permitted_values"("permitted_value_name", "permitted_value_id")');
         } catch (PDOException $err) {
             $this->print_error("テーブル wakarana_permitted_values のインデックス作成処理に失敗しました。".$err->getMessage());
             return FALSE;

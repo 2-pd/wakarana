@@ -124,10 +124,10 @@ _/_/_/_/ データベース _/_/_/_/
 
 テーブル `wakarana_permitted_values`
   `permitted_value_id` varchar(60) [TEXT] (NOT NULL PRIMARY KEY) 権限値変数ID
-  `value_name` varchar(120) [TEXT] (NOT NULL) 権限値名
+  `permitted_value_name` varchar(120) [TEXT] (NOT NULL) 権限値名
   `permitted_value_description` text [TEXT] 権限値の説明文
   
-  INDEX `wakarana_idx_v1` `value_name`, `permitted_value_id`
+  INDEX `wakarana_idx_v1` `permitted_value_name`, `permitted_value_id`
 
 
 テーブル `wakarana_role_permitted_values`
