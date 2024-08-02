@@ -213,7 +213,7 @@ class wakarana extends wakarana_common {
         try {
             $stmt = $this->db_obj->query('SELECT * FROM "wakarana_roles" ORDER BY "role_id" ASC');
         } catch (PDOException $err) {
-            $this->print_error("ロールの取得に失敗しました。".$err->getMessage());
+            $this->print_error("ロール一覧の取得に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -316,6 +316,25 @@ class wakarana extends wakarana_common {
         } else {
             return FALSE;
         }
+    }
+    
+    
+    function get_all_permitted_values () {
+        try {
+            $stmt = $this->db_obj->query('SELECT * FROM "wakarana_permitted_values" ORDER BY "permitted_value_id" ASC');
+        } catch (PDOException $err) {
+            $this->print_error("権限値情報一覧の取得に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        $permitted_values_info = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        $permitted_values = array();
+        foreach ($permitted_values_info as $permitted_value_info) {
+            $permitted_values[] = $this->new_wakarana_permitted_value($permitted_value_info);
+        }
+        
+        return $permitted_values;
     }
     
     
