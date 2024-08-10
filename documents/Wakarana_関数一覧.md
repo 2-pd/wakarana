@@ -169,10 +169,10 @@ wakarana_config.iniの設定値を取得する。
 「**user_created**」。ユーザー一覧の並び替え基準「ユーザー作成日」。
 
 #### WAKARANA_BASE_ROLE
-「**\_\_BASE\_\_**」。ベースロールの識別名。
+「**\_\_base\_\_**」。ベースロールの識別名。
 
 #### WAKARANA_ADMIN_ROLE
-「**\_\_ADMIN\_\_**」。特権管理者ロールの識別名。
+「**\_\_admin\_\_**」。特権管理者ロールの識別名。
 
 #### WAKARANA_BASE32_TABLE
 Base32エンコード用の変換対応表。
@@ -318,14 +318,14 @@ wakarana_permissionインスタンスを生成する。
 **返り値** ： 権限対象リソースIDをキーとし、値として動作識別名の配列を持った連想配列を返す。権限が存在しない場合は空配列を返す。失敗した場合はFALSEを返す。
 
 
-#### wakarana::add_permission($resource_id, $permission_name, $classify_actions=TRUE, $permission_description="")
+#### wakarana::add_permission($resource_id, $permission_name, $permission_description="")
 権限を新規作成する。権限は権限の表示名ではなく権限対象リソースのIDで識別される。  
 権限対象リソースIDに「/」が含まれる場合、作成される権限は「/」以下を取り除いたリソースIDの権限(親権限)の子権限となり、親権限に存在する動作を全て持った状態で作成される。  
 存在しない親権限に子権限を作成することはできない。  
+権限の作成時、初期動作「any」が自動作成される。  
   
 **$resource_id** ： 権限対象リソースID。半角英数字及びアンダーバー、「/」が使用可能(ただし、「/」はリソースIDの先頭や末尾に使用したり、複数文字連続させることはできない)。アルファベット大文字は小文字に変換される。  
 **$permission_name** ： 権限の表示名  
-**$classify_actions** : 動作を識別するか。FALSEを指定すると動作「any」が自動作成される。  
 **$permission_description** : 権限についての説明文  
   
 **返り値** ： 成功した場合は作成した権限のwakarana_permissionインスタンスを、失敗した場合はFALSEを返す。
@@ -931,11 +931,11 @@ wakarana_userインスタンスはこの関数以外の方法(unsetや変数の�
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
-#### wakarana_user::increment_value($custom_field_name, $value_number, $increments=1)
-ユーザーの指定した数値カスタムフィールドの値に指定した値を加算する。  
+#### wakarana_user::increment_value($custom_field_name, $increments=1)
+ユーザーの指定した数値カスタムフィールドに指定した値を加算する。  
+異なるユーザーが同一の値持つことを認めていないカスタムフィールドでは使用できない。  
   
-**$custom_field_name** ： カスタムフィールド名  
-**$value_number** ： 上書きする値の並び順番号  
+**$custom_field_name** ： カスタムフィールド名。2個以上の値の登録が可能なカスタムフィールドは指定できない。  
 **$increments** ： 加算する値  
   
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
@@ -1277,8 +1277,8 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
 
 #### wakarana_role::add_permission($resource_id, $action="any")
 ロールに権限を追加する。  
-特権管理者ロールは自動的に全ての権限が付与されるため、この関数は使用できない。  
-また、ロールに親権限が割り当て済みの場合、自動的に子権限も持っていることになる。  
+特権管理者ロールは自動的に全ての権限が付与されるため、この関数を使用する必要はない。  
+また、ロールに親権限を割り当てると、自動的に子孫権限も割り当てられる。  
   
 **$resource_id** ： 権限対象リソースID  
 **$action** ： 動作識別名  
@@ -1393,12 +1393,12 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
   
 **$action** ： 動作識別名  
   
-**返り値** ： 成功した場合はTRUE、既に動作が存在している場合や失敗した場合はFALSEを返す。
+**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
 #### wakarana_permission::delete_action($action=NULL)
 権限で使用可能な動作を削除する。削除された動作は全てのロールから剥奪される。  
-親権限に存在する動作を削除することはできない。  
+親権限に存在する動作、及び、初期動作「any」を削除することはできない。  
   
 **$action** ： 動作識別名。NULLまたは省略した場合は全ての動作が削除される。  
   

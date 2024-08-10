@@ -10,8 +10,8 @@ define("WAKARANA_ORDER_USER_ID", "user_id");
 define("WAKARANA_ORDER_USER_NAME", "user_name");
 define("WAKARANA_ORDER_USER_CREATED", "user_created");
 
-define("WAKARANA_BASE_ROLE", "__BASE__");
-define("WAKARANA_ADMIN_ROLE", "__ADMIN__");
+define("WAKARANA_BASE_ROLE", "__base__");
+define("WAKARANA_ADMIN_ROLE", "__admin__");
 
 define("WAKARANA_BASE32_TABLE", array("A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "2", "3", "4", "5", "6", "7"));
 
@@ -19,6 +19,7 @@ define("WAKARANA_BASE32_TABLE", array("A", "B", "C", "D", "E", "F", "G", "H", "I
 class wakarana extends wakarana_common {
     public $user_ids = array();
     public $role_ids = array();
+    public $resource_ids = array();
     public $permitted_value_ids = array();
     
     
@@ -258,6 +259,91 @@ class wakarana extends wakarana_common {
         } else {
             return FALSE;
         }
+    }
+    
+    
+    protected function new_wakarana_permission ($permission_info) {
+        if (!isset($this->resource_ids[$permission_info["resource_id"]])) {
+            $this->resource_ids[$permission_info["resource_id"]] = new wakarana_permission($this, $permission_info);
+        }
+        
+        return $this->resource_ids[$permission_info["resource_id"]];
+    }
+    
+    
+    function get_permission ($resource_id) {
+        if (!self::check_resource_id_string($resource_id)) {
+            return FALSE;
+        }
+        
+        $resource_id = strtolower($resource_id);
+        
+        try {
+            $stmt = $this->db_obj->query('SELECT * FROM "wakarana_permissions" WHERE "resource_id" = \''.$resource_id.'\'');
+        } catch (PDOException $err) {
+            $this->print_error("権限情報の取得に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        $permission_info = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!empty($permission_info)) {
+            return $this->new_wakarana_permission($permission_info);
+        } else {
+            return FALSE;
+        }
+    }
+    
+    
+    function add_permission ($resource_id, $permission_name, $permission_description = "") {
+        if (!self::check_resource_id_string($resource_id)) {
+            $this->print_error("権限対象リソースIDに使用できない文字列が指定されました。");
+            return FALSE;
+        }
+        
+        $resource_id = strtolower($resource_id);
+        
+        $slash_pos = strripos($resource_id, "/");
+        
+        if ($slash_pos !== FALSE) {
+            $parent_resource_id = substr($resource_id, 0, $slash_pos);
+            
+            if (!is_object($this->get_permission($parent_resource_id))) {
+                $this->print_error("存在しない権限に子権限を作成することはできません。");
+                return FALSE;
+            }
+        }
+        
+        try {
+            $stmt = $this->db_obj->prepare('INSERT INTO "wakarana_permissions"("resource_id", "permission_name", "permission_description") VALUES (\''.$resource_id.'\', :permission_name, :permission_description)');
+            
+            $stmt->bindValue(":permission_name", mb_substr($permission_name, 0, 120), PDO::PARAM_STR);
+            $stmt->bindValue(":permission_description", $permission_description, PDO::PARAM_STR);
+            
+            $stmt->execute();
+        } catch (PDOException $err) {
+            $this->print_error("権限の作成に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        if ($slash_pos !== FALSE) {
+            try {
+                $this->db_obj->exec('INSERT INTO "wakarana_permission_actions"("resource_id", "action") SELECT \''.$resource_id.'\', "action" FROM "wakarana_permission_actions" WHERE "resource_id" = \''.$parent_resource_id.'\'');
+                $this->db_obj->exec('INSERT INTO "wakarana_role_permissions"("role_id", "resource_id", "action") SELECT "role_id", \''.$resource_id.'\', "action" FROM "wakarana_role_permissions" WHERE "resource_id" = \''.$parent_resource_id.'\'');
+                $this->db_obj->exec('INSERT INTO "wakarana_user_permission_caches"("user_id", "resource_id", "action") SELECT "user_id", \''.$resource_id.'\', "action" FROM "wakarana_user_permission_caches" WHERE "resource_id" = \''.$parent_resource_id.'\'');
+            } catch (PDOException $err) {
+                $this->print_error("親権限から子権限への設定継承に失敗しました。".$err->getMessage());
+                return FALSE;
+            }
+        }
+        
+        $permission = $this->get_permission($resource_id);
+        
+        if ($slash_pos === FALSE) {
+            $permission->add_action("any");
+        }
+        
+        return $permission;
     }
     
     
@@ -2466,6 +2552,89 @@ class wakarana_role {
         
         $this->role_info["role_name"] = $role_name;
         $this->role_info["role_description"] = $role_description;
+        
+        return TRUE;
+    }
+    
+    
+    function add_permission ($resource_id, $action="any") {
+        if (!wakarana::check_resource_id_string($resource_id) || !wakarana::check_id_string($action)) {
+            $this->wakarana->print_error("識別名として使用できない文字列が指定されました。");
+            return FALSE;
+        }
+        
+        try {
+            $this->wakarana->db_obj->exec('INSERT INTO "wakarana_role_permissions"("role_id", "resource_id", "action") SELECT \''.$this->role_info["role_id"].'\', "resource_id", \''.$action.'\' FROM "wakarana_permissions" WHERE "resource_id" = \''.$resource_id.'\' OR "resource_id" LIKE \''.$resource_id.'/%\' ON CONFLICT ("role_id", "resource_id", "action") DO NOTHING');
+            $this->wakarana->db_obj->exec('INSERT INTO "wakarana_user_permission_caches"("user_id", "resource_id", "action") SELECT "wakarana_user_roles"."user_id", "wakarana_role_permissions"."resource_id", \''.$action.'\' FROM "wakarana_user_roles", "wakarana_role_permissions" WHERE "wakarana_user_roles"."role_id" = "wakarana_role_permissions"."role_id" AND ("wakarana_role_permissions"."resource_id" = \''.$resource_id.'\' OR "wakarana_role_permissions"."resource_id" LIKE \''.$resource_id.'/%\') AND "wakarana_role_permissions"."action" = \''.$action.'\' ON CONFLICT ("user_id", "resource_id", "action") DO NOTHING');
+        } catch (PDOException $err) {
+            $this->wakarana->print_error("権限の追加に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+    }
+}
+
+
+class wakarana_permission {
+    protected $wakarana;
+    protected $permission_info;
+    
+    
+    function __construct ($wakarana, $permission_info) {
+        $this->wakarana = $wakarana;
+        $this->permission_info = $permission_info;
+    }
+    
+    
+    function get_resource_id () {
+        return $this->permission_info["resource_id"];
+    }
+    
+    
+    function get_name () {
+        return $this->permission_info["permission_name"];
+    }
+    
+    
+    function get_description () {
+        return $this->permission_info["permission_description"];
+    }
+    
+    
+    function set_info ($permission_name, $permission_description = "") {
+        try {
+            $stmt = $this->wakarana->db_obj->prepare('UPDATE "wakarana_permissions" SET "permission_name" = :permission_name, "permission_description" = :permission_description WHERE "resource_id" = \''.$this->permission_info["resource_id"].'\'');
+            
+            $stmt->bindValue(":permission_name", mb_substr($permission_name, 0, 120), PDO::PARAM_STR);
+            $stmt->bindValue(":permission_description", $permission_description, PDO::PARAM_STR);
+            
+            $stmt->execute();
+        } catch (PDOException $err) {
+            $this->wakarana->print_error("権限情報の変更に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        $this->permission_info["permission_name"] = $permission_name;
+        $this->permission_info["permission_description"] = $permission_description;
+        
+        return TRUE;
+    }
+    
+    
+    function add_action ($action) {
+        if (!wakarana::check_id_string($action)) {
+            $this->wakarana->print_error("動作識別名に使用できない文字列が指定されました。");
+            return FALSE;
+        }
+        
+        try {
+            $this->wakarana->db_obj->exec('INSERT INTO "wakarana_permission_actions"("resource_id", "action") SELECT "resource_id", \''.$action.'\' FROM "wakarana_permissions" WHERE "resource_id" = \''.$this->permission_info["resource_id"].'\' OR "resource_id" LIKE \''.$this->permission_info["resource_id"].'/%\' ON CONFLICT ("resource_id", "action") DO NOTHING');
+        } catch (PDOException $err) {
+            $this->wakarana->print_error("動作の追加に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        $admin_role = $this->wakarana->get_role(WAKARANA_ADMIN_ROLE);
+        $admin_role->add_permission($this->permission_info["resource_id"], $action);
         
         return TRUE;
     }
