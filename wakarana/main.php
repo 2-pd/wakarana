@@ -1786,6 +1786,38 @@ class wakarana_user {
     }
     
     
+    function increment_value ($custom_field_name, $increments = 1) {
+        if (!wakarana::check_id_string($custom_field_name) || !isset($this->wakarana->custom_fields[$custom_field_name])) {
+            $this->wakarana->print_error("指定されたカスタムフィールドは存在しません。");
+            return FALSE;
+        }
+        
+        if (!$this->wakarana->custom_fields[$custom_field_name]["is_numeric"]) {
+            $this->wakarana->print_error("指定されたカスタムフィールドは数値型ではありません。");
+            return FALSE;
+        }
+        
+        if ($this->wakarana->custom_fields[$custom_field_name]["records_per_user"] !== 1) {
+            $this->wakarana->print_error("指定されたカスタムフィールドは単一値ではありません。");
+            return FALSE;
+        }
+        
+        if (!$this->wakarana->custom_fields[$custom_field_name]["allow_nonunique_value"]) {
+            $this->wakarana->print_error("複数のアカウントに同一の値を割り当てできないカスタムフィールドが指定されました。");
+            return FALSE;
+        }
+        
+        $increments = intval($increments);
+        
+        try {
+            $this->wakarana->db_obj->exec('INSERT INTO "wakarana_user_custom_numerical_fields"("user_id", "custom_field_name", "value_number", "custom_field_value") VALUES (\''.$this->user_info["user_id"].'\', \''.$custom_field_name.'\', 1, \''.$increments.'\') ON CONFLICT("user_id", "custom_field_name", "value_number") DO UPDATE SET "custom_field_value" = "custom_field_value" + '.$increments.'');
+        } catch (PDOException $err) {
+            $this->wakarana->print_error("カスタムフィールド値の変更に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+    }
+    
+    
     function delete_value ($custom_field_name, $value_number = NULL) {
         if (!wakarana::check_id_string($custom_field_name) || !isset($this->wakarana->custom_fields[$custom_field_name])) {
             $this->wakarana->print_error("指定されたカスタムフィールドは存在しません。");
