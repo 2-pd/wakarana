@@ -295,6 +295,25 @@ class wakarana extends wakarana_common {
     }
     
     
+    function get_all_permissions () {
+        try {
+            $stmt = $this->db_obj->query('SELECT * FROM "wakarana_permissions" ORDER BY "resource_id" ASC');
+        } catch (PDOException $err) {
+            $this->print_error("権限一覧の取得に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        $permissions_info = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        $permissions = array();
+        foreach ($permissions_info as $permission_info) {
+            $permissions[] = $this->new_wakarana_permission($permission_info);
+        }
+        
+        return $permissions;
+    }
+    
+    
     function add_permission ($resource_id, $permission_name, $permission_description = "") {
         if (!self::check_resource_id_string($resource_id)) {
             $this->print_error("権限対象リソースIDに使用できない文字列が指定されました。");
