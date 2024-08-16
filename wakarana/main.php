@@ -322,7 +322,7 @@ class wakarana extends wakarana_common {
         
         $resource_id = strtolower($resource_id);
         
-        $slash_pos = strripos($resource_id, "/");
+        $slash_pos = strrpos($resource_id, "/");
         
         if ($slash_pos !== FALSE) {
             $parent_resource_id = substr($resource_id, 0, $slash_pos);
@@ -2700,6 +2700,19 @@ class wakarana_permission {
         $admin_role->add_permission($this->permission_info["resource_id"], $action);
         
         return TRUE;
+    }
+    
+    
+    function get_parent_permission () {
+        $slash_pos = strrpos($this->permission_info["resource_id"], "/");
+        
+        if ($slash_pos === FALSE) {
+            return NULL;
+        }
+        
+        $resource_id = substr($this->permission_info["resource_id"], 0, $slash_pos);
+        
+        return $this->wakarana->get_permission($resource_id);
     }
 }
 

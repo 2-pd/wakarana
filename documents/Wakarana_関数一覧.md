@@ -1405,6 +1405,12 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
+#### wakarana_permission::get_parent_permission()
+権限の親権限を取得する。  
+  
+**返り値** ： 親権限のwakarana_permissionインスタンスを返す。親権限が存在しなければNULLを返し、失敗した場合はFALSEを返す。
+
+
 #### wakarana_permission::get_descendant_permissions()
 権限の子孫権限一覧を取得する。  
   
