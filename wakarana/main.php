@@ -2671,6 +2671,18 @@ class wakarana_permission {
     }
     
     
+    function get_actions () {
+        try {
+            $stmt = $this->wakarana->db_obj->query('SELECT "action" FROM "wakarana_permission_actions" WHERE "resource_id" = \''.$this->permission_info["resource_id"].'\' ORDER BY "action" ASC');
+        } catch (PDOException $err) {
+            $this->wakarana->print_error("動作一覧の取得に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        return $stmt->fetchAll(PDO::FETCH_COLUMN);
+    }
+    
+    
     function add_action ($action) {
         if (!wakarana::check_id_string($action)) {
             $this->wakarana->print_error("動作識別名に使用できない文字列が指定されました。");
