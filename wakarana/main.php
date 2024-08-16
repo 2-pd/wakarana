@@ -2703,6 +2703,53 @@ class wakarana_permission {
     }
     
     
+    function delete_action ($action = NULL) {
+        $parent_permission = $this->get_parent_permission();
+        if (!empty($parent_permission)) {
+            $actions = $parent_permission->get_actions();
+        } else {
+            $actions = array();
+        }
+        
+        if (empty($action)) {
+            $action_q = '"action" != \'any\'';
+            
+            if (count($actions) >= 2) {
+                $this->wakarana->print_error("親権限から \"any\" 以外の動作を継承しているため、動作識別名を省略することはできません。");
+                return FALSE;
+            }
+        } else {
+            if (!wakarana::check_id_string($action)) {
+                $this->wakarana->print_error("動作識別名に使用できない文字列が指定されました。");
+                return FALSE;
+            }
+            
+            if ($action === "any") {
+                $this->wakarana->print_error("初期動作 \"any\" を削除することはできません。");
+                return FALSE;
+            }
+            
+            if (in_array($action, $actions)) {
+                $this->wakarana->print_error("親権限から継承した動作を削除することはできません。");
+                return FALSE;
+            }
+            
+            $action_q = '"action" = \''.$action.'\'';
+        }
+        
+        try {
+            $this->wakarana->db_obj->exec('DELETE FROM "wakarana_permission_actions" WHERE ("resource_id" = \''.$this->permission_info["resource_id"].'\' OR "resource_id" LIKE \''.$this->permission_info["resource_id"].'/%\') AND '.$action_q);
+            $this->wakarana->db_obj->exec('DELETE FROM "wakarana_role_permissions" WHERE ("resource_id" = \''.$this->permission_info["resource_id"].'\' OR "resource_id" LIKE \''.$this->permission_info["resource_id"].'/%\') AND '.$action_q);
+            $this->wakarana->db_obj->exec('DELETE FROM "wakarana_user_permission_caches" WHERE ("resource_id" = \''.$this->permission_info["resource_id"].'\' OR "resource_id" LIKE \''.$this->permission_info["resource_id"].'/%\') AND '.$action_q);
+        } catch (PDOException $err) {
+            $this->wakarana->print_error("動作の削除に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        return TRUE;
+    }
+    
+    
     function get_parent_permission () {
         $slash_pos = strrpos($this->permission_info["resource_id"], "/");
         
