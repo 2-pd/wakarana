@@ -2833,12 +2833,26 @@ class wakarana_permitted_value {
             
             $stmt->execute();
         } catch (PDOException $err) {
-            $this->wakarana->print_error("権限情報の変更に失敗しました。".$err->getMessage());
+            $this->wakarana->print_error("権限値情報の変更に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
         $this->permitted_value_info["permitted_value_name"] = $permitted_value_name;
         $this->permitted_value_info["permitted_value_description"] = $permitted_value_description;
+        
+        return TRUE;
+    }
+    
+    
+    function delete_permitted_value () {
+        try {
+            $this->wakarana->db_obj->exec('DELETE FROM "wakarana_permitted_values" WHERE "permitted_value_id" = \''.$this->permitted_value_info["permitted_value_id"].'\'');
+            $this->wakarana->db_obj->exec('DELETE FROM "wakarana_role_permitted_values" WHERE "permitted_value_id" = \''.$this->permitted_value_info["permitted_value_id"].'\'');
+            $this->wakarana->db_obj->exec('DELETE FROM "wakarana_user_permitted_value_caches" WHERE "permitted_value_id" = \''.$this->permitted_value_info["permitted_value_id"].'\'');
+        } catch (PDOException $err) {
+            $this->wakarana->print_error("権限値の削除に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
         
         return TRUE;
     }
