@@ -207,9 +207,9 @@ wakarana_common::__constructとwakarana_common::connect_dbを順に実行する�
 **返り値** ： パスワードが指定した文字数以上かつ大文字・小文字・数字の全てを含むならTRUE、そうでないならFALSEを返す。
 
 
-#### ◆ wakarana::new_wakarana_user($user_info)
+#### wakarana::new_wakarana_user($user_info)
 wakarana_userインスタンスを生成する。  
-◆クラス内呼び出し専用。  
+この関数はクラス外から直接呼び出すべきではない。  
   
 **$user_info** : ユーザー情報("user_id"(ユーザーID)、"user_name"(ユーザー名)、"password"(ハッシュ化されたパスワード)、"user_created"(アカウント作成日時)、"last_updated"(アカウント情報更新日時)、"last_access"(最終アクセス日時)、"status"(アカウントが使用可能か停止されているか)、"totp_key"(TOTPワンタイムパスワード生成キー))を格納した連想配列。
 

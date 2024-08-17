@@ -43,7 +43,7 @@ class wakarana extends wakarana_common {
     }
     
     
-    protected function new_wakarana_user ($user_info) {
+    function new_wakarana_user ($user_info) {
         if (!isset($this->user_ids[$user_info["user_id"]])) {
             $this->user_ids[$user_info["user_id"]] = new wakarana_user($this, $user_info);
         }
@@ -2605,6 +2605,25 @@ class wakarana_role {
         $this->role_info["role_description"] = $role_description;
         
         return TRUE;
+    }
+    
+    
+    function get_users () {
+        try {
+            $stmt = $this->wakarana->db_obj->query('SELECT "wakarana_users".* FROM "wakarana_users", "wakarana_user_roles" WHERE "wakarana_user_roles"."role_id" = \''.$this->role_info["role_id"].'\' AND "wakarana_users"."user_id" = "wakarana_user_roles"."user_id" ORDER BY "wakarana_user_roles"."user_id" ASC');
+        } catch (PDOException $err) {
+            $this->wakarana->print_error("ロールを持つユーザーの一覧取得に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        $users_info = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        $users = array();
+        foreach ($users_info as $user_info) {
+            $users[] = $this->wakarana->new_wakarana_user($user_info);
+        }
+        
+        return $users;
     }
     
     
