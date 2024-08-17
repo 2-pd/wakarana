@@ -2627,11 +2627,50 @@ class wakarana_role {
     }
     
     
+    function get_permissions () {
+        try {
+            $stmt = $this->wakarana->db_obj->query('SELECT "resource_id", "action" FROM "wakarana_role_permissions" WHERE "role_id" = \''.$this->role_info["role_id"].'\' ORDER BY "resource_id", "action" ASC');
+        } catch (PDOException $err) {
+            $this->wakarana->print_error("ロールの権限一覧の取得に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        return $stmt->fetchAll(PDO::FETCH_COLUMN|PDO::FETCH_GROUP);
+    }
+    
+    
+    function check_permission ($resource_id, $action = "any") {
+        if (!wakarana::check_resource_id_string($resource_id) || !wakarana::check_id_string($action)) {
+            $this->wakarana->print_error("識別名として使用できない文字列が指定されました。");
+            return FALSE;
+        }
+        
+        $resource_id = strtolower($resource_id);
+        $action = strtolower($action);
+        
+        try {
+            $stmt = $this->wakarana->db_obj->query('SELECT COUNT(*) FROM "wakarana_role_permissions" WHERE "role_id" = \''.$this->role_info["role_id"].'\' AND "resource_id" = \''.$resource_id.'\' AND "action" = \''.$action.'\'');
+        } catch (PDOException $err) {
+            $this->wakarana->print_error("ロールの権限確認に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        if (intval($stmt->fetchColumn()) === 1) {
+            return TRUE;
+        } else {
+            return FALSE;
+        }
+    }
+    
+    
     function add_permission ($resource_id, $action="any") {
         if (!wakarana::check_resource_id_string($resource_id) || !wakarana::check_id_string($action)) {
             $this->wakarana->print_error("識別名として使用できない文字列が指定されました。");
             return FALSE;
         }
+        
+        $resource_id = strtolower($resource_id);
+        $action = strtolower($action);
         
         try {
             $this->wakarana->db_obj->exec('INSERT INTO "wakarana_role_permissions"("role_id", "resource_id", "action") SELECT \''.$this->role_info["role_id"].'\', "resource_id", \''.$action.'\' FROM "wakarana_permissions" WHERE "resource_id" = \''.$resource_id.'\' OR "resource_id" LIKE \''.$resource_id.'/%\' ON CONFLICT ("role_id", "resource_id", "action") DO NOTHING');
@@ -2661,10 +2700,12 @@ class wakarana_role {
             return FALSE;
         }
         
+        $permitted_value_id = strtolower($permitted_value_id);
+        
         try {
             $stmt = $this->wakarana->db_obj->query('SELECT "permitted_value" FROM "wakarana_role_permitted_values" WHERE "role_id" = \''.$this->role_info["role_id"].'\' AND "permitted_value_id" = \''.$permitted_value_id.'\'');
         } catch (PDOException $err) {
-            $this->wakarana->print_error("ロールの権限値一覧の取得に失敗しました。".$err->getMessage());
+            $this->wakarana->print_error("ロールの権限値の取得に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -2742,6 +2783,8 @@ class wakarana_permission {
             return FALSE;
         }
         
+        $action = strtolower($action);
+        
         try {
             $this->wakarana->db_obj->exec('INSERT INTO "wakarana_permission_actions"("resource_id", "action") SELECT "resource_id", \''.$action.'\' FROM "wakarana_permissions" WHERE "resource_id" = \''.$this->permission_info["resource_id"].'\' OR "resource_id" LIKE \''.$this->permission_info["resource_id"].'/%\' ON CONFLICT ("resource_id", "action") DO NOTHING');
         } catch (PDOException $err) {
@@ -2776,6 +2819,8 @@ class wakarana_permission {
                 $this->wakarana->print_error("動作識別名に使用できない文字列が指定されました。");
                 return FALSE;
             }
+            
+            $action = strtolower($action);
             
             if ($action === "any") {
                 $this->wakarana->print_error("初期動作 \"any\" を削除することはできません。");
