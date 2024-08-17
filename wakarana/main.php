@@ -2641,6 +2641,40 @@ class wakarana_role {
             return FALSE;
         }
     }
+    
+    
+    function get_permitted_values () {
+        try {
+            $stmt = $this->wakarana->db_obj->query('SELECT "permitted_value_id", "permitted_value" FROM "wakarana_role_permitted_values" WHERE "role_id" = \''.$this->role_info["role_id"].'\' ORDER BY "permitted_value_id" ASC');
+        } catch (PDOException $err) {
+            $this->wakarana->print_error("ロールの権限値一覧の取得に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        return $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
+    }
+    
+    
+    function get_permitted_value ($permitted_value_id) {
+        if (!wakarana::check_id_string($permitted_value_id)) {
+            $this->wakarana->print_error("権限値変数IDに使用できない文字列が指定されました。");
+            return FALSE;
+        }
+        
+        try {
+            $stmt = $this->wakarana->db_obj->query('SELECT "permitted_value" FROM "wakarana_role_permitted_values" WHERE "role_id" = \''.$this->role_info["role_id"].'\' AND "permitted_value_id" = \''.$permitted_value_id.'\'');
+        } catch (PDOException $err) {
+            $this->wakarana->print_error("ロールの権限値一覧の取得に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        $permitted_value = $stmt->fetchColumn();
+        if ($permitted_value !== FALSE) {
+            return $permitted_value;
+        } else {
+            return NULL;
+        }
+    }
 }
 
 
