@@ -262,7 +262,7 @@ class wakarana extends wakarana_common {
     }
     
     
-    protected function new_wakarana_permission ($permission_info) {
+    function new_wakarana_permission ($permission_info) {
         if (!isset($this->resource_ids[$permission_info["resource_id"]])) {
             $this->resource_ids[$permission_info["resource_id"]] = new wakarana_permission($this, $permission_info);
         }
@@ -2760,6 +2760,25 @@ class wakarana_permission {
         $resource_id = substr($this->permission_info["resource_id"], 0, $slash_pos);
         
         return $this->wakarana->get_permission($resource_id);
+    }
+    
+    
+    function get_descendant_permissions () {
+        try {
+            $stmt = $this->wakarana->db_obj->query('SELECT * FROM "wakarana_permissions" WHERE "resource_id" LIKE \''.$this->permission_info["resource_id"].'/%\' ORDER BY "resource_id" ASC');
+        } catch (PDOException $err) {
+            $this->wakarana->print_error("権限一覧の取得に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        $permissions_info = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        $permissions = array();
+        foreach ($permissions_info as $permission_info) {
+            $permissions[] = $this->wakarana->new_wakarana_permission($permission_info);
+        }
+        
+        return $permissions;
     }
 }
 
