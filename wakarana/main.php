@@ -2780,6 +2780,21 @@ class wakarana_permission {
         
         return $permissions;
     }
+    
+    
+    function delete_permission () {
+        try {
+            $this->wakarana->db_obj->exec('DELETE FROM "wakarana_permissions" WHERE "resource_id" = \''.$this->permission_info["resource_id"].'\' OR "resource_id" LIKE \''.$this->permission_info["resource_id"].'/%\'');
+            $this->wakarana->db_obj->exec('DELETE FROM "wakarana_permission_actions" WHERE "resource_id" = \''.$this->permission_info["resource_id"].'\' OR "resource_id" LIKE \''.$this->permission_info["resource_id"].'/%\'');
+            $this->wakarana->db_obj->exec('DELETE FROM "wakarana_role_permissions" WHERE "resource_id" = \''.$this->permission_info["resource_id"].'\' OR "resource_id" LIKE \''.$this->permission_info["resource_id"].'/%\'');
+            $this->wakarana->db_obj->exec('DELETE FROM "wakarana_user_permission_caches" WHERE "resource_id" = \''.$this->permission_info["resource_id"].'\' OR "resource_id" LIKE \''.$this->permission_info["resource_id"].'/%\'');
+        } catch (PDOException $err) {
+            $this->wakarana->print_error("権限の削除に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        return TRUE;
+    }
 }
 
 
