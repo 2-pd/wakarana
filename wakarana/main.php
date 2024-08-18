@@ -1924,23 +1924,18 @@ class wakarana_user {
     }
     
     
-    function add_role ($role_name) {
-        if ($role_name === WAKARANA_BASE_ROLE) {
-            $this->wakarana->print_error("ベースロールは追加する必要がありません。");
-            return FALSE;
-        }
-        
-        if (!wakarana::check_id_string($role_name)) {
+    function add_role ($role_id) {
+        if (!wakarana::check_id_string($role_id)) {
             $this->wakarana->print_error("ロール名にに使用できない文字列が指定されました。");
             return FALSE;
         }
         
-        if ($role_name !== WAKARANA_ADMIN_ROLE) {
-            $role_name = strtolower($role_name);
-        }
+        $role_id = strtolower($role_id);
         
         try {
-            $this->wakarana->db_obj->exec('INSERT INTO "wakarana_user_roles"("user_id", "role_name") VALUES (\''.$this->user_info["user_id"].'\', \''.$role_name.'\')');
+            $this->wakarana->db_obj->exec('INSERT INTO "wakarana_user_roles"("user_id", "role_id") VALUES (\''.$this->user_info["user_id"].'\', \''.$role_id.'\') ON CONFLICT ("user_id", "role_id") DO NOTHING');
+            $this->wakarana->db_obj->exec('INSERT INTO "wakarana_user_permission_caches"("user_id", "resource_id", "action") SELECT \''.$this->user_info["user_id"].'\', "resource_id", "action" FROM "wakarana_role_permissions" WHERE "role_id" = \''.$role_id.'\' ON CONFLICT ("user_id", "resource_id", "action") DO NOTHING');
+            $this->wakarana->db_obj->exec('INSERT INTO "wakarana_user_permitted_value_caches"("user_id", "permitted_value_id", "maximum_permitted_value") SELECT \''.$this->user_info["user_id"].'\', "permitted_value_id", "permitted_value" FROM "wakarana_role_permitted_values" WHERE "role_id" = \''.$role_id.'\' ON CONFLICT("user_id", "permitted_value_id") DO UPDATE SET "maximum_permitted_value" = (SELECT MAX("wakarana_role_permitted_values"."permitted_value") FROM "wakarana_user_roles", "wakarana_role_permitted_values" WHERE "wakarana_user_roles"."user_id" = \''.$this->user_info["user_id"].'\' AND "wakarana_role_permitted_values"."role_id" = "wakarana_user_roles"."role_id" AND "wakarana_role_permitted_values"."permitted_value_id" = EXCLUDED."permitted_value_id" GROUP BY "wakarana_role_permitted_values"."permitted_value_id")');
         } catch (PDOException $err) {
             $this->wakarana->print_error("ロールの付与に失敗しました。".$err->getMessage());
             return FALSE;
