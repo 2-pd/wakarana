@@ -251,9 +251,9 @@ wakarana_userインスタンスを生成する。
 **返り値** ： 成功した場合は追加したユーザーのwakarana_userインスタンスを返す。失敗した場合はFALSEを返す。
 
 
-#### ◆ wakarana::new_wakarana_role($role_info)
+#### wakarana::new_wakarana_role($role_info)
 wakarana_roleインスタンスを生成する。  
-◆クラス内呼び出し専用。  
+この関数はクラス外から直接呼び出すべきではない。  
   
 **$role_info** : ロール情報("role_id"(ロールID)、"role_name"(ロール名)、"role_description"(ロールの説明文))を格納した連想配列。
 
@@ -968,9 +968,9 @@ wakarana_userインスタンスはこの関数以外の方法(unsetや変数の�
 
 
 #### wakarana_user::get_roles()
-ユーザーに割り当てられたロールの一覧を取得する。ただし、ベースロールは取得しない。  
+ユーザーに割り当てられたロールの一覧を取得する。  
   
-**返り値** ： ロールのwakarana_roleインスタンスをロール名のアルファベット順に格納した配列を返す。ロールが存在しない場合は空配列を返す。失敗した場合はFALSEを返す。
+**返り値** ： ユーザーに割り当てられたベースロールを含む全ロールのwakarana_roleインスタンスをロール名のアルファベット順に格納した配列を返す。失敗した場合はFALSEを返す。
 
 
 #### wakarana_user::add_role($role_id)

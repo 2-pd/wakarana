@@ -177,7 +177,7 @@ class wakarana extends wakarana_common {
     }
     
     
-    protected function new_wakarana_role ($role_info) {
+    function new_wakarana_role ($role_info) {
         if (!isset($this->role_ids[$role_info["role_id"]])) {
             $this->role_ids[$role_info["role_id"]] = new wakarana_role($this, $role_info);
         }
@@ -1907,13 +1907,20 @@ class wakarana_user {
     
     function get_roles () {
         try {
-            $stmt = $this->wakarana->db_obj->query('SELECT "role_name" FROM "wakarana_user_roles" WHERE "user_id" = \''.$this->user_info["user_id"].'\' ORDER BY "role_name" ASC');
+            $stmt = $this->wakarana->db_obj->query('SELECT "wakarana_roles".* FROM "wakarana_roles", "wakarana_user_roles" WHERE "wakarana_user_roles"."user_id" = \''.$this->user_info["user_id"].'\' AND "wakarana_roles"."role_id" = "wakarana_user_roles"."role_id" ORDER BY "wakarana_user_roles"."role_id" ASC');
         } catch (PDOException $err) {
             $this->wakarana->print_error("ロールの取得に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
-        return $stmt->fetchAll(PDO::FETCH_COLUMN);
+        $roles_info = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        $roles = array();
+        foreach ($roles_info as $role_info) {
+            $roles[] = $this->wakarana->new_wakarana_role($role_info);
+        }
+        
+        return $roles;
     }
     
     
