@@ -767,9 +767,7 @@ class wakarana extends wakarana_common {
             return FALSE;
         }
         
-        $data = $stmt->fetchColumn();
-        
-        if (!empty($data)) {
+        if ($stmt->fetchColumn() >= 1) {
             try {
                 $stmt = $this->db_obj->prepare('DELETE FROM "wakarana_email_address_verification_codes" WHERE "email_address" = :email_address AND "verification_code" = :verification_code');
                 
@@ -848,9 +846,7 @@ class wakarana extends wakarana_common {
             return FALSE;
         }
         
-        $data = $stmt->fetchColumn();
-        
-        if (!empty($data)) {
+        if ($stmt->fetchColumn() === 1) {
             $this->delete_invite_code($invite_code);
             
             return TRUE;
@@ -1976,27 +1972,22 @@ class wakarana_user {
     }
     
     
-    function check_permission ($permission_name) {
-        if (!wakarana::check_id_string($permission_name)) {
+    function check_permission($resource_id, $action = "any") {
+        if (!wakarana::check_resource_id_string($resource_id) || !wakarana::check_id_string($action)) {
+            $this->wakarana->print_error("識別名として使用できない文字列が指定されました。");
             return FALSE;
         }
         
         try {
-            $stmt_1 = $this->wakarana->db_obj->query('SELECT MAX("wakarana_permission_values"."permission_value") FROM "wakarana_user_roles", "wakarana_permission_values" WHERE (("wakarana_user_roles"."user_id" = \''.$this->user_info["user_id"].'\' AND "wakarana_user_roles"."role_name" = "wakarana_permission_values"."role_name") OR "wakarana_permission_values"."role_name" = \''.WAKARANA_BASE_ROLE.'\') AND "permission_name" = \''.strtolower($permission_name).'\'');
-            $permission_value = $stmt_1->fetchColumn();
-            
-            if (!empty($permission_value)) {
-                return $permission_value;
-            } else {
-                $stmt_2 = $this->wakarana->db_obj->query('SELECT COUNT("role_name") FROM "wakarana_user_roles" WHERE "user_id"=\''.$this->user_info["user_id"].'\' AND "role_name" = \''.WAKARANA_ADMIN_ROLE.'\'');
-                if ($stmt_2->fetchColumn()) {
-                    return -1;
-                } else {
-                    return 0;
-                }
-            }
+            $stmt = $this->wakarana->db_obj->query('SELECT COUNT(*) FROM "wakarana_user_permission_caches" WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "resource_id" = \''.strtolower($resource_id).'\' AND "action" = \''.strtolower($action).'\'');
         } catch (PDOException $err) {
-            $this->wakarana->print_error("権限値の取得に失敗しました。".$err->getMessage());
+            $this->wakarana->print_error("ユーザーの権限確認に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        if ($stmt->fetchColumn() === 1) {
+            return TRUE;
+        } else {
             return FALSE;
         }
     }
@@ -2280,11 +2271,9 @@ class wakarana_user {
             return FALSE;
         }
         
-        $data = $stmt->fetchColumn();
-        
-        if (!empty($data)) {
+        if ($stmt->fetchColumn() === 1) {
             try {
-                $stmt = $this->wakarana->db_obj->prepare('DELETE FROM "wakarana_email_address_verification_codes" WHERE "email_address" = :email_address AND "verification_code" = :verification_code');
+                $stmt = $this->wakarana->db_obj->prepare('DELETE FROM "wakarana_email_address_verification_codes" WHERE "email_address" = :email_address AND "verification_code" = :verification_code AND "user_id" = \''.$this->user_info["user_id"].'\'');
                 
                 $stmt->bindValue(":email_address", $email_address, PDO::PARAM_STR);
                 $stmt->bindValue(":verification_code", $verification_code, PDO::PARAM_STR);
@@ -2502,7 +2491,7 @@ class wakarana_user {
             return FALSE;
         }
         
-        if (intval($stmt->fetchColumn()) === 1) {
+        if ($stmt->fetchColumn() === 1) {
             try {
                 $stmt = $this->wakarana->db_obj->prepare('DELETE FROM "wakarana_one_time_tokens" WHERE "token" = :token');
                 
@@ -2657,7 +2646,7 @@ class wakarana_role {
             return FALSE;
         }
         
-        if (intval($stmt->fetchColumn()) === 1) {
+        if ($stmt->fetchColumn() === 1) {
             return TRUE;
         } else {
             return FALSE;
