@@ -2005,6 +2005,41 @@ class wakarana_user {
     }
     
     
+    function get_permitted_value ($permitted_value_id) {
+        if (!wakarana::check_id_string($permitted_value_id)) {
+            $this->wakarana->print_error("権限値変数IDに使用できない文字列が指定されました。");
+            return FALSE;
+        }
+        
+        try {
+            $stmt = $this->wakarana->db_obj->query('SELECT "maximum_permitted_value" FROM "wakarana_user_permitted_value_caches" WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "permitted_value_id" = \''.$permitted_value_id.'\'');
+        } catch (PDOException $err) {
+            $this->wakarana->print_error("ユーザーの権限値取得に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        $permitted_value = $stmt->fetchColumn();
+        
+        if ($permitted_value !== FALSE) {
+            return $permitted_value;
+        } else {
+            return NULL;
+        }
+    }
+    
+    
+    function get_permitted_values () {
+        try {
+            $stmt = $this->wakarana->db_obj->query('SELECT "permitted_value_id", "maximum_permitted_value" FROM "wakarana_user_permitted_value_caches" WHERE "user_id" = \''.$this->user_info["user_id"].'\' ORDER BY "permitted_value_id" ASC');
+        } catch (PDOException $err) {
+            $this->wakarana->print_error("ユーザーの権限値一覧の取得に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        return $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
+    }
+    
+    
     function delete_all_tokens () {
         if($this->delete_login_tokens() && $this->delete_one_time_tokens() && $this->delete_email_address_verification_code() && $this->delete_invite_codes() && $this->delete_password_reset_token() && $this->delete_2sv_token()){
             return TRUE;
