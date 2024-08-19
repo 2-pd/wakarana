@@ -262,6 +262,17 @@ class wakarana extends wakarana_common {
     }
     
     
+    static function get_parent_resource_id ($resource_id) {
+        $slash_pos = strrpos($resource_id, "/");
+        
+        if ($slash_pos === FALSE) {
+            return NULL;
+        }
+        
+        return substr($resource_id, 0, $slash_pos);
+    }
+    
+    
     function new_wakarana_permission ($permission_info) {
         if (!isset($this->resource_ids[$permission_info["resource_id"]])) {
             $this->resource_ids[$permission_info["resource_id"]] = new wakarana_permission($this, $permission_info);
@@ -322,11 +333,9 @@ class wakarana extends wakarana_common {
         
         $resource_id = strtolower($resource_id);
         
-        $slash_pos = strrpos($resource_id, "/");
+        $parent_resource_id = wakarana::get_parent_resource_id($resource_id);
         
-        if ($slash_pos !== FALSE) {
-            $parent_resource_id = substr($resource_id, 0, $slash_pos);
-            
+        if (!empty($parent_resource_id)) {
             if (!is_object($this->get_permission($parent_resource_id))) {
                 $this->print_error("存在しない権限に子権限を作成することはできません。");
                 return FALSE;
@@ -345,7 +354,7 @@ class wakarana extends wakarana_common {
             return FALSE;
         }
         
-        if ($slash_pos !== FALSE) {
+        if (!empty($parent_resource_id)) {
             try {
                 $this->db_obj->exec('INSERT INTO "wakarana_permission_actions"("resource_id", "action") SELECT \''.$resource_id.'\', "action" FROM "wakarana_permission_actions" WHERE "resource_id" = \''.$parent_resource_id.'\'');
                 $this->db_obj->exec('INSERT INTO "wakarana_role_permissions"("role_id", "resource_id", "action") SELECT "role_id", \''.$resource_id.'\', "action" FROM "wakarana_role_permissions" WHERE "resource_id" = \''.$parent_resource_id.'\'');
@@ -358,7 +367,7 @@ class wakarana extends wakarana_common {
         
         $permission = $this->get_permission($resource_id);
         
-        if ($slash_pos === FALSE) {
+        if (empty($parent_resource_id)) {
             $permission->add_action("any");
         }
         
@@ -2887,15 +2896,13 @@ class wakarana_permission {
     
     
     function get_parent_permission () {
-        $slash_pos = strrpos($this->permission_info["resource_id"], "/");
+        $resource_id = wakarana::get_parent_resource_id($this->permission_info["resource_id"]);
         
-        if ($slash_pos === FALSE) {
+        if (!empty($resource_id)) {
+            return $this->wakarana->get_permission($resource_id);
+        } else {
             return NULL;
         }
-        
-        $resource_id = substr($this->permission_info["resource_id"], 0, $slash_pos);
-        
-        return $this->wakarana->get_permission($resource_id);
     }
     
     
