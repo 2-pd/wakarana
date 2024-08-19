@@ -1993,6 +1993,18 @@ class wakarana_user {
     }
     
     
+    function get_permissions () {
+        try {
+            $stmt = $this->wakarana->db_obj->query('SELECT "resource_id", "action" FROM "wakarana_user_permission_caches" WHERE "user_id" = \''.$this->user_info["user_id"].'\' ORDER BY "resource_id", "action" ASC');
+        } catch (PDOException $err) {
+            $this->wakarana->print_error("ユーザーの権限一覧の取得に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        return $stmt->fetchAll(PDO::FETCH_COLUMN|PDO::FETCH_GROUP);
+    }
+    
+    
     function delete_all_tokens () {
         if($this->delete_login_tokens() && $this->delete_one_time_tokens() && $this->delete_email_address_verification_code() && $this->delete_invite_codes() && $this->delete_password_reset_token() && $this->delete_2sv_token()){
             return TRUE;
@@ -2387,7 +2399,7 @@ class wakarana_user {
         $this->wakarana->delete_expired_invite_codes();
         
         try {
-            $stmt = $this->wakarana->db_obj->query('DELETE FROM "wakarana_invite_codes" WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
+            $this->wakarana->db_obj->exec('DELETE FROM "wakarana_invite_codes" WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
         } catch (PDOException $err) {
             $this->wakarana->print_error("ユーザーが発行した招待コードの削除に失敗しました。".$err->getMessage());
             return FALSE;
