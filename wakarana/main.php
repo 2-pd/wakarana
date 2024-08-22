@@ -379,31 +379,6 @@ class wakarana extends wakarana_common {
     }
     
     
-    function delete_role ($role_name) {
-        if ($role_name === WAKARANA_BASE_ROLE) {
-            $this->print_error("ベースロールを削除することはできません。");
-            return FALSE;
-        }
-        
-        if (!self::check_id_string($role_name)) {
-            return FALSE;
-        }
-        
-        if ($role_name !== WAKARANA_ADMIN_ROLE) {
-            $role_name = strtolower($role_name);
-        }
-        
-        try {
-            $this->db_obj->exec('DELETE FROM "wakarana_user_roles" WHERE "role_name" = \''.$role_name.'\'');
-        } catch (PDOException $err) {
-            $this->print_error("ロールの削除に失敗しました。".$err->getMessage());
-            return FALSE;
-        }
-        
-        return $this->remove_permission_value($role_name);
-    }
-    
-    
     protected function new_wakarana_permitted_value ($permitted_value_info) {
         if (!isset($this->permitted_value_ids[$permitted_value_info["permitted_value_id"]])) {
             $this->permitted_value_ids[$permitted_value_info["permitted_value_id"]] = new wakarana_permitted_value($this, $permitted_value_info);
@@ -2771,6 +2746,33 @@ class wakarana_role {
         } else {
             return NULL;
         }
+    }
+    
+    
+    function delete_role () {
+        if ($this->role_info["role_id"] === WAKARANA_BASE_ROLE || $this->role_info["role_id"] === WAKARANA_ADMIN_ROLE) {
+            $this->wakarana->print_error("初期ロールを削除することはできません。");
+            return FALSE;
+        }
+        
+        try {
+            $this->wakarana->db_obj->exec('DELETE FROM "wakarana_roles" WHERE "role_id" = \''.$this->role_info["role_id"].'\'');
+            $this->wakarana->db_obj->exec('DELETE FROM "wakarana_role_permissions" WHERE "role_id" = \''.$this->role_info["role_id"].'\'');
+            $this->wakarana->db_obj->exec('DELETE FROM "wakarana_role_permitted_values" WHERE "role_id" = \''.$this->role_info["role_id"].'\'');
+            
+            $this->wakarana->db_obj->exec('DELETE FROM "wakarana_user_permission_caches" WHERE "user_id" IN (SELECT "user_id" FROM "wakarana_user_roles" WHERE "role_id" = \''.$this->role_info["role_id"].'\')');
+            $this->wakarana->db_obj->exec('INSERT INTO "wakarana_user_permission_caches"("user_id", "resource_id", "action") SELECT DISTINCT "wakarana_user_roles"."user_id", "wakarana_role_permissions"."resource_id", "wakarana_role_permissions"."action" FROM "wakarana_user_roles", "wakarana_role_permissions" WHERE "wakarana_user_roles"."user_id" IN (SELECT "user_id" FROM "wakarana_user_roles" WHERE "role_id" = \''.$this->role_info["role_id"].'\') AND "wakarana_role_permissions"."role_id" = "wakarana_user_roles"."role_id" ON CONFLICT ("user_id", "resource_id", "action") DO NOTHING');
+            
+            $this->wakarana->db_obj->exec('DELETE FROM "wakarana_user_permitted_value_caches" WHERE "user_id" IN (SELECT "user_id" FROM "wakarana_user_roles" WHERE "role_id" = \''.$this->role_info["role_id"].'\')');
+            $this->wakarana->db_obj->exec('INSERT INTO "wakarana_user_permitted_value_caches"("user_id", "permitted_value_id", "maximum_permitted_value") SELECT DISTINCT "wakarana_user_roles"."user_id", "wakarana_role_permitted_values"."permitted_value_id", MAX("wakarana_role_permitted_values"."permitted_value") FROM "wakarana_user_roles", "wakarana_role_permitted_values" WHERE "wakarana_user_roles"."user_id" IN (SELECT "user_id" FROM "wakarana_user_roles" WHERE "role_id" = \''.$this->role_info["role_id"].'\') AND "wakarana_role_permitted_values"."role_id" = "wakarana_user_roles"."role_id" GROUP BY "wakarana_user_roles"."user_id", "wakarana_role_permitted_values"."permitted_value_id" ON CONFLICT ("user_id", "permitted_value_id") DO NOTHING');
+            
+            $this->wakarana->db_obj->exec('DELETE FROM "wakarana_user_roles" WHERE "role_id" = \''.$this->role_info["role_id"].'\'');
+        } catch (PDOException $err) {
+            $this->wakarana->print_error("ロールの削除に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        return TRUE;
     }
 }
 
