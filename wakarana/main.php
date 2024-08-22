@@ -173,7 +173,11 @@ class wakarana extends wakarana_common {
             return FALSE;
         }
         
-        return $this->get_user($user_id);
+        $user = $this->get_user($user_id);
+        
+        $user->add_role(WAKARANA_BASE_ROLE);
+        
+        return $user;
     }
     
     
@@ -333,7 +337,7 @@ class wakarana extends wakarana_common {
         
         $resource_id = strtolower($resource_id);
         
-        $parent_resource_id = wakarana::get_parent_resource_id($resource_id);
+        $parent_resource_id = self::get_parent_resource_id($resource_id);
         
         if (!empty($parent_resource_id)) {
             if (!is_object($this->get_permission($parent_resource_id))) {

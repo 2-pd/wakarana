@@ -240,7 +240,7 @@ wakarana_userインスタンスを生成する。
 
 
 #### wakarana::add_user($user_id, $password, $user_name="", $status=WAKARANA_STATUS_NORMAL)
-新しいユーザーを追加する。  
+新しいユーザーを追加する。追加したユーザーには自動的にベースロールが割り当てられる。  
 既に存在するユーザーIDを指定した場合はエラーとなる。  
   
 **$user_id** ： 追加するユーザーのID。半角英数字及びアンダーバーが使用可能。  
@@ -319,12 +319,6 @@ wakarana_permissionインスタンスを生成する。
 存在する権限の一覧を取得する。  
   
 **返り値** ： 権限のwakarana_permissionインスタンスを権限対象リソースIDのアルファベット順に格納した配列を返す。権限が存在しない場合は空配列を返す。失敗した場合はFALSEを返す。
-
-
-#### wakarana::get_all_permission_actions()
-全ての権限とそこに存在する動作の一覧を取得する。  
-  
-**返り値** ： 権限対象リソースIDをキーとし、値として動作識別名の配列を持った連想配列を返す。権限が存在しない場合は空配列を返す。失敗した場合はFALSEを返す。
 
 
 #### wakarana::add_permission($resource_id, $permission_name, $permission_description="")
