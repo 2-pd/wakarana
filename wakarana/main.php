@@ -2572,12 +2572,15 @@ class wakarana_user {
     
     
     function delete_user () {
-        if (!$this->delete_all_tokens() || !$this->remove_role() || !$this->remove_all_email_addresses() || !$this->delete_all_values() || !$this->delete_auth_logs()){
+        if (!$this->delete_all_tokens() || !$this->remove_all_email_addresses() || !$this->delete_all_values() || !$this->delete_auth_logs()) {
             return FALSE;
         }
         
         try {
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_users" WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
+            $this->wakarana->db_obj->exec('DELETE FROM "wakarana_user_roles" WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
+            $this->wakarana->db_obj->exec('DELETE FROM "wakarana_user_permission_caches" WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
+            $this->wakarana->db_obj->exec('DELETE FROM "wakarana_user_permitted_value_caches" WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
         } catch (PDOException $err) {
             $this->wakarana->print_error("ユーザーの削除に失敗しました。".$err->getMessage());
             return FALSE;
@@ -2772,6 +2775,11 @@ class wakarana_role {
             return FALSE;
         }
         
+        unset($this->wakarana->role_ids[$this->role_info["role_id"]]);
+        
+        unset($this->wakarana);
+        unset($this->role_info);
+        
         return TRUE;
     }
 }
@@ -2947,6 +2955,11 @@ class wakarana_permission {
             return FALSE;
         }
         
+        unset($this->wakarana->resource_ids[$this->permission_info["resource_id"]]);
+        
+        unset($this->wakarana);
+        unset($this->permission_info);
+        
         return TRUE;
     }
 }
@@ -3007,6 +3020,11 @@ class wakarana_permitted_value {
             $this->wakarana->print_error("権限値の削除に失敗しました。".$err->getMessage());
             return FALSE;
         }
+        
+        unset($this->wakarana->permitted_value_ids[$this->permitted_value_info["permitted_value_id"]]);
+        
+        unset($this->wakarana);
+        unset($this->permitted_value_info);
         
         return TRUE;
     }
