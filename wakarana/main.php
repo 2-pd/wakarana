@@ -2833,6 +2833,40 @@ class wakarana_role {
     }
     
     
+    function set_permitted_value ($permitted_value_id, $permitted_value) {
+        if (!wakarana::check_id_string($permitted_value_id)) {
+            $this->wakarana->print_error("権限値変数IDに使用できない文字列が指定されました。");
+            return FALSE;
+        }
+        
+        $permitted_value_id = strtolower($permitted_value_id);
+        $permitted_value = intval($permitted_value);
+        
+        $old_permitted_value = $this->get_permitted_value($permitted_value_id);
+        
+        if (is_null($old_permitted_value) && empty($this->wakarana->get_permitted_value($permitted_value_id))) {
+            $this->wakarana->print_error("存在しない権限値を設定することはできません。");
+            return FALSE;
+        }
+        
+        try {
+            $this->wakarana->db_obj->exec('INSERT INTO "wakarana_role_permitted_values"("role_id", "permitted_value_id", "permitted_value") VALUES (\''.$this->role_info["role_id"].'\', \''.$permitted_value_id.'\', '.$permitted_value.') ON CONFLICT ("role_id", "permitted_value_id") DO UPDATE SET "permitted_value" = '.$permitted_value);
+            
+            if (!is_null($old_permitted_value) && $old_permitted_value > $permitted_value) {
+                $this->wakarana->db_obj->exec('DELETE FROM "wakarana_user_permitted_value_caches" WHERE "user_id" IN (SELECT "user_id" FROM "wakarana_user_roles" WHERE "role_id" = \''.$this->role_info["role_id"].'\') AND "permitted_value_id" = \''.$permitted_value_id.'\'');
+                $this->wakarana->db_obj->exec('INSERT INTO "wakarana_user_permitted_value_caches"("user_id", "permitted_value_id", "maximum_permitted_value") SELECT "wakarana_user_roles"."user_id", \''.$permitted_value_id.'\', MAX("wakarana_role_permitted_values"."permitted_value") FROM "wakarana_user_roles", "wakarana_role_permitted_values" WHERE "wakarana_user_roles"."user_id" IN (SELECT "user_id" FROM "wakarana_user_roles" WHERE "role_id" = \''.$this->role_info["role_id"].'\') AND "wakarana_role_permitted_values"."role_id" = "wakarana_user_roles"."role_id" AND "wakarana_role_permitted_values"."permitted_value_id" = \''.$permitted_value_id.'\' GROUP BY "wakarana_user_roles"."user_id"');
+            } else {
+                $this->wakarana->db_obj->exec('INSERT INTO "wakarana_user_permitted_value_caches"("user_id", "permitted_value_id", "maximum_permitted_value") SELECT "user_id", \''.$permitted_value_id.'\', '.$permitted_value.' FROM "wakarana_user_roles" WHERE "role_id" = \''.$this->role_info["role_id"].'\' ON CONFLICT ("user_id", "permitted_value_id") DO UPDATE SET "maximum_permitted_value" = '.$permitted_value.' WHERE "maximum_permitted_value" < '.$permitted_value.'');
+            }
+        } catch (PDOException $err) {
+            $this->wakarana->print_error("ロールの権限値設定に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        return TRUE;
+    }
+    
+    
     function remove_permitted_value ($permitted_value_id = NULL) {
         if (!empty($permitted_value_id)) {
             if (!wakarana::check_id_string($permitted_value_id)) {
@@ -2849,12 +2883,12 @@ class wakarana_role {
         
         try {
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_role_permitted_values" WHERE "role_id" = \''.$this->role_info["role_id"].'\''.$permitted_value_id_q);
-            $this->wakarana->db_obj->exec('DELETE FROM "wakarana_user_permitted_value_caches" WHERE "user_id" IN (SELECT "user_id" FROM "wakarana_user_roles" WHERE "role_id" = \''.$this->role_info["role_id"].'\''.$permitted_value_id_q.')');
+            $this->wakarana->db_obj->exec('DELETE FROM "wakarana_user_permitted_value_caches" WHERE "user_id" IN (SELECT "user_id" FROM "wakarana_user_roles" WHERE "role_id" = \''.$this->role_info["role_id"].'\')'.$permitted_value_id_q);
             
             if (!empty($permitted_value_id)) {
-                $this->wakarana->db_obj->exec('INSERT INTO "wakarana_user_permitted_value_caches"("user_id", "permitted_value_id", "maximum_permitted_value") SELECT DISTINCT "wakarana_user_roles"."user_id", \''.$permitted_value_id.'\', MAX("wakarana_role_permitted_values"."permitted_value") FROM "wakarana_user_roles", "wakarana_role_permitted_values" WHERE "wakarana_user_roles"."user_id" IN (SELECT "user_id" FROM "wakarana_user_roles" WHERE "role_id" = \''.$this->role_info["role_id"].'\') AND "wakarana_role_permitted_values"."role_id" = "wakarana_user_roles"."role_id" AND "wakarana_role_permitted_values"."permitted_value_id" = \''.$permitted_value_id.'\' GROUP BY "wakarana_user_roles"."user_id" ON CONFLICT ("user_id", "permitted_value_id") DO NOTHING');
+                $this->wakarana->db_obj->exec('INSERT INTO "wakarana_user_permitted_value_caches"("user_id", "permitted_value_id", "maximum_permitted_value") SELECT "wakarana_user_roles"."user_id", \''.$permitted_value_id.'\', MAX("wakarana_role_permitted_values"."permitted_value") FROM "wakarana_user_roles", "wakarana_role_permitted_values" WHERE "wakarana_user_roles"."user_id" IN (SELECT "user_id" FROM "wakarana_user_roles" WHERE "role_id" = \''.$this->role_info["role_id"].'\') AND "wakarana_role_permitted_values"."role_id" = "wakarana_user_roles"."role_id" AND "wakarana_role_permitted_values"."permitted_value_id" = \''.$permitted_value_id.'\' GROUP BY "wakarana_user_roles"."user_id"');
             } else {
-                $this->wakarana->db_obj->exec('INSERT INTO "wakarana_user_permitted_value_caches"("user_id", "permitted_value_id", "maximum_permitted_value") SELECT DISTINCT "wakarana_user_roles"."user_id", "wakarana_role_permitted_values"."permitted_value_id", MAX("wakarana_role_permitted_values"."permitted_value") FROM "wakarana_user_roles", "wakarana_role_permitted_values" WHERE "wakarana_user_roles"."user_id" IN (SELECT "user_id" FROM "wakarana_user_roles" WHERE "role_id" = \''.$this->role_info["role_id"].'\') AND "wakarana_role_permitted_values"."role_id" = "wakarana_user_roles"."role_id" GROUP BY "wakarana_user_roles"."user_id", "wakarana_role_permitted_values"."permitted_value_id" ON CONFLICT ("user_id", "permitted_value_id") DO NOTHING');
+                $this->wakarana->db_obj->exec('INSERT INTO "wakarana_user_permitted_value_caches"("user_id", "permitted_value_id", "maximum_permitted_value") SELECT "wakarana_user_roles"."user_id", "wakarana_role_permitted_values"."permitted_value_id", MAX("wakarana_role_permitted_values"."permitted_value") FROM "wakarana_user_roles", "wakarana_role_permitted_values" WHERE "wakarana_user_roles"."user_id" IN (SELECT "user_id" FROM "wakarana_user_roles" WHERE "role_id" = \''.$this->role_info["role_id"].'\') AND "wakarana_role_permitted_values"."role_id" = "wakarana_user_roles"."role_id" GROUP BY "wakarana_user_roles"."user_id", "wakarana_role_permitted_values"."permitted_value_id"');
             }
         } catch (PDOException $err) {
             $this->wakarana->print_error("ロールからの権限値削除に失敗しました。".$err->getMessage());
