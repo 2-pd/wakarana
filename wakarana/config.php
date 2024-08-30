@@ -394,9 +394,27 @@ class wakarana_config extends wakarana_common {
         
         try {
             if ($this->config["use_sqlite"]) {
-                $this->db_obj->exec("CREATE TABLE IF NOT EXISTS `wakarana_user_roles`(`user_id` TEXT COLLATE NOCASE NOT NULL, `role_name` TEXT NOT NULL, PRIMARY KEY(`user_id`, `role_name`))");
+                $this->db_obj->exec("CREATE TABLE IF NOT EXISTS `wakarana_roles`(`role_id` TEXT NOT NULL PRIMARY KEY, `role_name` TEXT COLLATE NOCASE NOT NULL, `role_description` TEXT)");
             } else {
-                $this->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_user_roles"("user_id" varchar(60) NOT NULL, "role_name" varchar(60) NOT NULL, PRIMARY KEY("user_id", "role_name"))');
+                $this->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_roles"("role_id" varchar(60) NOT NULL PRIMARY KEY, "role_name" varchar(120) NOT NULL, "role_description" text)');
+            }
+        } catch (PDOException $err) {
+            $this->print_error("テーブル wakarana_roles の作成処理に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        try {
+            $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_r1" ON "wakarana_roles"("role_name", "role_id")');
+        } catch (PDOException $err) {
+            $this->print_error("テーブル wakarana_roles のインデックス作成処理に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        try {
+            if ($this->config["use_sqlite"]) {
+                $this->db_obj->exec("CREATE TABLE IF NOT EXISTS `wakarana_user_roles`(`user_id` TEXT COLLATE NOCASE NOT NULL, `role_id` TEXT NOT NULL, PRIMARY KEY(`user_id`, `role_id`))");
+            } else {
+                $this->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_user_roles"("user_id" varchar(60) NOT NULL, "role_id" varchar(60) NOT NULL, PRIMARY KEY("user_id", "role_id"))');
             }
         } catch (PDOException $err) {
             $this->print_error("テーブル wakarana_user_roles の作成処理に失敗しました。".$err->getMessage());
@@ -404,7 +422,7 @@ class wakarana_config extends wakarana_common {
         }
         
         try {
-            $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_r1" ON "wakarana_user_roles"("role_name", "user_id")');
+            $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_ur1" ON "wakarana_user_roles"("role_id", "user_id")');
         } catch (PDOException $err) {
             $this->print_error("テーブル wakarana_user_roles のインデックス作成処理に失敗しました。".$err->getMessage());
             return FALSE;
@@ -412,19 +430,127 @@ class wakarana_config extends wakarana_common {
         
         try {
             if ($this->config["use_sqlite"]) {
-                $this->db_obj->exec("CREATE TABLE IF NOT EXISTS `wakarana_permission_values`(`role_name` TEXT NOT NULL, `permission_name` TEXT NOT NULL, `permission_value` INTEGER NOT NULL, PRIMARY KEY(`role_name`, `permission_name`))");
+                $this->db_obj->exec("CREATE TABLE IF NOT EXISTS `wakarana_permissions`(`resource_id` TEXT NOT NULL PRIMARY KEY, `permission_name` TEXT COLLATE NOCASE NOT NULL, `permission_description` TEXT)");
             } else {
-                $this->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_permission_values"("role_name" varchar(60) NOT NULL, "permission_name" varchar(120) NOT NULL, "permission_value" integer NOT NULL, PRIMARY KEY("role_name", "permission_name"))');
+                $this->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_permissions"("resource_id" varchar(120) NOT NULL PRIMARY KEY, "permission_name" varchar(120) NOT NULL, "permission_description" text)');
             }
         } catch (PDOException $err) {
-            $this->print_error("テーブル wakarana_permission_values の作成処理に失敗しました。".$err->getMessage());
+            $this->print_error("テーブル wakarana_permissions の作成処理に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
         try {
-            $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_p1" ON "wakarana_permission_values"("permission_name", "permission_value", "role_name")');
+            $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_p1" ON "wakarana_permissions"("permission_name", "resource_id")');
         } catch (PDOException $err) {
-            $this->print_error("テーブル wakarana_permission_values のインデックス作成処理に失敗しました。".$err->getMessage());
+            $this->print_error("テーブル wakarana_permissions のインデックス作成処理に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        try {
+            if ($this->config["use_sqlite"]) {
+                $this->db_obj->exec("CREATE TABLE IF NOT EXISTS `wakarana_permission_actions`(`resource_id` TEXT NOT NULL, `action` TEXT NOT NULL, PRIMARY KEY(`resource_id`, `action`))");
+            } else {
+                $this->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_permission_actions"("resource_id" varchar(120) NOT NULL, "action" varchar(60) NOT NULL, PRIMARY KEY("resource_id", "action"))');
+            }
+        } catch (PDOException $err) {
+            $this->print_error("テーブル wakarana_permission_actions の作成処理に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        try {
+            $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_pa1" ON "wakarana_permission_actions"("action", "resource_id")');
+        } catch (PDOException $err) {
+            $this->print_error("テーブル wakarana_permission_actions のインデックス作成処理に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        try {
+            if ($this->config["use_sqlite"]) {
+                $this->db_obj->exec("CREATE TABLE IF NOT EXISTS `wakarana_role_permissions`(`role_id` TEXT NOT NULL, `resource_id` TEXT NOT NULL, `action` TEXT NOT NULL, PRIMARY KEY(`role_id`, `resource_id`, `action`))");
+            } else {
+                $this->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_role_permissions"("role_id" varchar(60) NOT NULL, "resource_id" varchar(120) NOT NULL, "action" varchar(60) NOT NULL, PRIMARY KEY("role_id", "resource_id", "action"))');
+            }
+        } catch (PDOException $err) {
+            $this->print_error("テーブル wakarana_role_permissions の作成処理に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        try {
+            $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_rp1" ON "wakarana_role_permissions"("resource_id", "action", "role_id")');
+        } catch (PDOException $err) {
+            $this->print_error("テーブル wakarana_role_permissions のインデックス作成処理に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        try {
+            if ($this->config["use_sqlite"]) {
+                $this->db_obj->exec("CREATE TABLE IF NOT EXISTS `wakarana_user_permission_caches`(`user_id` TEXT COLLATE NOCASE NOT NULL, `resource_id` TEXT NOT NULL, `action` TEXT NOT NULL, PRIMARY KEY(`user_id`, `resource_id`, `action`))");
+            } else {
+                $this->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_user_permission_caches"("user_id" varchar(60) NOT NULL, "resource_id" varchar(120) NOT NULL, "action" varchar(60) NOT NULL, PRIMARY KEY("user_id", "resource_id", "action"))');
+            }
+        } catch (PDOException $err) {
+            $this->print_error("テーブル wakarana_user_permission_caches の作成処理に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        try {
+            $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_up1" ON "wakarana_user_permission_caches"("resource_id", "action", "user_id")');
+        } catch (PDOException $err) {
+            $this->print_error("テーブル wakarana_user_permission_caches のインデックス作成処理に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        try {
+            if ($this->config["use_sqlite"]) {
+                $this->db_obj->exec("CREATE TABLE IF NOT EXISTS `wakarana_permitted_values`(`permitted_value_id` TEXT NOT NULL PRIMARY KEY, `permitted_value_name` TEXT NOT NULL, `permitted_value_description` TEXT)");
+            } else {
+                $this->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_permitted_values"("permitted_value_id" varchar(60) NOT NULL PRIMARY KEY, "permitted_value_name" varchar(120) NOT NULL, "permitted_value_description" text)');
+            }
+        } catch (PDOException $err) {
+            $this->print_error("テーブル wakarana_permitted_values の作成処理に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        try {
+            $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_v1" ON "wakarana_permitted_values"("permitted_value_name", "permitted_value_id")');
+        } catch (PDOException $err) {
+            $this->print_error("テーブル wakarana_permitted_values のインデックス作成処理に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        try {
+            if ($this->config["use_sqlite"]) {
+                $this->db_obj->exec("CREATE TABLE IF NOT EXISTS `wakarana_role_permitted_values`(`role_id` TEXT NOT NULL, `permitted_value_id` TEXT NOT NULL, `permitted_value` INTEGER NOT NULL, PRIMARY KEY(`role_id`, `permitted_value_id`))");
+            } else {
+                $this->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_role_permitted_values"("role_id" varchar(60) NOT NULL, "permitted_value_id" varchar(60) NOT NULL, "permitted_value" integer NOT NULL, PRIMARY KEY("role_id", "permitted_value_id"))');
+            }
+        } catch (PDOException $err) {
+            $this->print_error("テーブル wakarana_role_permitted_values の作成処理に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        try {
+            $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_rv1" ON "wakarana_role_permitted_values"("permitted_value_id", "permitted_value", "role_id")');
+        } catch (PDOException $err) {
+            $this->print_error("テーブル wakarana_role_permitted_values のインデックス作成処理に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        try {
+            if ($this->config["use_sqlite"]) {
+                $this->db_obj->exec("CREATE TABLE IF NOT EXISTS `wakarana_user_permitted_value_caches`(`user_id` TEXT COLLATE NOCASE NOT NULL, `permitted_value_id` TEXT NOT NULL, `maximum_permitted_value` INTEGER NOT NULL, PRIMARY KEY(`user_id`, `permitted_value_id`))");
+            } else {
+                $this->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_user_permitted_value_caches"("user_id" varchar(60) NOT NULL, "permitted_value_id" varchar(60) NOT NULL, "maximum_permitted_value" integer NOT NULL, PRIMARY KEY("user_id", "permitted_value_id"))');
+            }
+        } catch (PDOException $err) {
+            $this->print_error("テーブル wakarana_user_permitted_value_caches の作成処理に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        try {
+            $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_uv1" ON "wakarana_user_permitted_value_caches"("permitted_value_id", "maximum_permitted_value", "user_id")');
+        } catch (PDOException $err) {
+            $this->print_error("テーブル wakarana_user_permitted_value_caches のインデックス作成処理に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -540,6 +666,14 @@ class wakarana_config extends wakarana_common {
             $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_t1" ON "wakarana_two_step_verification_tokens"("token_created")');
         } catch (PDOException $err) {
             $this->print_error("テーブル wakarana_two_step_verification_tokens のインデックス作成処理に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        try {
+            $this->db_obj->exec('INSERT INTO "wakarana_roles"("role_id", "role_name", "role_description") VALUES (\'__base__\', \'ベースロール\', \'\') ON CONFLICT ("role_id") DO NOTHING');
+            $this->db_obj->exec('INSERT INTO "wakarana_roles"("role_id", "role_name", "role_description") VALUES (\'__admin__\', \'特権管理者ロール\', \'\') ON CONFLICT ("role_id") DO NOTHING');
+        } catch (PDOException $err) {
+            $this->print_error("初期ロールの追加処理に失敗しました。".$err->getMessage());
             return FALSE;
         }
         

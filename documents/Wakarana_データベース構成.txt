@@ -101,6 +101,7 @@ _/_/_/_/ データベース _/_/_/_/
   `action` varchar(60) [TEXT] (NOT NULL) 許可される操作の識別名
   
   PRIMARY KEY `resource_id`, `action`
+  INDEX `wakarana_idx_pa1` `action`, `resource_id`
 
 
 テーブル `wakarana_role_permissions`
@@ -112,12 +113,21 @@ _/_/_/_/ データベース _/_/_/_/
   INDEX `wakarana_idx_rp1` `resource_id`, `action`, `role_id`
 
 
+テーブル `wakarana_user_permission_caches`
+  `user_id` varchar(60) [TEXT COLLATE NOCASE] (NOT NULL) ユーザーID
+  `resource_id` varchar(120) [TEXT] (NOT NULL) 権限の対象となる概念のID
+  `action` varchar(60) [TEXT] (NOT NULL) 許可される操作の識別名
+  
+  PRIMARY KEY `user_id`, `resource_id`, `action`
+  INDEX `wakarana_idx_up1` `resource_id`, `action`, `user_id`
+
+
 テーブル `wakarana_permitted_values`
   `permitted_value_id` varchar(60) [TEXT] (NOT NULL PRIMARY KEY) 権限値変数ID
-  `value_name` varchar(120) [TEXT] (NOT NULL) 権限値名
+  `permitted_value_name` varchar(120) [TEXT] (NOT NULL) 権限値名
+  `permitted_value_description` text [TEXT] 権限値の説明文
   
-  PRIMARY KEY `role_name`, `permitted_value_id`
-  INDEX `wakarana_idx_v1` `permitted_value_id`, `value_id`
+  INDEX `wakarana_idx_v1` `permitted_value_name`, `permitted_value_id`
 
 
 テーブル `wakarana_role_permitted_values`
@@ -127,6 +137,15 @@ _/_/_/_/ データベース _/_/_/_/
   
   PRIMARY KEY `role_id`, `permitted_value_id`
   INDEX `wakarana_idx_rv1` `permitted_value_id`, `permitted_value`, `role_id`
+
+
+テーブル `wakarana_user_permitted_value_caches`
+  `user_id` varchar(60) [TEXT COLLATE NOCASE] (NOT NULL) ユーザーID
+  `permitted_value_id` varchar(60) [TEXT] (NOT NULL) 権限値変数ID
+  `maximum_permitted_value` integer [INTEGER] (NOT NULL) 権限の値のうち最大のもの
+  
+  PRIMARY KEY `user_id`, `permitted_value_id`
+  INDEX `wakarana_idx_uv1` `permitted_value_id`, `maximum_permitted_value`, `user_id`
 
 
 テーブル `wakarana_one_time_tokens`
