@@ -20,6 +20,7 @@ define("WAKARANA_CONFIG_ORIGINAL",
             "allow_nonunique_email_address" => FALSE,
             "email_addresses_per_user" => 5,
             "verification_email_expire" => 1800,
+            "verification_email_sendable_interval" => 10,
             
             "login_token_cookie_name" => "wakarana_login_token",
             "cookie_domain" => "",
@@ -70,67 +71,52 @@ class wakarana_config extends wakarana_common {
             return FALSE;
         }
         
-        if ($this->config["display_errors"]) {
-            fwrite($file_h,"display_errors=true\n");
-        } else {
-            fwrite($file_h,"display_errors=false\n");
-        }
+        fwrite($file_h,"display_errors = ".($this->config["display_errors"] ? "true" : "false")."\n");
         fwrite($file_h,"\n");
         
-        if ($this->config["use_sqlite"]) {
-            fwrite($file_h,"use_sqlite=true\n");
-        } else {
-            fwrite($file_h,"use_sqlite=false\n");
-        }
-        fwrite($file_h,"sqlite_db_file=\"".$this->config["sqlite_db_file"]."\"\n");
+        fwrite($file_h,"use_sqlite = ".($this->config["use_sqlite"] ? "true" : "false")."\n");
+        fwrite($file_h,"sqlite_db_file = \"".$this->config["sqlite_db_file"]."\"\n");
         fwrite($file_h,"\n");
         
-        fwrite($file_h,"pg_host=\"".$this->config["pg_host"]."\"\n");
-        fwrite($file_h,"pg_user=\"".$this->config["pg_user"]."\"\n");
-        fwrite($file_h,"pg_pass=\"".$this->config["pg_pass"]."\"\n");
-        fwrite($file_h,"pg_db=\"".$this->config["pg_db"]."\"\n");
-        fwrite($file_h,"pg_port=".$this->config["pg_port"]."\n");
+        fwrite($file_h,"pg_host = \"".$this->config["pg_host"]."\"\n");
+        fwrite($file_h,"pg_user = \"".$this->config["pg_user"]."\"\n");
+        fwrite($file_h,"pg_pass = \"".$this->config["pg_pass"]."\"\n");
+        fwrite($file_h,"pg_db = \"".$this->config["pg_db"]."\"\n");
+        fwrite($file_h,"pg_port = ".$this->config["pg_port"]."\n");
         fwrite($file_h,"\n");
         
-        if ($this->config["allow_weak_password"]) {
-            fwrite($file_h,"allow_weak_password=true\n");
-        } else {
-            fwrite($file_h,"allow_weak_password=false\n");
-        }
+        fwrite($file_h,"allow_weak_password = ".($this->config["allow_weak_password"] ? "true" : "false")."\n");
         fwrite($file_h,"\n");
         
-        if ($this->config["allow_nonunique_email_address"]) {
-            fwrite($file_h,"allow_nonunique_email_address=true\n");
-        } else {
-            fwrite($file_h,"allow_nonunique_email_address=false\n");
-        }
-        fwrite($file_h,"email_addresses_per_user=".$this->config["email_addresses_per_user"]."\n");
-        fwrite($file_h,"verification_email_expire=".$this->config["verification_email_expire"]."\n");
+        fwrite($file_h,"allow_nonunique_email_address = ".($this->config["allow_nonunique_email_address"] ? "true" : "false")."\n");
+        fwrite($file_h,"email_addresses_per_user = ".$this->config["email_addresses_per_user"]."\n");
+        fwrite($file_h,"verification_email_expire = ".$this->config["verification_email_expire"]."\n");
+        fwrite($file_h,"verification_email_sendable_interval = ".$this->config["verification_email_sendable_interval"]."\n");
         fwrite($file_h,"\n");
         
-        fwrite($file_h,"login_token_cookie_name=\"".$this->config["login_token_cookie_name"]."\"\n");
-        fwrite($file_h,"cookie_domain=\"".$this->config["cookie_domain"]."\"\n");
+        fwrite($file_h,"login_token_cookie_name = \"".$this->config["login_token_cookie_name"]."\"\n");
+        fwrite($file_h,"cookie_domain = \"".$this->config["cookie_domain"]."\"\n");
         fwrite($file_h,"\n");
         
-        fwrite($file_h,"login_tokens_per_user=".$this->config["login_tokens_per_user"]."\n");
-        fwrite($file_h,"login_token_expire=".$this->config["login_token_expire"]."\n");
-        fwrite($file_h,"one_time_tokens_per_user=".$this->config["one_time_tokens_per_user"]."\n");
-        fwrite($file_h,"one_time_token_expire=".$this->config["one_time_token_expire"]."\n");
+        fwrite($file_h,"login_tokens_per_user = ".$this->config["login_tokens_per_user"]."\n");
+        fwrite($file_h,"login_token_expire = ".$this->config["login_token_expire"]."\n");
+        fwrite($file_h,"one_time_tokens_per_user = ".$this->config["one_time_tokens_per_user"]."\n");
+        fwrite($file_h,"one_time_token_expire = ".$this->config["one_time_token_expire"]."\n");
         fwrite($file_h,"\n");
         
-        fwrite($file_h,"minimum_authenticate_interval=".$this->config["minimum_authenticate_interval"]."\n");
-        fwrite($file_h,"authenticate_logs_per_user=".$this->config["authenticate_logs_per_user"]."\n");
-        fwrite($file_h,"authenticate_log_retention_time=".$this->config["authenticate_log_retention_time"]."\n");
+        fwrite($file_h,"minimum_authenticate_interval = ".$this->config["minimum_authenticate_interval"]."\n");
+        fwrite($file_h,"authenticate_logs_per_user = ".$this->config["authenticate_logs_per_user"]."\n");
+        fwrite($file_h,"authenticate_log_retention_time = ".$this->config["authenticate_log_retention_time"]."\n");
         fwrite($file_h,"\n");
         
-        fwrite($file_h,"password_reset_token_expire=".$this->config["password_reset_token_expire"]."\n");
+        fwrite($file_h,"password_reset_token_expire = ".$this->config["password_reset_token_expire"]."\n");
         fwrite($file_h,"\n");
         
-        fwrite($file_h,"totp_pin_expire=".$this->config["totp_pin_expire"]."\n");
-        fwrite($file_h,"two_step_verification_token_expire=".$this->config["two_step_verification_token_expire"]."\n");
+        fwrite($file_h,"totp_pin_expire = ".$this->config["totp_pin_expire"]."\n");
+        fwrite($file_h,"two_step_verification_token_expire = ".$this->config["two_step_verification_token_expire"]."\n");
         fwrite($file_h,"\n");
         
-        fwrite($file_h,"proxy_count=".$this->config["proxy_count"]."\n");
+        fwrite($file_h,"proxy_count = ".$this->config["proxy_count"]."\n");
         
         fclose($file_h);
         
@@ -596,9 +582,9 @@ class wakarana_config extends wakarana_common {
         
         try {
             if ($this->config["use_sqlite"]) {
-                $this->db_obj->exec("CREATE TABLE IF NOT EXISTS `wakarana_email_address_verification_codes`(`user_id` TEXT COLLATE NOCASE UNIQUE, `email_address` TEXT NOT NULL, `verification_code` TEXT NOT NULL, `code_created` TEXT NOT NULL)");
+                $this->db_obj->exec("CREATE TABLE IF NOT EXISTS `wakarana_email_address_verification_codes`(`user_id` TEXT COLLATE NOCASE UNIQUE, `email_address` TEXT NOT NULL, `verification_code` TEXT NOT NULL, `code_created` TEXT NOT NULL, `ip_address` TEXT NOT NULL)");
             } else {
-                $this->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_email_address_verification_codes"("user_id" varchar(60) UNIQUE, "email_address" varchar(254) NOT NULL, "verification_code" varchar(8) NOT NULL, "code_created" timestamp NOT NULL)');
+                $this->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_email_address_verification_codes"("user_id" varchar(60) UNIQUE, "email_address" varchar(254) NOT NULL, "verification_code" varchar(8) NOT NULL, "code_created" timestamp NOT NULL, "ip_address" varchar(39) NOT NULL)');
             }
         } catch (PDOException $err) {
             $this->print_error("テーブル wakarana_email_address_verification_codes の作成処理に失敗しました。".$err->getMessage());
@@ -608,6 +594,7 @@ class wakarana_config extends wakarana_common {
         try {
             $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_ev1" ON "wakarana_email_address_verification_codes"("email_address", "verification_code")');
             $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_ev2" ON "wakarana_email_address_verification_codes"("code_created")');
+            $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_ev3" ON "wakarana_email_address_verification_codes"("ip_address", "code_created")');
         } catch (PDOException $err) {
             $this->print_error("テーブル wakarana_email_address_verification_codes のインデックス作成処理に失敗しました。".$err->getMessage());
             return FALSE;
