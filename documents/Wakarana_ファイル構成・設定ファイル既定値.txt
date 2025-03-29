@@ -38,6 +38,7 @@ _/_/_/_/ 基本設定ファイル wakarana_config.ini _/_/_/_/
   allow_nonunique_email_address 同じメールアドレスでの複数のアカウント作成を許すかどうか(trueまたはfalse、trueの場合はメールアドレスなし(NULL)を許可しない)
   email_addresses_per_user ユーザーごとに登録可能なメールアドレスの数
   verification_email_expire メールアドレス確認トークンの有効時間(秒数で指定)
+  verification_email_sendable_interval 同一メールアドレスへの確認トークン発行可能間隔(秒数で指定)
   
   login_token_cookie_name ログイントークンのCookie保存名
   cookie_domain サブドメインと主ドメインでログインを共通化する場合、主ドメインを指定する(例: "example.jp"と"hoge.example.jp"でログインを共通化する場合は"example.jp"を指定する)

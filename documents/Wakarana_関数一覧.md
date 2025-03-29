@@ -1002,7 +1002,7 @@ wakarana_userインスタンスはこの関数以外の方法(unsetや変数の�
 **返り値** ： ユーザーが持つロールのいずれかに権限が割り当てられている場合はTRUE、それ以外の場合はFALSEを返す。
 
 
-#### wakarana_user::get_permissions()
+#### wakarana_user::get_permissions(get_descendant_permissions=TRUE)
 ユーザーに割り当てられた権限の一覧を子孫権限も含めて取得する。  
   
 **返り値** ： 権限対象リソースIDをキーとし、値として動作識別名の配列を持った連想配列を返す。権限が存在しない場合は空配列を返す。失敗した場合はFALSEを返す。
@@ -1253,11 +1253,11 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
 **返り値** ： ロールについての説明文を返す。
 
 
-#### wakarana_role::set_info($role_name, $role_description="")
+#### wakarana_role::set_info($role_name=NULL, $role_description=NULL)
 ロールの情報を変更する。  
   
-**$role_name** ： ロールの表示名  
-**$role_description** : ロールについての説明文  
+**$role_name** ： ロールの表示名。変更しない場合はNULL。  
+**$role_description** : ロールについての説明文。変更しない場合は省略。  
   
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
@@ -1268,7 +1268,7 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
 **返り値** ： 成功した場合は、wakarana_userインスタンスをユーザーIDの順に配列で返す。失敗した場合はFALSEを返す。
 
 
-#### wakarana_role::get_permissions()
+#### wakarana_role::get_permissions(get_descendant_permissions=TRUE)
 ロールに割り当てられた権限の一覧を子孫権限も含めて取得する。  
   
 **返り値** ： 権限対象リソースIDをキーとし、値として動作識別名の配列を持った連想配列を返す。権限が存在しない場合は空配列を返す。失敗した場合はFALSEを返す。
@@ -1379,11 +1379,11 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
 **返り値** ： 権限についての説明文を返す。
 
 
-#### wakarana_permission::set_info($permission_name, $permission_description="")
+#### wakarana_permission::set_info($permission_name=NULL, $permission_description=NULL)
 権限の情報を変更する。  
   
-**$permission_name** ： 権限の表示名  
-**$permission_description** : 権限についての説明文  
+**$permission_name** ： 権限の表示名。変更しない場合はNULL。  
+**$permission_description** : 権限についての説明文。変更しない場合は省略。  
   
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
@@ -1460,11 +1460,11 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
 **返り値** ： 権限値についての説明文を返す。
 
 
-#### wakarana_permitted_value::set_info($permitted_value_name, $permitted_value_description="")
+#### wakarana_permitted_value::set_info($permitted_value_name=NULL, $permitted_value_description=NULL)
 権限値の情報を変更する。  
   
-**$permitted_value_name** ： 権限値の表示名  
-**$permitted_value_description** : 権限値についての説明文  
+**$permitted_value_name** ： 権限値の表示名。変更しない場合はNULL。  
+**$permitted_value_description** : 権限値についての説明文。変更しない場合は省略。  
   
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
