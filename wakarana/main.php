@@ -1986,7 +1986,7 @@ class wakarana_user {
     }
     
     
-    function get_permissions () {
+    function get_permissions ($get_descendant_permissions = TRUE) {
         try {
             $stmt = $this->wakarana->db_obj->query('SELECT "resource_id", "action" FROM "wakarana_user_permission_caches" WHERE "user_id" = \''.$this->user_info["user_id"].'\' ORDER BY "resource_id", "action" ASC');
         } catch (PDOException $err) {
@@ -1994,7 +1994,35 @@ class wakarana_user {
             return FALSE;
         }
         
-        return $stmt->fetchAll(PDO::FETCH_COLUMN|PDO::FETCH_GROUP);
+        if ($get_descendant_permissions){
+            return $stmt->fetchAll(PDO::FETCH_COLUMN|PDO::FETCH_GROUP);
+        } else {
+            $permissions = array();
+            foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+                $resource_id_pieces = explode("/", $row["resource_id"]);
+                array_pop($resource_id_pieces);
+                
+                $ancestral_resource_id = "";
+                foreach ($resource_id_pieces as $resource_id_piece) {
+                    if (!empty($ancestral_resource_id)) {
+                        $ancestral_resource_id .= "/";
+                    }
+                    $ancestral_resource_id .= $resource_id_piece;
+                    
+                    if (array_key_exists($ancestral_resource_id, $permissions) && in_array($row["action"], $permissions[$ancestral_resource_id])) {
+                        continue 2;
+                    }
+                }
+                
+                if (!array_key_exists($row["resource_id"], $permissions)) {
+                    $permissions[$row["resource_id"]] = array();
+                }
+                
+                $permissions[$row["resource_id"]][] = $row["action"];
+            }
+            
+            return $permissions;
+        }
     }
     
     
@@ -2661,7 +2689,7 @@ class wakarana_role {
     }
     
     
-    function get_permissions () {
+    function get_permissions ($get_descendant_permissions = TRUE) {
         try {
             $stmt = $this->wakarana->db_obj->query('SELECT "resource_id", "action" FROM "wakarana_role_permissions" WHERE "role_id" = \''.$this->role_info["role_id"].'\' ORDER BY "resource_id", "action" ASC');
         } catch (PDOException $err) {
@@ -2669,7 +2697,35 @@ class wakarana_role {
             return FALSE;
         }
         
-        return $stmt->fetchAll(PDO::FETCH_COLUMN|PDO::FETCH_GROUP);
+        if ($get_descendant_permissions){
+            return $stmt->fetchAll(PDO::FETCH_COLUMN|PDO::FETCH_GROUP);
+        } else {
+            $permissions = array();
+            foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+                $resource_id_pieces = explode("/", $row["resource_id"]);
+                array_pop($resource_id_pieces);
+                
+                $ancestral_resource_id = "";
+                foreach ($resource_id_pieces as $resource_id_piece) {
+                    if (!empty($ancestral_resource_id)) {
+                        $ancestral_resource_id .= "/";
+                    }
+                    $ancestral_resource_id .= $resource_id_piece;
+                    
+                    if (array_key_exists($ancestral_resource_id, $permissions) && in_array($row["action"], $permissions[$ancestral_resource_id])) {
+                        continue 2;
+                    }
+                }
+                
+                if (!array_key_exists($row["resource_id"], $permissions)) {
+                    $permissions[$row["resource_id"]] = array();
+                }
+                
+                $permissions[$row["resource_id"]][] = $row["action"];
+            }
+            
+            return $permissions;
+        }
     }
     
     

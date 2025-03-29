@@ -1003,7 +1003,9 @@ wakarana_userインスタンスはこの関数以外の方法(unsetや変数の�
 
 
 #### wakarana_user::get_permissions(get_descendant_permissions=TRUE)
-ユーザーに割り当てられた権限の一覧を子孫権限も含めて取得する。  
+ユーザーに割り当てられた権限の一覧を取得する。  
+  
+**$get_descendant_permissions** ： TRUEを指定した場合、割り当てられている親権限と同一動作の子孫権限も含めて取得する。  
   
 **返り値** ： 権限対象リソースIDをキーとし、値として動作識別名の配列を持った連想配列を返す。権限が存在しない場合は空配列を返す。失敗した場合はFALSEを返す。
 
@@ -1268,8 +1270,10 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
 **返り値** ： 成功した場合は、wakarana_userインスタンスをユーザーIDの順に配列で返す。失敗した場合はFALSEを返す。
 
 
-#### wakarana_role::get_permissions(get_descendant_permissions=TRUE)
-ロールに割り当てられた権限の一覧を子孫権限も含めて取得する。  
+#### wakarana_role::get_permissions($get_descendant_permissions=TRUE)
+ロールに割り当てられた権限の一覧を取得する。  
+  
+**$get_descendant_permissions** ： TRUEを指定した場合、割り当てられている親権限と同一動作の子孫権限も含めて取得する。  
   
 **返り値** ： 権限対象リソースIDをキーとし、値として動作識別名の配列を持った連想配列を返す。権限が存在しない場合は空配列を返す。失敗した場合はFALSEを返す。
 
