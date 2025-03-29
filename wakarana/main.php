@@ -2650,12 +2650,28 @@ class wakarana_role {
     }
     
     
-    function set_info ($role_name, $role_description = "") {
-        try {
-            $stmt = $this->wakarana->db_obj->prepare('UPDATE "wakarana_roles" SET "role_name" = :role_name, "role_description" = :role_description WHERE "role_id" = \''.$this->role_info["role_id"].'\'');
+    function set_info ($role_name = NULL, $role_description = NULL) {
+        if (!is_null($role_name)) {
+            $set_q = '"role_name" = :role_name';
             
-            $stmt->bindValue(":role_name", mb_substr($role_name, 0, 120), PDO::PARAM_STR);
-            $stmt->bindValue(":role_description", $role_description, PDO::PARAM_STR);
+            if (!is_null($role_description)) {
+                $set_q .= ', "role_description" = :role_description';
+            }
+        } elseif (!is_null($role_description)) {
+            $set_q = '"role_description" = :role_description';
+        } else {
+            return TRUE;
+        }
+        
+        try {
+            $stmt = $this->wakarana->db_obj->prepare('UPDATE "wakarana_roles" SET '.$set_q.' WHERE "role_id" = \''.$this->role_info["role_id"].'\'');
+            
+            if (!is_null($role_name)) {
+                $stmt->bindValue(":role_name", mb_substr($role_name, 0, 120), PDO::PARAM_STR);
+            }
+            if (!is_null($role_description)) {
+                $stmt->bindValue(":role_description", $role_description, PDO::PARAM_STR);
+            }
             
             $stmt->execute();
         } catch (PDOException $err) {
@@ -3009,12 +3025,28 @@ class wakarana_permission {
     }
     
     
-    function set_info ($permission_name, $permission_description = "") {
-        try {
-            $stmt = $this->wakarana->db_obj->prepare('UPDATE "wakarana_permissions" SET "permission_name" = :permission_name, "permission_description" = :permission_description WHERE "resource_id" = \''.$this->permission_info["resource_id"].'\'');
+    function set_info ($permission_name = NULL, $permission_description = NULL) {
+        if (!is_null($permission_name)) {
+            $set_q = '"permission_name" = :permission_name';
             
-            $stmt->bindValue(":permission_name", mb_substr($permission_name, 0, 120), PDO::PARAM_STR);
-            $stmt->bindValue(":permission_description", $permission_description, PDO::PARAM_STR);
+            if (!is_null($permission_description)) {
+                $set_q .= ', "permission_description" = :permission_description';
+            }
+        } elseif (!is_null($permission_description)) {
+            $set_q = '"permission_description" = :permission_description';
+        } else {
+            return TRUE;
+        }
+        
+        try {
+            $stmt = $this->wakarana->db_obj->prepare('UPDATE "wakarana_permissions" SET '.$set_q.' WHERE "resource_id" = \''.$this->permission_info["resource_id"].'\'');
+            
+            if (!is_null($permission_name)) {
+                $stmt->bindValue(":permission_name", mb_substr($permission_name, 0, 120), PDO::PARAM_STR);
+            }
+            if (!is_null($permission_description)) {
+                $stmt->bindValue(":permission_description", $permission_description, PDO::PARAM_STR);
+            }
             
             $stmt->execute();
         } catch (PDOException $err) {
@@ -3189,12 +3221,28 @@ class wakarana_permitted_value {
     }
     
     
-    function set_info ($permitted_value_name, $permitted_value_description = "") {
-        try {
-            $stmt = $this->wakarana->db_obj->prepare('UPDATE "wakarana_permitted_values" SET "permitted_value_name" = :permitted_value_name, "permitted_value_description" = :permitted_value_description WHERE "permitted_value_id" = \''.$this->permitted_value_info["permitted_value_id"].'\'');
+    function set_info ($permitted_value_name = NULL, $permitted_value_description = NULL) {
+        if (!is_null($permitted_value_name)) {
+            $set_q = '"permitted_value_name" = :permitted_value_name';
             
-            $stmt->bindValue(":permitted_value_name", mb_substr($permitted_value_name, 0, 120), PDO::PARAM_STR);
-            $stmt->bindValue(":permitted_value_description", $permitted_value_description, PDO::PARAM_STR);
+            if (!is_null($permission_description)) {
+                $set_q .= ', "permitted_value_description" = :permitted_value_description';
+            }
+        } elseif (!is_null($permitted_value_description)) {
+            $set_q = '"permitted_value_description" = :permitted_value_description';
+        } else {
+            return TRUE;
+        }
+        
+        try {
+            $stmt = $this->wakarana->db_obj->prepare('UPDATE "wakarana_permitted_values" SET '.$set_q.' WHERE "permitted_value_id" = \''.$this->permitted_value_info["permitted_value_id"].'\'');
+            
+            if (!is_null($permitted_value_name)) {
+                $stmt->bindValue(":permitted_value_name", mb_substr($permitted_value_name, 0, 120), PDO::PARAM_STR);
+            }
+            if (!is_null($permitted_value_description)) {
+                $stmt->bindValue(":permitted_value_description", $permitted_value_description, PDO::PARAM_STR);
+            }
             
             $stmt->execute();
         } catch (PDOException $err) {
