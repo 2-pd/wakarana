@@ -701,6 +701,40 @@ class wakarana extends wakarana_common {
     }
     
     
+    function check_email_sending_interval ($email_address) {
+        $sendable_datetime_max = date("Y-m-d H:i:s", time() - $this->config["verification_email_sendable_interval"]);
+        $ip_address = $this->get_client_ip_address();
+        
+        try {
+            $stmt = $this->db_obj->query('SELECT "code_created" FROM "wakarana_email_address_verification_codes" WHERE "ip_address" = \''.$ip_address.'\' ORDER BY "code_created" DESC LIMIT 1');
+        } catch (PDOException $err) {
+            $this->print_error("メールアドレス確認コードの前回送信時間確認に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        if ($stmt->fetchColumn() > $sendable_datetime_max) {
+            return FALSE;
+        }
+        
+        try {
+            $stmt = $this->db_obj->prepare('SELECT "code_created" FROM "wakarana_email_address_verification_codes" WHERE "email_address" = :email_address ORDER BY "code_created" DESC LIMIT 1');
+            
+            $stmt->bindValue(":email_address", $email_address, PDO::PARAM_STR);
+            
+            $stmt->execute();
+        } catch (PDOException $err) {
+            $this->print_error("メールアドレス確認コードの前回送信時間確認に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        if ($stmt->fetchColumn() > $sendable_datetime_max) {
+            return FALSE;
+        }
+        
+        return TRUE;
+    }
+    
+    
     function create_email_address_verification_code ($email_address) {
         if (!$this->check_email_address($email_address)) {
             $this->print_error("使用できないメールアドレスです。");
@@ -714,12 +748,18 @@ class wakarana extends wakarana_common {
         
         $this->delete_email_address_verification_codes();
         
+        if (!$this->check_email_sending_interval($email_address)) {
+            $this->print_error("前回に確認コードを発行してから十分な時間が経過していません。");
+            return FALSE;
+        }
+        
         $verification_code = self::create_random_code(8);
         
         $code_created = date("Y-m-d H:i:s");
+        $ip_address = $this->get_client_ip_address();
         
         try {
-            $stmt = $this->db_obj->prepare('INSERT INTO "wakarana_email_address_verification_codes"("user_id", "email_address", "verification_code", "code_created") VALUES (NULL, :email_address, \''.$verification_code.'\', \''.$code_created.'\')');
+            $stmt = $this->db_obj->prepare('INSERT INTO "wakarana_email_address_verification_codes"("user_id", "email_address", "verification_code", "code_created", "ip_address") VALUES (NULL, :email_address, \''.$verification_code.'\', \''.$code_created.'\', \''.$ip_address.'\')');
             
             $stmt->bindValue(":email_address", $email_address, PDO::PARAM_STR);
             
@@ -1986,7 +2026,7 @@ class wakarana_user {
     }
     
     
-    function get_permissions () {
+    function get_permissions ($get_descendant_permissions = TRUE) {
         try {
             $stmt = $this->wakarana->db_obj->query('SELECT "resource_id", "action" FROM "wakarana_user_permission_caches" WHERE "user_id" = \''.$this->user_info["user_id"].'\' ORDER BY "resource_id", "action" ASC');
         } catch (PDOException $err) {
@@ -1994,7 +2034,35 @@ class wakarana_user {
             return FALSE;
         }
         
-        return $stmt->fetchAll(PDO::FETCH_COLUMN|PDO::FETCH_GROUP);
+        if ($get_descendant_permissions){
+            return $stmt->fetchAll(PDO::FETCH_COLUMN|PDO::FETCH_GROUP);
+        } else {
+            $permissions = array();
+            foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+                $resource_id_pieces = explode("/", $row["resource_id"]);
+                array_pop($resource_id_pieces);
+                
+                $ancestral_resource_id = "";
+                foreach ($resource_id_pieces as $resource_id_piece) {
+                    if (!empty($ancestral_resource_id)) {
+                        $ancestral_resource_id .= "/";
+                    }
+                    $ancestral_resource_id .= $resource_id_piece;
+                    
+                    if (array_key_exists($ancestral_resource_id, $permissions) && in_array($row["action"], $permissions[$ancestral_resource_id])) {
+                        continue 2;
+                    }
+                }
+                
+                if (!array_key_exists($row["resource_id"], $permissions)) {
+                    $permissions[$row["resource_id"]] = array();
+                }
+                
+                $permissions[$row["resource_id"]][] = $row["action"];
+            }
+            
+            return $permissions;
+        }
     }
     
     
@@ -2269,12 +2337,18 @@ class wakarana_user {
         
         $this->wakarana->delete_email_address_verification_codes();
         
+        if (!$this->wakarana->check_email_sending_interval($email_address)) {
+            $this->wakarana->print_error("前回に確認コードを発行してから十分な時間が経過していません。");
+            return FALSE;
+        }
+        
         $verification_code = wakarana::create_random_code(8);
         
         $code_created = date("Y-m-d H:i:s");
+        $ip_address = $this->wakarana->get_client_ip_address();
         
         try {
-            $stmt = $this->wakarana->db_obj->prepare('INSERT INTO "wakarana_email_address_verification_codes"("user_id", "email_address", "verification_code", "code_created") VALUES (\''.$this->user_info["user_id"].'\', :email_address, \''.$verification_code.'\', \''.$code_created.'\') ON CONFLICT("user_id") DO UPDATE SET "email_address" = :email_address_2, "verification_code" = \''.$verification_code.'\', "code_created" = \''.$code_created.'\'');
+            $stmt = $this->wakarana->db_obj->prepare('INSERT INTO "wakarana_email_address_verification_codes"("user_id", "email_address", "verification_code", "code_created", "ip_address") VALUES (\''.$this->user_info["user_id"].'\', :email_address, \''.$verification_code.'\', \''.$code_created.'\', \''.$ip_address.'\') ON CONFLICT("user_id") DO UPDATE SET "email_address" = :email_address_2, "verification_code" = \''.$verification_code.'\', "code_created" = \''.$code_created.'\', "ip_address" = \''.$ip_address.'\'');
             
             $stmt->bindValue(":email_address", $email_address, PDO::PARAM_STR);
             $stmt->bindValue(":email_address_2", $email_address, PDO::PARAM_STR);
@@ -2622,12 +2696,28 @@ class wakarana_role {
     }
     
     
-    function set_info ($role_name, $role_description = "") {
-        try {
-            $stmt = $this->wakarana->db_obj->prepare('UPDATE "wakarana_roles" SET "role_name" = :role_name, "role_description" = :role_description WHERE "role_id" = \''.$this->role_info["role_id"].'\'');
+    function set_info ($role_name = NULL, $role_description = NULL) {
+        if (!is_null($role_name)) {
+            $set_q = '"role_name" = :role_name';
             
-            $stmt->bindValue(":role_name", mb_substr($role_name, 0, 120), PDO::PARAM_STR);
-            $stmt->bindValue(":role_description", $role_description, PDO::PARAM_STR);
+            if (!is_null($role_description)) {
+                $set_q .= ', "role_description" = :role_description';
+            }
+        } elseif (!is_null($role_description)) {
+            $set_q = '"role_description" = :role_description';
+        } else {
+            return TRUE;
+        }
+        
+        try {
+            $stmt = $this->wakarana->db_obj->prepare('UPDATE "wakarana_roles" SET '.$set_q.' WHERE "role_id" = \''.$this->role_info["role_id"].'\'');
+            
+            if (!is_null($role_name)) {
+                $stmt->bindValue(":role_name", mb_substr($role_name, 0, 120), PDO::PARAM_STR);
+            }
+            if (!is_null($role_description)) {
+                $stmt->bindValue(":role_description", $role_description, PDO::PARAM_STR);
+            }
             
             $stmt->execute();
         } catch (PDOException $err) {
@@ -2661,7 +2751,7 @@ class wakarana_role {
     }
     
     
-    function get_permissions () {
+    function get_permissions ($get_descendant_permissions = TRUE) {
         try {
             $stmt = $this->wakarana->db_obj->query('SELECT "resource_id", "action" FROM "wakarana_role_permissions" WHERE "role_id" = \''.$this->role_info["role_id"].'\' ORDER BY "resource_id", "action" ASC');
         } catch (PDOException $err) {
@@ -2669,7 +2759,35 @@ class wakarana_role {
             return FALSE;
         }
         
-        return $stmt->fetchAll(PDO::FETCH_COLUMN|PDO::FETCH_GROUP);
+        if ($get_descendant_permissions){
+            return $stmt->fetchAll(PDO::FETCH_COLUMN|PDO::FETCH_GROUP);
+        } else {
+            $permissions = array();
+            foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+                $resource_id_pieces = explode("/", $row["resource_id"]);
+                array_pop($resource_id_pieces);
+                
+                $ancestral_resource_id = "";
+                foreach ($resource_id_pieces as $resource_id_piece) {
+                    if (!empty($ancestral_resource_id)) {
+                        $ancestral_resource_id .= "/";
+                    }
+                    $ancestral_resource_id .= $resource_id_piece;
+                    
+                    if (array_key_exists($ancestral_resource_id, $permissions) && in_array($row["action"], $permissions[$ancestral_resource_id])) {
+                        continue 2;
+                    }
+                }
+                
+                if (!array_key_exists($row["resource_id"], $permissions)) {
+                    $permissions[$row["resource_id"]] = array();
+                }
+                
+                $permissions[$row["resource_id"]][] = $row["action"];
+            }
+            
+            return $permissions;
+        }
     }
     
     
@@ -2953,12 +3071,28 @@ class wakarana_permission {
     }
     
     
-    function set_info ($permission_name, $permission_description = "") {
-        try {
-            $stmt = $this->wakarana->db_obj->prepare('UPDATE "wakarana_permissions" SET "permission_name" = :permission_name, "permission_description" = :permission_description WHERE "resource_id" = \''.$this->permission_info["resource_id"].'\'');
+    function set_info ($permission_name = NULL, $permission_description = NULL) {
+        if (!is_null($permission_name)) {
+            $set_q = '"permission_name" = :permission_name';
             
-            $stmt->bindValue(":permission_name", mb_substr($permission_name, 0, 120), PDO::PARAM_STR);
-            $stmt->bindValue(":permission_description", $permission_description, PDO::PARAM_STR);
+            if (!is_null($permission_description)) {
+                $set_q .= ', "permission_description" = :permission_description';
+            }
+        } elseif (!is_null($permission_description)) {
+            $set_q = '"permission_description" = :permission_description';
+        } else {
+            return TRUE;
+        }
+        
+        try {
+            $stmt = $this->wakarana->db_obj->prepare('UPDATE "wakarana_permissions" SET '.$set_q.' WHERE "resource_id" = \''.$this->permission_info["resource_id"].'\'');
+            
+            if (!is_null($permission_name)) {
+                $stmt->bindValue(":permission_name", mb_substr($permission_name, 0, 120), PDO::PARAM_STR);
+            }
+            if (!is_null($permission_description)) {
+                $stmt->bindValue(":permission_description", $permission_description, PDO::PARAM_STR);
+            }
             
             $stmt->execute();
         } catch (PDOException $err) {
@@ -3133,12 +3267,28 @@ class wakarana_permitted_value {
     }
     
     
-    function set_info ($permitted_value_name, $permitted_value_description = "") {
-        try {
-            $stmt = $this->wakarana->db_obj->prepare('UPDATE "wakarana_permitted_values" SET "permitted_value_name" = :permitted_value_name, "permitted_value_description" = :permitted_value_description WHERE "permitted_value_id" = \''.$this->permitted_value_info["permitted_value_id"].'\'');
+    function set_info ($permitted_value_name = NULL, $permitted_value_description = NULL) {
+        if (!is_null($permitted_value_name)) {
+            $set_q = '"permitted_value_name" = :permitted_value_name';
             
-            $stmt->bindValue(":permitted_value_name", mb_substr($permitted_value_name, 0, 120), PDO::PARAM_STR);
-            $stmt->bindValue(":permitted_value_description", $permitted_value_description, PDO::PARAM_STR);
+            if (!is_null($permitted_value_description)) {
+                $set_q .= ', "permitted_value_description" = :permitted_value_description';
+            }
+        } elseif (!is_null($permitted_value_description)) {
+            $set_q = '"permitted_value_description" = :permitted_value_description';
+        } else {
+            return TRUE;
+        }
+        
+        try {
+            $stmt = $this->wakarana->db_obj->prepare('UPDATE "wakarana_permitted_values" SET '.$set_q.' WHERE "permitted_value_id" = \''.$this->permitted_value_info["permitted_value_id"].'\'');
+            
+            if (!is_null($permitted_value_name)) {
+                $stmt->bindValue(":permitted_value_name", mb_substr($permitted_value_name, 0, 120), PDO::PARAM_STR);
+            }
+            if (!is_null($permitted_value_description)) {
+                $stmt->bindValue(":permitted_value_description", $permitted_value_description, PDO::PARAM_STR);
+            }
             
             $stmt->execute();
         } catch (PDOException $err) {
