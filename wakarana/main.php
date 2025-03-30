@@ -701,6 +701,40 @@ class wakarana extends wakarana_common {
     }
     
     
+    function check_email_sending_interval ($email_address) {
+        $sendable_datetime_max = date("Y-m-d H:i:s", time() - $this->config["verification_email_sendable_interval"]);
+        $ip_address = $this->get_client_ip_address();
+        
+        try {
+            $stmt = $this->db_obj->query('SELECT "code_created" FROM "wakarana_email_address_verification_codes" WHERE "ip_address" = \''.$ip_address.'\' ORDER BY "code_created" DESC LIMIT 1');
+        } catch (PDOException $err) {
+            $this->print_error("メールアドレス確認コードの前回送信時間確認に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        if ($stmt->fetchColumn() > $sendable_datetime_max) {
+            return FALSE;
+        }
+        
+        try {
+            $stmt = $this->db_obj->prepare('SELECT "code_created" FROM "wakarana_email_address_verification_codes" WHERE "email_address" = :email_address ORDER BY "code_created" DESC LIMIT 1');
+            
+            $stmt->bindValue(":email_address", $email_address, PDO::PARAM_STR);
+            
+            $stmt->execute();
+        } catch (PDOException $err) {
+            $this->print_error("メールアドレス確認コードの前回送信時間確認に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        if ($stmt->fetchColumn() > $sendable_datetime_max) {
+            return FALSE;
+        }
+        
+        return TRUE;
+    }
+    
+    
     function create_email_address_verification_code ($email_address) {
         if (!$this->check_email_address($email_address)) {
             $this->print_error("使用できないメールアドレスです。");
@@ -714,12 +748,18 @@ class wakarana extends wakarana_common {
         
         $this->delete_email_address_verification_codes();
         
+        if (!$this->check_email_sending_interval($email_address)) {
+            $this->print_error("前回に確認コードを発行してから十分な時間が経過していません。");
+            return FALSE;
+        }
+        
         $verification_code = self::create_random_code(8);
         
         $code_created = date("Y-m-d H:i:s");
+        $ip_address = $this->get_client_ip_address();
         
         try {
-            $stmt = $this->db_obj->prepare('INSERT INTO "wakarana_email_address_verification_codes"("user_id", "email_address", "verification_code", "code_created") VALUES (NULL, :email_address, \''.$verification_code.'\', \''.$code_created.'\')');
+            $stmt = $this->db_obj->prepare('INSERT INTO "wakarana_email_address_verification_codes"("user_id", "email_address", "verification_code", "code_created", "ip_address") VALUES (NULL, :email_address, \''.$verification_code.'\', \''.$code_created.'\', \''.$ip_address.'\')');
             
             $stmt->bindValue(":email_address", $email_address, PDO::PARAM_STR);
             
@@ -2297,12 +2337,18 @@ class wakarana_user {
         
         $this->wakarana->delete_email_address_verification_codes();
         
+        if (!$this->wakarana->check_email_sending_interval($email_address)) {
+            $this->wakarana->print_error("前回に確認コードを発行してから十分な時間が経過していません。");
+            return FALSE;
+        }
+        
         $verification_code = wakarana::create_random_code(8);
         
         $code_created = date("Y-m-d H:i:s");
+        $ip_address = $this->wakarana->get_client_ip_address();
         
         try {
-            $stmt = $this->wakarana->db_obj->prepare('INSERT INTO "wakarana_email_address_verification_codes"("user_id", "email_address", "verification_code", "code_created") VALUES (\''.$this->user_info["user_id"].'\', :email_address, \''.$verification_code.'\', \''.$code_created.'\') ON CONFLICT("user_id") DO UPDATE SET "email_address" = :email_address_2, "verification_code" = \''.$verification_code.'\', "code_created" = \''.$code_created.'\'');
+            $stmt = $this->wakarana->db_obj->prepare('INSERT INTO "wakarana_email_address_verification_codes"("user_id", "email_address", "verification_code", "code_created", "ip_address") VALUES (\''.$this->user_info["user_id"].'\', :email_address, \''.$verification_code.'\', \''.$code_created.'\', \''.$ip_address.'\') ON CONFLICT("user_id") DO UPDATE SET "email_address" = :email_address_2, "verification_code" = \''.$verification_code.'\', "code_created" = \''.$code_created.'\', "ip_address" = \''.$ip_address.'\'');
             
             $stmt->bindValue(":email_address", $email_address, PDO::PARAM_STR);
             $stmt->bindValue(":email_address_2", $email_address, PDO::PARAM_STR);
@@ -3225,7 +3271,7 @@ class wakarana_permitted_value {
         if (!is_null($permitted_value_name)) {
             $set_q = '"permitted_value_name" = :permitted_value_name';
             
-            if (!is_null($permission_description)) {
+            if (!is_null($permitted_value_description)) {
                 $set_q .= ', "permitted_value_description" = :permitted_value_description';
             }
         } elseif (!is_null($permitted_value_description)) {

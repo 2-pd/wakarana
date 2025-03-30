@@ -498,6 +498,14 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
 **返り値** ： メールアドレスの規格に沿った文字列であり、かつ、メールドメインブラックリストに含まれないドメインの場合はTRUE、それ以外の場合はFALSEを返す。
 
 
+#### wakarana::check_email_sending_interval($email_address)
+アクセス者のIPアドレスと指定されたメールアドレスの両方が発行可能間隔以降にメールアドレス確認トークン発行を受けていないことを確認する。  
+  
+**$email_address** : メールアドレス  
+  
+**返り値** ： アクセス者のIPアドレスと指定されたメールアドレスの両方が発行可能間隔以降にメールアドレス確認トークン発行を受けていなければTRUE、それ以外の場合はFALSEを返す。
+
+
 #### wakarana::create_email_address_verification_code($email_address)
 アカウント登録前の新規ユーザーに対してメールアドレス確認コードを生成し、データベースに登録する。  
 この関数によりメールが送信されるわけではない。  
@@ -1002,7 +1010,7 @@ wakarana_userインスタンスはこの関数以外の方法(unsetや変数の�
 **返り値** ： ユーザーが持つロールのいずれかに権限が割り当てられている場合はTRUE、それ以外の場合はFALSEを返す。
 
 
-#### wakarana_user::get_permissions(get_descendant_permissions=TRUE)
+#### wakarana_user::get_permissions($get_descendant_permissions=TRUE)
 ユーザーに割り当てられた権限の一覧を取得する。  
   
 **$get_descendant_permissions** ： TRUEを指定した場合、割り当てられている親権限と同一動作の子孫権限も含めて取得する。  
