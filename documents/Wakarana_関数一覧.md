@@ -1438,6 +1438,14 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
 **返り値** ： 子孫の権限のwakarana_permissionインスタンスを配列で返す。子孫権限が存在しなければ空配列を返し、失敗した場合はFALSEを返す。
 
 
+#### wakarana_permission::get_roles($action="any")
+権限が割り当てられているロールの一覧を取得する。  
+  
+**$action** ： 動作識別名  
+  
+**返り値** ： ロールのwakarana_roleインスタンスを配列で返す。どのロールにも割り当てられていなければ空配列を返し、失敗した場合はFALSEを返す。
+
+
 #### wakarana_permission::delete_permission()
 権限を全てのロールから剥奪して完全に削除する。子孫権限が存在する場合、それらも同様に削除される。  
   
