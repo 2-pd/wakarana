@@ -3222,6 +3222,32 @@ class wakarana_permission {
     }
     
     
+    function get_roles ($action = "any") {
+        if (!wakarana::check_id_string($action)) {
+            $this->wakarana->print_error("動作識別名に使用できない文字列が指定されました。");
+            return FALSE;
+        }
+        
+        $action = strtolower($action);
+        
+        try {
+            $stmt = $this->wakarana->db_obj->query('SELECT "wakarana_roles".* FROM "wakarana_roles", "wakarana_role_permissions" WHERE "wakarana_role_permissions"."resource_id" = \''.$this->permission_info["resource_id"].'\' AND "wakarana_role_permissions"."action" = \''.$action.'\' AND "wakarana_role_permissions"."role_id" = "wakarana_roles"."role_id" ORDER BY "wakarana_role_permissions"."role_id" ASC');
+        } catch (PDOException $err) {
+            $this->wakarana->print_error("ロールの取得に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        $roles_info = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        $roles = array();
+        foreach ($roles_info as $role_info) {
+            $roles[] = $this->wakarana->new_wakarana_role($role_info);
+        }
+        
+        return $roles;
+    }
+    
+    
     function delete_permission () {
         try {
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_permissions" WHERE "resource_id" = \''.$this->permission_info["resource_id"].'\' OR "resource_id" LIKE \''.$this->permission_info["resource_id"].'/%\'');
