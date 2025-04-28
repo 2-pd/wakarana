@@ -1446,6 +1446,14 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
 **返り値** ： ロールのwakarana_roleインスタンスをロールIDの順に配列で返す。失敗した場合はFALSEを返す。
 
 
+#### wakarana_permission::get_users($action="any")
+権限が割り当てられているユーザーの一覧を取得する。  
+  
+**$action** ： 動作識別名  
+  
+**返り値** ： ユーザーのwakarana_userインスタンスをユーザーIDの順に配列で返す。権限を持つユーザーが存在しなければ空配列を返し、失敗した場合はFALSEを返す。
+
+
 #### wakarana_permission::delete_permission()
 権限を全てのロールから剥奪して完全に削除する。子孫権限が存在する場合、それらも同様に削除される。  
   
