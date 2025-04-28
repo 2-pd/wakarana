@@ -1949,12 +1949,14 @@ class wakarana_user {
     
     
     function add_role ($role_id) {
-        if (!wakarana::check_id_string($role_id)) {
-            $this->wakarana->print_error("ロールIDにに使用できない文字列が指定されました。");
+        $role = $this->wakarana->get_role($role_id);
+        
+        if (!is_object($role)) {
+            $this->wakarana->print_error("正しいロールIDではありません。");
             return FALSE;
         }
         
-        $role_id = strtolower($role_id);
+        $role_id = $role->get_id();
         
         try {
             $this->wakarana->db_obj->exec('INSERT INTO "wakarana_user_roles"("user_id", "role_id") VALUES (\''.$this->user_info["user_id"].'\', \''.$role_id.'\') ON CONFLICT ("user_id", "role_id") DO NOTHING');
@@ -1972,7 +1974,7 @@ class wakarana_user {
     function remove_role ($role_id = NULL) {
         if (!empty($role_id)) {
             if (!wakarana::check_id_string($role_id)) {
-                $this->wakarana->print_error("ロールIDにに使用できない文字列が指定されました。");
+                $this->wakarana->print_error("ロールIDに使用できない文字列が指定されました。");
                 return FALSE;
             }
             
@@ -3220,6 +3222,58 @@ class wakarana_permission {
     }
     
     
+    function get_roles ($action = "any") {
+        if (!wakarana::check_id_string($action)) {
+            $this->wakarana->print_error("動作識別名に使用できない文字列が指定されました。");
+            return FALSE;
+        }
+        
+        $action = strtolower($action);
+        
+        try {
+            $stmt = $this->wakarana->db_obj->query('SELECT "wakarana_roles".* FROM "wakarana_roles", "wakarana_role_permissions" WHERE "wakarana_role_permissions"."resource_id" = \''.$this->permission_info["resource_id"].'\' AND "wakarana_role_permissions"."action" = \''.$action.'\' AND "wakarana_role_permissions"."role_id" = "wakarana_roles"."role_id" ORDER BY "wakarana_role_permissions"."role_id" ASC');
+        } catch (PDOException $err) {
+            $this->wakarana->print_error("権限を持つロールの一覧取得に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        $roles_info = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        $roles = array();
+        foreach ($roles_info as $role_info) {
+            $roles[] = $this->wakarana->new_wakarana_role($role_info);
+        }
+        
+        return $roles;
+    }
+    
+    
+    function get_users ($action = "any") {
+        if (!wakarana::check_id_string($action)) {
+            $this->wakarana->print_error("動作識別名に使用できない文字列が指定されました。");
+            return FALSE;
+        }
+        
+        $action = strtolower($action);
+        
+        try {
+            $stmt = $this->wakarana->db_obj->query('SELECT "wakarana_users".* FROM "wakarana_users", "wakarana_user_permission_caches" WHERE "wakarana_user_permission_caches"."resource_id" = \''.$this->permission_info["resource_id"].'\' AND "wakarana_user_permission_caches"."action" = \''.$action.'\' AND "wakarana_users"."user_id" = "wakarana_user_permission_caches"."user_id" ORDER BY "wakarana_user_permission_caches"."user_id" ASC');
+        } catch (PDOException $err) {
+            $this->wakarana->print_error("権限を持つユーザーの一覧取得に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        $users_info = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        $users = array();
+        foreach ($users_info as $user_info) {
+            $users[] = $this->wakarana->new_wakarana_user($user_info);
+        }
+        
+        return $users;
+    }
+    
+    
     function delete_permission () {
         try {
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_permissions" WHERE "resource_id" = \''.$this->permission_info["resource_id"].'\' OR "resource_id" LIKE \''.$this->permission_info["resource_id"].'/%\'');
@@ -3300,6 +3354,77 @@ class wakarana_permitted_value {
         $this->permitted_value_info["permitted_value_description"] = $permitted_value_description;
         
         return TRUE;
+    }
+    
+    
+    function get_roles ($min = NULL, $max = NULL) {
+        if (is_null($min)) {
+            $min_q = "";
+        } else {
+            $min_q = 'AND "wakarana_role_permitted_values"."permitted_value" >= '.intval($min).' ';
+        }
+        
+        if (is_null($max)) {
+            $max_q = "";
+        } else {
+            $max_q = 'AND "wakarana_role_permitted_values"."permitted_value" <= '.intval($max).' ';
+        }
+        
+        try {
+            $stmt = $this->wakarana->db_obj->query('SELECT "wakarana_roles".*, "wakarana_role_permitted_values"."permitted_value" FROM "wakarana_roles", "wakarana_role_permitted_values" WHERE "wakarana_role_permitted_values"."permitted_value_id" = \''.$this->permitted_value_info["permitted_value_id"].'\' '.$min_q.$max_q.'AND "wakarana_role_permitted_values"."role_id" = "wakarana_roles"."role_id" ORDER BY "wakarana_role_permitted_values"."permitted_value" DESC');
+        } catch (PDOException $err) {
+            $this->wakarana->print_error("権限値を持つロールの一覧取得に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        $roles_info = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        $roles = array();
+        foreach ($roles_info as $role_info) {
+            $role_data = array("permitted_value" => $role_info["permitted_value"]);
+            
+            unset($role_info["permitted_value"]);
+            $role_data["role"] = $this->wakarana->new_wakarana_role($role_info);
+            
+            $roles[] = $role_data;
+        }
+        
+        return $roles;
+    }
+    
+    
+    function get_users ($min = NULL, $max = NULL) {
+        if (is_null($min)) {
+            $min_q = "";
+        } else {
+            $min_q = 'AND "wakarana_user_permitted_value_caches"."maximum_permitted_value" >= '.intval($min).' ';
+        }
+        
+        if (is_null($max)) {
+            $max_q = "";
+        } else {
+            $max_q = 'AND "wakarana_user_permitted_value_caches"."maximum_permitted_value" <= '.intval($max).' ';
+        }
+        
+        try {
+            $stmt = $this->wakarana->db_obj->query('SELECT "wakarana_users".*, "wakarana_user_permitted_value_caches"."maximum_permitted_value" FROM "wakarana_users", "wakarana_user_permitted_value_caches" WHERE "wakarana_user_permitted_value_caches"."permitted_value_id" = \''.$this->permitted_value_info["permitted_value_id"].'\' '.$min_q.$max_q.'AND "wakarana_user_permitted_value_caches"."user_id" = "wakarana_users"."user_id" ORDER BY "wakarana_user_permitted_value_caches"."maximum_permitted_value" DESC');
+        } catch (PDOException $err) {
+            $this->wakarana->print_error("権限値を持つユーザーの一覧取得に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        $users_info = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        $users = array();
+        foreach ($users_info as $user_info) {
+            $user_data = array("permitted_value" => $user_info["maximum_permitted_value"]);
+            
+            unset($user_info["maximum_permitted_value"]);
+            $user_data["user"] = $this->wakarana->new_wakarana_user($user_info);
+            $users[] = $user_data;
+        }
+        
+        return $users;
     }
     
     
