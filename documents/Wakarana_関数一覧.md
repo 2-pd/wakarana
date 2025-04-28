@@ -1497,6 +1497,15 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
 **返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
+#### wakarana_permitted_value::get_roles($min=NULL, $max=NULL)
+権限値が割り当てられているロールの一覧を取得する。  
+  
+**$min** ： 取得対象にする権限値の下限。NULLの場合は下限を設けない。  
+**$max** ： 取得対象にする権限値の上限。NULLの場合は上限を設けない。  
+  
+**返り値** ： ロールとその権限値を格納した連想配列("role"(ロールのwakarana_roleインスタンス)、"permitted_value"(権限値))を権限値の大きい順に並べた配列を返す。権限値を持つロールが存在しなければ空配列を返し、失敗した場合はFALSEを返す。
+
+
 #### wakarana_permitted_value::delete_permitted_value()
 権限値を全てのロールから剥奪して完全に削除する。  
   
