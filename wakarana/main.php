@@ -3233,7 +3233,7 @@ class wakarana_permission {
         try {
             $stmt = $this->wakarana->db_obj->query('SELECT "wakarana_roles".* FROM "wakarana_roles", "wakarana_role_permissions" WHERE "wakarana_role_permissions"."resource_id" = \''.$this->permission_info["resource_id"].'\' AND "wakarana_role_permissions"."action" = \''.$action.'\' AND "wakarana_role_permissions"."role_id" = "wakarana_roles"."role_id" ORDER BY "wakarana_role_permissions"."role_id" ASC');
         } catch (PDOException $err) {
-            $this->wakarana->print_error("ロールの取得に失敗しました。".$err->getMessage());
+            $this->wakarana->print_error("権限を持つロールの一覧取得に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -3245,6 +3245,32 @@ class wakarana_permission {
         }
         
         return $roles;
+    }
+    
+    
+    function get_users ($action = "any") {
+        if (!wakarana::check_id_string($action)) {
+            $this->wakarana->print_error("動作識別名に使用できない文字列が指定されました。");
+            return FALSE;
+        }
+        
+        $action = strtolower($action);
+        
+        try {
+            $stmt = $this->wakarana->db_obj->query('SELECT "wakarana_users".* FROM "wakarana_users", "wakarana_user_permission_caches" WHERE "wakarana_user_permission_caches"."resource_id" = \''.$this->permission_info["resource_id"].'\' AND "wakarana_user_permission_caches"."action" = \''.$action.'\' AND "wakarana_users"."user_id" = "wakarana_user_permission_caches"."user_id" ORDER BY "wakarana_user_permission_caches"."user_id" ASC');
+        } catch (PDOException $err) {
+            $this->wakarana->print_error("権限を持つユーザーの一覧取得に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        $users_info = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        $users = array();
+        foreach ($users_info as $user_info) {
+            $users[] = $this->wakarana->new_wakarana_user($user_info);
+        }
+        
+        return $users;
     }
     
     
