@@ -3357,6 +3357,42 @@ class wakarana_permitted_value {
     }
     
     
+    function get_roles ($min = NULL, $max = NULL) {
+        if (is_null($min)) {
+            $min_q = "";
+        } else {
+            $min_q = 'AND "wakarana_role_permitted_values"."permitted_value" >= '.intval($min).' ';
+        }
+        
+        if (is_null($max)) {
+            $max_q = "";
+        } else {
+            $max_q = 'AND "wakarana_role_permitted_values"."permitted_value" <= '.intval($max).' ';
+        }
+        
+        try {
+            $stmt = $this->wakarana->db_obj->query('SELECT "wakarana_roles".*, "wakarana_role_permitted_values"."permitted_value" FROM "wakarana_roles", "wakarana_role_permitted_values" WHERE "wakarana_role_permitted_values"."permitted_value_id" = \''.$this->permitted_value_info["permitted_value_id"].'\' '.$min_q.$max_q.'AND "wakarana_role_permitted_values"."role_id" = "wakarana_roles"."role_id" ORDER BY "wakarana_role_permitted_values"."permitted_value" DESC');
+        } catch (PDOException $err) {
+            $this->wakarana->print_error("権限値を持つロールの一覧取得に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        $roles_info = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        $roles = array();
+        foreach ($roles_info as $role_info) {
+            $role_data = array("permitted_value" => $role_info["permitted_value"]);
+            
+            unset($role_info["permitted_value"]);
+            $role_data["role"] = $this->wakarana->new_wakarana_role($role_info);
+            
+            $roles[] = $role_data;
+        }
+        
+        return $roles;
+    }
+    
+    
     function delete_permitted_value () {
         try {
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_permitted_values" WHERE "permitted_value_id" = \''.$this->permitted_value_info["permitted_value_id"].'\'');
