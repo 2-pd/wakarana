@@ -3393,6 +3393,41 @@ class wakarana_permitted_value {
     }
     
     
+    function get_users ($min = NULL, $max = NULL) {
+        if (is_null($min)) {
+            $min_q = "";
+        } else {
+            $min_q = 'AND "wakarana_user_permitted_value_caches"."maximum_permitted_value" >= '.intval($min).' ';
+        }
+        
+        if (is_null($max)) {
+            $max_q = "";
+        } else {
+            $max_q = 'AND "wakarana_user_permitted_value_caches"."maximum_permitted_value" <= '.intval($max).' ';
+        }
+        
+        try {
+            $stmt = $this->wakarana->db_obj->query('SELECT "wakarana_users".*, "wakarana_user_permitted_value_caches"."maximum_permitted_value" FROM "wakarana_users", "wakarana_user_permitted_value_caches" WHERE "wakarana_user_permitted_value_caches"."permitted_value_id" = \''.$this->permitted_value_info["permitted_value_id"].'\' '.$min_q.$max_q.'AND "wakarana_user_permitted_value_caches"."user_id" = "wakarana_users"."user_id" ORDER BY "wakarana_user_permitted_value_caches"."maximum_permitted_value" DESC');
+        } catch (PDOException $err) {
+            $this->wakarana->print_error("権限値を持つユーザーの一覧取得に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        $users_info = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        $users = array();
+        foreach ($users_info as $user_info) {
+            $user_data = array("permitted_value" => $user_info["maximum_permitted_value"]);
+            
+            unset($user_info["maximum_permitted_value"]);
+            $user_data["user"] = $this->wakarana->new_wakarana_user($user_info);
+            $users[] = $user_data;
+        }
+        
+        return $users;
+    }
+    
+    
     function delete_permitted_value () {
         try {
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_permitted_values" WHERE "permitted_value_id" = \''.$this->permitted_value_info["permitted_value_id"].'\'');
