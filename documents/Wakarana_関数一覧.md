@@ -1443,7 +1443,7 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
   
 **$action** ： 動作識別名  
   
-**返り値** ： ロールのwakarana_roleインスタンスを配列で返す。どのロールにも割り当てられていなければ空配列を返し、失敗した場合はFALSEを返す。
+**返り値** ： ロールのwakarana_roleインスタンスをロールIDの順に配列で返す。失敗した場合はFALSEを返す。
 
 
 #### wakarana_permission::delete_permission()
