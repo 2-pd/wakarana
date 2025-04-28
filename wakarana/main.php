@@ -1949,12 +1949,14 @@ class wakarana_user {
     
     
     function add_role ($role_id) {
-        if (!wakarana::check_id_string($role_id)) {
-            $this->wakarana->print_error("ロールIDにに使用できない文字列が指定されました。");
+        $role = $this->wakarana->get_role($role_id);
+        
+        if (!is_object($role)) {
+            $this->wakarana->print_error("正しいロールIDではありません。");
             return FALSE;
         }
         
-        $role_id = strtolower($role_id);
+        $role_id = $role->get_id();
         
         try {
             $this->wakarana->db_obj->exec('INSERT INTO "wakarana_user_roles"("user_id", "role_id") VALUES (\''.$this->user_info["user_id"].'\', \''.$role_id.'\') ON CONFLICT ("user_id", "role_id") DO NOTHING');
@@ -1972,7 +1974,7 @@ class wakarana_user {
     function remove_role ($role_id = NULL) {
         if (!empty($role_id)) {
             if (!wakarana::check_id_string($role_id)) {
-                $this->wakarana->print_error("ロールIDにに使用できない文字列が指定されました。");
+                $this->wakarana->print_error("ロールIDに使用できない文字列が指定されました。");
                 return FALSE;
             }
             
