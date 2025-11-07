@@ -168,7 +168,7 @@ class wakarana extends wakarana_common {
         $date_time = date("Y-m-d H:i:s");
         
         try {
-            $stmt = $this->db_obj->query("SELECT COUNT(*) FROM `wakarana_users` WHERE `user_id` = '".$user_id."'");
+            $stmt = $this->db_obj->query('SELECT COUNT(*) FROM "wakarana_users" WHERE "user_id" = \''.$user_id.'\'');
         } catch (PDOException $err) {
             $this->print_error("ユーザー作成の可否を確認できませんでした。".$err->getMessage());
             return FALSE;
@@ -255,12 +255,26 @@ class wakarana extends wakarana_common {
     
     
     function add_role ($role_id, $role_name, $role_description = "") {
+        $this->rejection_reason = NULL;
+        
         if (!self::check_id_string($role_id)) {
-            $this->print_error("ロールIDに使用できない文字列が指定されました。");
+            $this->rejection_reason = "invalid_role_id";
             return FALSE;
         }
         
         $role_id = strtolower($role_id);
+        
+        try {
+            $stmt = $this->db_obj->query('SELECT COUNT(*) FROM "wakarana_roles" WHERE "role_id" = \''.$role_id.'\'');
+        } catch (PDOException $err) {
+            $this->print_error("ロール作成の可否を確認できませんでした。".$err->getMessage());
+            return FALSE;
+        }
+        
+        if ($stmt->fetchColumn() !== 0) {
+            $this->rejection_reason = "role_already_exists";
+            return FALSE;
+        }
         
         try {
             $stmt = $this->db_obj->prepare('INSERT INTO "wakarana_roles"("role_id", "role_name", "role_description") VALUES (\''.$role_id.'\', :role_name, :role_description)');
