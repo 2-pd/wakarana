@@ -481,12 +481,26 @@ class wakarana extends wakarana_common {
     
     
     function add_permitted_value ($permitted_value_id, $permitted_value_name, $permitted_value_description = "") {
+        $this->rejection_reason = NULL;
+        
         if (!self::check_id_string($permitted_value_id)) {
-            $this->print_error("権限値変数IDに使用できない文字列が指定されました。");
+            $this->rejection_reason = "invalid_permitted_value_id";
             return FALSE;
         }
         
         $permitted_value_id = strtolower($permitted_value_id);
+        
+        try {
+            $stmt = $this->db_obj->query('SELECT COUNT(*) FROM "wakarana_permitted_values" WHERE "permitted_value_id" = \''.$permitted_value_id.'\'');
+        } catch (PDOException $err) {
+            $this->print_error("権限値作成の可否を確認できませんでした。".$err->getMessage());
+            return FALSE;
+        }
+        
+        if ($stmt->fetchColumn() !== 0) {
+            $this->rejection_reason = "permitted_value_already_exists";
+            return FALSE;
+        }
         
         try {
             $stmt = $this->db_obj->prepare('INSERT INTO "wakarana_permitted_values"("permitted_value_id", "permitted_value_name", "permitted_value_description") VALUES (\''.$permitted_value_id.'\', :permitted_value_name, :permitted_value_description)');
