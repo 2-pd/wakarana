@@ -152,18 +152,32 @@ class wakarana extends wakarana_common {
     
     
     function add_user ($user_id, $password, $user_name = "", $status = WAKARANA_STATUS_NORMAL) {
+        $this->rejection_reason = NULL;
+        
         if (!self::check_id_string($user_id)) {
-            $this->print_error("ユーザーIDに使用できない文字列が指定されました。");
+            $this->rejection_reason = "invalid_user_id";
             return FALSE;
         }
         
         if (!$this->config["allow_weak_password"] && !self::check_password_strength($password)) {
-            $this->print_error("パスワードの強度が不十分です。現在の設定では弱いパスワードの使用は許可されていません。");
+            $this->rejection_reason = "weak_password";
             return FALSE;
         }
         
         $password_hash = self::hash_password($user_id, $password);
         $date_time = date("Y-m-d H:i:s");
+        
+        try {
+            $stmt = $this->db_obj->query("SELECT COUNT(*) FROM `wakarana_users` WHERE `user_id` = '".$user_id."'");
+        } catch (PDOException $err) {
+            $this->print_error("ユーザー作成の可否を確認できませんでした。".$err->getMessage());
+            return FALSE;
+        }
+        
+        if ($stmt->fetchColumn() !== 0) {
+            $this->rejection_reason = "user_already_exists";
+            return FALSE;
+        }
         
         try {
             $stmt = $this->db_obj->prepare('INSERT INTO "wakarana_users"("user_id", "password", "user_name", "user_created", "last_updated", "last_access", "status", "totp_key") VALUES (\''.$user_id.'\', \''.$password_hash.'\', :user_name, \''.$date_time.'\', \''.$date_time.'\', \''.$date_time.'\', '.intval($status).', NULL)');
