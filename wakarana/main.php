@@ -808,19 +808,18 @@ class wakarana extends wakarana_common {
     
     function create_email_address_verification_code ($email_address) {
         if (!$this->check_email_address($email_address)) {
-            $this->print_error("使用できないメールアドレスです。");
             return FALSE;
         }
         
         if (!$this->config["allow_nonunique_email_address"] && !empty($this->search_users_with_email_address($email_address))) {
-            $this->print_error("現在の設定では同一メールアドレスでの復数アカウント作成は許可されていません。");
+            $this->rejection_reason = "email_address_already_exists";
             return NULL;
         }
         
         $this->delete_email_address_verification_codes();
         
         if (!$this->check_email_sending_interval($email_address)) {
-            $this->print_error("前回に確認コードを発行してから十分な時間が経過していません。");
+            $this->rejection_reason = "currently_locked_out";
             return FALSE;
         }
         
