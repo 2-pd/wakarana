@@ -756,11 +756,19 @@ class wakarana extends wakarana_common {
     
     
     function check_email_address ($email_address) {
+        $this->rejection_reason = NULL;
+        
         if (preg_match("/\A[A-Za-z0-9!#$%&'\*+\/=?^_`\{\|\}~\.\-]+@[A-Za-z0-9\-]+(\.[A-Za-z0-9\-]+)+\z/u", $email_address)) {
-            return $this->check_email_domain(substr($email_address, strpos($email_address, "@") + 1));
+            if ($this->check_email_domain(substr($email_address, strpos($email_address, "@") + 1))) {
+                return TRUE;
+            }
+            
+            $this->rejection_reason = "blacklisted_email_domain";
         } else {
-            return FALSE;
+            $this->rejection_reason = "invalid_email_address";
         }
+        
+        return FALSE;
     }
     
     

@@ -519,7 +519,7 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
   
 **返り値** ： メールアドレスの規格に沿った文字列であり、かつ、メールドメインブラックリストに含まれないドメインの場合はTRUE、それ以外の場合はFALSEを返す。  
   
-**拒絶理由文字列** : "invalid_email_address"(メールアドレスとして正しくない文字列である)、"blacklisted_email_domain"(メールドメインがブラックリストに登録されている)、"email_address_already_exists"(既に登録されているメールアドレスである)
+**拒絶理由文字列** : "invalid_email_address"(メールアドレスとして正しくない文字列である)、"blacklisted_email_domain"(メールドメインがブラックリストに登録されている)
 
 
 #### wakarana::check_email_sending_interval($email_address)
@@ -549,7 +549,7 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
   
 **返り値** ： 認証された場合はTRUEを返し、それ以外の場合はFALSEを返す。  
   
-**拒絶理由文字列** : "blacklisted_email_domain"(メールドメインがブラックリストに登録されている)、"email_address_already_exists"(既に登録されているメールアドレスである)
+**拒絶理由文字列** : "invalid_email_address"(メールアドレスとして正しくない文字列である)、"blacklisted_email_domain"(メールドメインがブラックリストに登録されている)、"email_address_already_exists"(既に登録されているメールアドレスである)
 
 
 #### wakarana::get_email_address_verification_code_expire($email_address, $verification_code)
