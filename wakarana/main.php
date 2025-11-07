@@ -22,10 +22,17 @@ class wakarana extends wakarana_common {
     public $resource_ids = array();
     public $permitted_value_ids = array();
     
+    protected $rejection_reason = NULL;
+    
     
     function __construct ($base_dir = NULL) {
         parent::__construct($base_dir);
         $this->connect_db();
+    }
+    
+    
+    function get_rejection_reason () {
+        return $this->rejection_reason;
     }
     
     
