@@ -536,7 +536,7 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
   
 **$email_address** : コードの送信先メールアドレス  
   
-**返り値** ： 成功した場合は8桁のメールアドレス確認コード文字列を、失敗した場合はFALSEを返す。同じメールアドレスでの複数のアカウント作成を許可しない設定の場合、既に使用されているメールアドレスならNULLを返す。  
+**返り値** ： 成功した場合は8桁のメールアドレス確認コード文字列を、失敗した場合はFALSEを返す。  
   
 **拒絶理由文字列** : "invalid_email_address"(メールアドレスとして正しくない文字列である)、"blacklisted_email_domain"(メールドメインがブラックリストに登録されている)、"email_address_already_exists"(既に登録されているメールアドレスである)、"currently_locked_out"(前回のメールアドレス確認コード発行時から規定の時間が経過していない)
 
@@ -549,7 +549,7 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
   
 **返り値** ： 認証された場合はTRUEを返し、それ以外の場合はFALSEを返す。  
   
-**拒絶理由文字列** : "invalid_email_address"(メールアドレスとして正しくない文字列である)、"blacklisted_email_domain"(メールドメインがブラックリストに登録されている)、"email_address_already_exists"(既に登録されているメールアドレスである)
+**拒絶理由文字列** : "invalid_email_address"(メールアドレスとして正しくない文字列である)、"blacklisted_email_domain"(メールドメインがブラックリストに登録されている)、"email_address_already_exists"(既に登録されているメールアドレスである)、"parameters_not_matched"(メールアドレスまたは確認コードが誤っている)
 
 
 #### wakarana::get_email_address_verification_code_expire($email_address, $verification_code)

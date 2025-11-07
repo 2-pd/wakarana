@@ -813,7 +813,7 @@ class wakarana extends wakarana_common {
         
         if (!$this->config["allow_nonunique_email_address"] && !empty($this->search_users_with_email_address($email_address))) {
             $this->rejection_reason = "email_address_already_exists";
-            return NULL;
+            return FALSE;
         }
         
         $this->delete_email_address_verification_codes();
@@ -845,7 +845,11 @@ class wakarana extends wakarana_common {
     
     function email_address_verify ($email_address, $verification_code) {
         if (!$this->check_email_address($email_address)) {
-            $this->print_error("使用できないメールアドレスです。");
+            return FALSE;
+        }
+        
+        if (!$this->config["allow_nonunique_email_address"] && !empty($this->search_users_with_email_address($email_address))) {
+            $this->rejection_reason = "email_address_already_exists";
             return FALSE;
         }
         
@@ -880,6 +884,7 @@ class wakarana extends wakarana_common {
             
             return TRUE;
         } else {
+            $this->rejection_reason = "parameters_not_matched";
             return FALSE;
         }
     }
