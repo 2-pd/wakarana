@@ -343,7 +343,7 @@ wakarana_permissionインスタンスを生成する。
   
 **返り値** ： 成功した場合は作成した権限のwakarana_permissionインスタンスを、失敗した場合はFALSEを返す。  
   
-**拒絶理由文字列** : "invalid_resource_id"(リソースIDに使用できない文字が含まれる)、"resource_already_exists"(権限対象リソースが権限が既に存在している)
+**拒絶理由文字列** : "invalid_resource_id"(リソースIDに使用できない文字が含まれる)、"resource_already_exists"(権限対象リソースが既に存在している)、"parent_resource_not_exists"(親となる権限対象リソースが存在しない)
 
 
 #### ◆ wakarana::new_wakarana_permitted_value($permitted_value_info)

@@ -365,8 +365,10 @@ class wakarana extends wakarana_common {
     
     
     function add_permission ($resource_id, $permission_name, $permission_description = "") {
+        $this->rejection_reason = NULL;
+        
         if (!self::check_resource_id_string($resource_id)) {
-            $this->print_error("権限対象リソースIDに使用できない文字列が指定されました。");
+            $this->rejection_reason = "invalid_resource_id";
             return FALSE;
         }
         
@@ -376,9 +378,21 @@ class wakarana extends wakarana_common {
         
         if (!empty($parent_resource_id)) {
             if (!is_object($this->get_permission($parent_resource_id))) {
-                $this->print_error("存在しない権限に子権限を作成することはできません。");
+                $this->rejection_reason = "parent_resource_not_exists";
                 return FALSE;
             }
+        }
+        
+        try {
+            $stmt = $this->db_obj->query('SELECT COUNT(*) FROM "wakarana_permissions" WHERE "resource_id" = \''.$resource_id.'\'');
+        } catch (PDOException $err) {
+            $this->print_error("権限作成の可否を確認できませんでした。".$err->getMessage());
+            return FALSE;
+        }
+        
+        if ($stmt->fetchColumn() !== 0) {
+            $this->rejection_reason = "resource_already_exists";
+            return FALSE;
         }
         
         try {
