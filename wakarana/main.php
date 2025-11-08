@@ -1181,6 +1181,8 @@ class wakarana extends wakarana_common {
     
     
     function totp_authenticate ($tmp_token, $totp_pin) {
+        $this->rejection_reason = NULL;
+        
         $this->delete_2sv_tokens();
         
         try {
@@ -1194,25 +1196,40 @@ class wakarana extends wakarana_common {
             return FALSE;
         }
         
-        $user = $this->get_user($stmt->fetchColumn());
+        $user_id = $stmt->fetchColumn();
         
-        if ($user !== FALSE) {
-            if ($user->totp_check($totp_pin) && $this->check_client_auth_interval($this->get_client_ip_address(), TRUE) && $user->check_auth_interval(TRUE)) {
-                $user->add_auth_log(TRUE);
-                
-                $status = $user->get_status();
-                if ($status !== WAKARANA_STATUS_NORMAL) {
-                    return $status;
-                }
-                
-                return $user;
-            } else {
-                $user->add_auth_log(FALSE);
-                return FALSE;
-            }
-        } else {
+        if ($user_id === FALSE) {
+            $this->rejection_reason = "invalid_token";
             return FALSE;
         }
+        
+        $user = $this->get_user($user_id);
+        
+        if (empty($user)) {
+            $this->print_error("ユーザー情報の取得に失敗しました。");
+            return FALSE;
+        }
+        
+        if ($this->check_client_auth_interval($this->get_client_ip_address(), TRUE) && $user->check_auth_interval(TRUE)) {
+            if ($user->totp_check($totp_pin)) {
+                $user->delete_2sv_token();
+                
+                if ($user->get_status() === WAKARANA_STATUS_NORMAL) {
+                    $user->add_auth_log(TRUE);
+                    
+                    return $user;
+                }
+                
+                $this->rejection_reason = "unavailable_user";
+            } else {
+                $this->rejection_reason = "pin_not_matched";
+            }
+        } else {
+            $this->rejection_reason = "currently_locked_out";
+        }
+        
+        $user->add_auth_log(FALSE);
+        return FALSE;
     }
     
     
