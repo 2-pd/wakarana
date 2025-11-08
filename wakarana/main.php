@@ -1584,8 +1584,10 @@ class wakarana_user {
     
     
     function set_password ($password) {
+        $this->rejection_reason = NULL;
+        
         if (!$this->wakarana->config["allow_weak_password"] && !wakarana::check_password_strength($password)) {
-            $this->wakarana->print_error("パスワードの強度が不十分です。現在の設定では弱いパスワードの使用は許可されていません。");
+            $this->rejection_reason = "weak_password";
             return FALSE;
         }
         
