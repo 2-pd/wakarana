@@ -1429,6 +1429,7 @@ class wakarana extends wakarana_common {
 class wakarana_user {
     protected $wakarana;
     protected $user_info;
+    protected $rejection_reason = NULL;
     
     
     function __construct ($wakarana, $user_info) {
@@ -1440,6 +1441,11 @@ class wakarana_user {
     static function free (&$wakarana_user) {
         unset($wakarana_user->wakarana->user_ids[$wakarana_user->user_info["user_id"]]);
         unset($wakarana_user);
+    }
+    
+    
+    function get_rejection_reason () {
+        return $this->rejection_reason;
     }
     
     
