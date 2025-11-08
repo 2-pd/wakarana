@@ -22,10 +22,17 @@ class wakarana extends wakarana_common {
     public $resource_ids = array();
     public $permitted_value_ids = array();
     
+    protected $rejection_reason = NULL;
+    
     
     function __construct ($base_dir = NULL) {
         parent::__construct($base_dir);
         $this->connect_db();
+    }
+    
+    
+    function get_rejection_reason () {
+        return $this->rejection_reason;
     }
     
     
@@ -145,18 +152,32 @@ class wakarana extends wakarana_common {
     
     
     function add_user ($user_id, $password, $user_name = "", $status = WAKARANA_STATUS_NORMAL) {
+        $this->rejection_reason = NULL;
+        
         if (!self::check_id_string($user_id)) {
-            $this->print_error("ユーザーIDに使用できない文字列が指定されました。");
+            $this->rejection_reason = "invalid_user_id";
             return FALSE;
         }
         
         if (!$this->config["allow_weak_password"] && !self::check_password_strength($password)) {
-            $this->print_error("パスワードの強度が不十分です。現在の設定では弱いパスワードの使用は許可されていません。");
+            $this->rejection_reason = "weak_password";
             return FALSE;
         }
         
         $password_hash = self::hash_password($user_id, $password);
         $date_time = date("Y-m-d H:i:s");
+        
+        try {
+            $stmt = $this->db_obj->query('SELECT COUNT(*) FROM "wakarana_users" WHERE "user_id" = \''.$user_id.'\'');
+        } catch (PDOException $err) {
+            $this->print_error("ユーザー作成の可否を確認できませんでした。".$err->getMessage());
+            return FALSE;
+        }
+        
+        if ($stmt->fetchColumn() !== 0) {
+            $this->rejection_reason = "user_already_exists";
+            return FALSE;
+        }
         
         try {
             $stmt = $this->db_obj->prepare('INSERT INTO "wakarana_users"("user_id", "password", "user_name", "user_created", "last_updated", "last_access", "status", "totp_key") VALUES (\''.$user_id.'\', \''.$password_hash.'\', :user_name, \''.$date_time.'\', \''.$date_time.'\', \''.$date_time.'\', '.intval($status).', NULL)');
@@ -234,12 +255,26 @@ class wakarana extends wakarana_common {
     
     
     function add_role ($role_id, $role_name, $role_description = "") {
+        $this->rejection_reason = NULL;
+        
         if (!self::check_id_string($role_id)) {
-            $this->print_error("ロールIDに使用できない文字列が指定されました。");
+            $this->rejection_reason = "invalid_role_id";
             return FALSE;
         }
         
         $role_id = strtolower($role_id);
+        
+        try {
+            $stmt = $this->db_obj->query('SELECT COUNT(*) FROM "wakarana_roles" WHERE "role_id" = \''.$role_id.'\'');
+        } catch (PDOException $err) {
+            $this->print_error("ロール作成の可否を確認できませんでした。".$err->getMessage());
+            return FALSE;
+        }
+        
+        if ($stmt->fetchColumn() !== 0) {
+            $this->rejection_reason = "role_already_exists";
+            return FALSE;
+        }
         
         try {
             $stmt = $this->db_obj->prepare('INSERT INTO "wakarana_roles"("role_id", "role_name", "role_description") VALUES (\''.$role_id.'\', :role_name, :role_description)');
@@ -330,8 +365,10 @@ class wakarana extends wakarana_common {
     
     
     function add_permission ($resource_id, $permission_name, $permission_description = "") {
+        $this->rejection_reason = NULL;
+        
         if (!self::check_resource_id_string($resource_id)) {
-            $this->print_error("権限対象リソースIDに使用できない文字列が指定されました。");
+            $this->rejection_reason = "invalid_resource_id";
             return FALSE;
         }
         
@@ -341,9 +378,21 @@ class wakarana extends wakarana_common {
         
         if (!empty($parent_resource_id)) {
             if (!is_object($this->get_permission($parent_resource_id))) {
-                $this->print_error("存在しない権限に子権限を作成することはできません。");
+                $this->rejection_reason = "parent_resource_not_exists";
                 return FALSE;
             }
+        }
+        
+        try {
+            $stmt = $this->db_obj->query('SELECT COUNT(*) FROM "wakarana_permissions" WHERE "resource_id" = \''.$resource_id.'\'');
+        } catch (PDOException $err) {
+            $this->print_error("権限作成の可否を確認できませんでした。".$err->getMessage());
+            return FALSE;
+        }
+        
+        if ($stmt->fetchColumn() !== 0) {
+            $this->rejection_reason = "resource_already_exists";
+            return FALSE;
         }
         
         try {
@@ -432,12 +481,26 @@ class wakarana extends wakarana_common {
     
     
     function add_permitted_value ($permitted_value_id, $permitted_value_name, $permitted_value_description = "") {
+        $this->rejection_reason = NULL;
+        
         if (!self::check_id_string($permitted_value_id)) {
-            $this->print_error("権限値変数IDに使用できない文字列が指定されました。");
+            $this->rejection_reason = "invalid_permitted_value_id";
             return FALSE;
         }
         
         $permitted_value_id = strtolower($permitted_value_id);
+        
+        try {
+            $stmt = $this->db_obj->query('SELECT COUNT(*) FROM "wakarana_permitted_values" WHERE "permitted_value_id" = \''.$permitted_value_id.'\'');
+        } catch (PDOException $err) {
+            $this->print_error("権限値作成の可否を確認できませんでした。".$err->getMessage());
+            return FALSE;
+        }
+        
+        if ($stmt->fetchColumn() !== 0) {
+            $this->rejection_reason = "permitted_value_already_exists";
+            return FALSE;
+        }
         
         try {
             $stmt = $this->db_obj->prepare('INSERT INTO "wakarana_permitted_values"("permitted_value_id", "permitted_value_name", "permitted_value_description") VALUES (\''.$permitted_value_id.'\', :permitted_value_name, :permitted_value_description)');
@@ -693,11 +756,19 @@ class wakarana extends wakarana_common {
     
     
     function check_email_address ($email_address) {
+        $this->rejection_reason = NULL;
+        
         if (preg_match("/\A[A-Za-z0-9!#$%&'\*+\/=?^_`\{\|\}~\.\-]+@[A-Za-z0-9\-]+(\.[A-Za-z0-9\-]+)+\z/u", $email_address)) {
-            return $this->check_email_domain(substr($email_address, strpos($email_address, "@") + 1));
+            if ($this->check_email_domain(substr($email_address, strpos($email_address, "@") + 1))) {
+                return TRUE;
+            }
+            
+            $this->rejection_reason = "blacklisted_email_domain";
         } else {
-            return FALSE;
+            $this->rejection_reason = "invalid_email_address";
         }
+        
+        return FALSE;
     }
     
     
@@ -737,19 +808,18 @@ class wakarana extends wakarana_common {
     
     function create_email_address_verification_code ($email_address) {
         if (!$this->check_email_address($email_address)) {
-            $this->print_error("使用できないメールアドレスです。");
             return FALSE;
         }
         
         if (!$this->config["allow_nonunique_email_address"] && !empty($this->search_users_with_email_address($email_address))) {
-            $this->print_error("現在の設定では同一メールアドレスでの復数アカウント作成は許可されていません。");
-            return NULL;
+            $this->rejection_reason = "email_address_already_exists";
+            return FALSE;
         }
         
         $this->delete_email_address_verification_codes();
         
         if (!$this->check_email_sending_interval($email_address)) {
-            $this->print_error("前回に確認コードを発行してから十分な時間が経過していません。");
+            $this->rejection_reason = "currently_locked_out";
             return FALSE;
         }
         
@@ -775,7 +845,11 @@ class wakarana extends wakarana_common {
     
     function email_address_verify ($email_address, $verification_code) {
         if (!$this->check_email_address($email_address)) {
-            $this->print_error("使用できないメールアドレスです。");
+            return FALSE;
+        }
+        
+        if (!$this->config["allow_nonunique_email_address"] && !empty($this->search_users_with_email_address($email_address))) {
+            $this->rejection_reason = "email_address_already_exists";
             return FALSE;
         }
         
@@ -810,6 +884,7 @@ class wakarana extends wakarana_common {
             
             return TRUE;
         } else {
+            $this->rejection_reason = "parameters_not_matched";
             return FALSE;
         }
     }
@@ -1106,6 +1181,8 @@ class wakarana extends wakarana_common {
     
     
     function totp_authenticate ($tmp_token, $totp_pin) {
+        $this->rejection_reason = NULL;
+        
         $this->delete_2sv_tokens();
         
         try {
@@ -1119,25 +1196,40 @@ class wakarana extends wakarana_common {
             return FALSE;
         }
         
-        $user = $this->get_user($stmt->fetchColumn());
+        $user_id = $stmt->fetchColumn();
         
-        if ($user !== FALSE) {
-            if ($user->totp_check($totp_pin) && $this->check_client_auth_interval($this->get_client_ip_address(), TRUE) && $user->check_auth_interval(TRUE)) {
-                $user->add_auth_log(TRUE);
-                
-                $status = $user->get_status();
-                if ($status !== WAKARANA_STATUS_NORMAL) {
-                    return $status;
-                }
-                
-                return $user;
-            } else {
-                $user->add_auth_log(FALSE);
-                return FALSE;
-            }
-        } else {
+        if ($user_id === FALSE) {
+            $this->rejection_reason = "invalid_token";
             return FALSE;
         }
+        
+        $user = $this->get_user($user_id);
+        
+        if (empty($user)) {
+            $this->print_error("ユーザー情報の取得に失敗しました。");
+            return FALSE;
+        }
+        
+        if ($this->check_client_auth_interval($this->get_client_ip_address(), TRUE) && $user->check_auth_interval(TRUE)) {
+            if ($user->totp_check($totp_pin)) {
+                $user->delete_2sv_token();
+                
+                if ($user->get_status() === WAKARANA_STATUS_NORMAL) {
+                    $user->add_auth_log(TRUE);
+                    
+                    return $user;
+                }
+                
+                $this->rejection_reason = "unavailable_user";
+            } else {
+                $this->rejection_reason = "pin_not_matched";
+            }
+        } else {
+            $this->rejection_reason = "currently_locked_out";
+        }
+        
+        $user->add_auth_log(FALSE);
+        return FALSE;
     }
     
     
