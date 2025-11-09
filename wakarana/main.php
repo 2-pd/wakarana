@@ -1429,6 +1429,7 @@ class wakarana extends wakarana_common {
 class wakarana_user {
     protected $wakarana;
     protected $user_info;
+    protected $rejection_reason = NULL;
     
     
     function __construct ($wakarana, $user_info) {
@@ -1440,6 +1441,11 @@ class wakarana_user {
     static function free (&$wakarana_user) {
         unset($wakarana_user->wakarana->user_ids[$wakarana_user->user_info["user_id"]]);
         unset($wakarana_user);
+    }
+    
+    
+    function get_rejection_reason () {
+        return $this->rejection_reason;
     }
     
     
@@ -1578,8 +1584,10 @@ class wakarana_user {
     
     
     function set_password ($password) {
+        $this->rejection_reason = NULL;
+        
         if (!$this->wakarana->config["allow_weak_password"] && !wakarana::check_password_strength($password)) {
-            $this->wakarana->print_error("パスワードの強度が不十分です。現在の設定では弱いパスワードの使用は許可されていません。");
+            $this->rejection_reason = "weak_password";
             return FALSE;
         }
         
@@ -1621,20 +1629,22 @@ class wakarana_user {
     
     
     function add_email_address ($email_address) {
+        $this->rejection_reason = NULL;
+        
         $email_addresses_count = count($this->get_email_addresses());
         
         if ($email_addresses_count >= $this->wakarana->config["email_addresses_per_user"]) {
-            $this->wakarana->print_error("現在の設定ではこのアカウントにはこれ以上メールアドレスを追加できません。");
+            $this->rejection_reason = "registration_limit_over";
             return FALSE;
         }
         
         if (!$this->wakarana->check_email_address($email_address)) {
-            $this->wakarana->print_error("使用できないメールアドレスです。");
+            $this->rejection_reason = $this->wakarana->get_rejection_reason();
             return FALSE;
         }
         
         if (!$this->wakarana->config["allow_nonunique_email_address"] && !empty($this->wakarana->search_users_with_email_address($email_address))) {
-            $this->wakarana->print_error("現在の設定では同一メールアドレスの復数アカウントでの使用は許可されていません。");
+            $this->rejection_reason = "email_address_already_exists";
             return FALSE;
         }
         
@@ -2390,11 +2400,19 @@ class wakarana_user {
     
     
     function authenticate ($password, $totp_pin = NULL) {
-        if ($this->check_password($password) && $this->wakarana->check_client_auth_interval($this->wakarana->get_client_ip_address()) && $this->check_auth_interval()) {
-            $status = $this->get_status();
-            if ($status !== WAKARANA_STATUS_NORMAL) {
-                $this->add_auth_log(TRUE);
-                return $status;
+        $this->rejection_reason = NULL;
+        
+        if (!($this->wakarana->check_client_auth_interval($this->wakarana->get_client_ip_address()) && $this->check_auth_interval())) {
+            $this->rejection_reason = "currently_locked_out";
+            $this->add_auth_log(FALSE);
+            return FALSE;
+        }
+        
+        if ($this->check_password($password)) {
+            if ($this->get_status() !== WAKARANA_STATUS_NORMAL) {
+                $this->rejection_reason = "unavailable_user";
+                $this->add_auth_log(FALSE);
+                return FALSE;
             }
             
             if ($this->get_totp_enabled()) {
@@ -2413,26 +2431,34 @@ class wakarana_user {
             }
         }
         
+        $this->rejection_reason = "parameters_not_matched";
         $this->add_auth_log(FALSE);
         return FALSE;
     }
     
     
     function create_email_address_verification_code ($email_address) {
+        $this->rejection_reason = NULL;
+        
+        if (count($this->get_email_addresses()) >= $this->wakarana->config["email_addresses_per_user"]) {
+            $this->rejection_reason = "registration_limit_over";
+            return FALSE;
+        }
+        
         if (!$this->wakarana->check_email_address($email_address)) {
-            $this->wakarana->print_error("使用できないメールアドレスです。");
+            $this->rejection_reason = $this->wakarana->get_rejection_reason();
             return FALSE;
         }
         
         if (!$this->wakarana->config["allow_nonunique_email_address"] && !empty($this->wakarana->search_users_with_email_address($email_address))) {
-            $this->wakarana->print_error("現在の設定では同一メールアドレスの復数アカウントでの使用は許可されていません。");
-            return NULL;
+            $this->rejection_reason = "email_address_already_exists";
+            return FALSE;
         }
         
         $this->wakarana->delete_email_address_verification_codes();
         
         if (!$this->wakarana->check_email_sending_interval($email_address)) {
-            $this->wakarana->print_error("前回に確認コードを発行してから十分な時間が経過していません。");
+            $this->rejection_reason = "currently_locked_out";
             return FALSE;
         }
         
@@ -2458,8 +2484,15 @@ class wakarana_user {
     
     
     function email_address_verify ($email_address, $verification_code, $verification_only = FALSE) {
+        $this->rejection_reason = NULL;
+        
         if (!$this->wakarana->check_email_address($email_address)) {
-            $this->wakarana->print_error("使用できないメールアドレスです。");
+            $this->rejection_reason = $this->wakarana->get_rejection_reason();
+            return FALSE;
+        }
+        
+        if (!$this->wakarana->config["allow_nonunique_email_address"] && !empty($this->wakarana->search_users_with_email_address($email_address))) {
+            $this->rejection_reason = "email_address_already_exists";
             return FALSE;
         }
         
@@ -2498,6 +2531,7 @@ class wakarana_user {
                 return TRUE;
             }
         } else {
+            $this->rejection_reason = "parameters_not_matched";
             return FALSE;
         }
     }
