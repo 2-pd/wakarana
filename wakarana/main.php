@@ -688,6 +688,8 @@ class wakarana extends wakarana_common {
     
     
     function authenticate_with_email_address ($email_address, $password, $totp_pin = NULL) {
+        $this->rejection_reason = NULL;
+        
         if ($this->config["allow_nonunique_email_address"]) {
             $this->print_error("同一メールアドレスの複数アカウントへの登録を容認する設定では、メールアドレスでのログインは利用できません。");
             return FALSE;
@@ -696,6 +698,7 @@ class wakarana extends wakarana_common {
         $users = $this->search_users_with_email_address($email_address);
         
         if (empty($users)) {
+            $this->rejection_reason = "parameters_not_matched";
             return FALSE;
         }
         
@@ -704,6 +707,7 @@ class wakarana extends wakarana_common {
         if ($result === TRUE) {
             return $users[0];
         } else {
+            $this->rejection_reason = $users[0]->get_rejection_reason();
             return $result;
         }
     }
