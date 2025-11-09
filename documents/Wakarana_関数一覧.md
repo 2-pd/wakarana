@@ -1164,7 +1164,7 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
   
 **返り値** ： 認証された場合はTRUE、ユーザーアカウントが停止中の場合はその状態値(WAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_UNAPPROVED)、ユーザーIDが2段階認証の対象ユーザーでTOTPコードがNULLだった場合は仮トークン、それ以外の場合はFALSEを返す。  
   
-**拒絶理由文字列** : "invalid_token"(有効な仮トークンではない)、"pin_not_matched"(TOTPコードが一致しない)、"unavailable_user"(ユーザーアカウントが停止中である)、"currently_locked_out"(ロックアウト中のためログインを試行できない)
+**拒絶理由文字列** : "parameters_not_matched"(パスワードまたはTOTPコードが誤っている)、"unavailable_user"(ユーザーアカウントが停止中である)、"currently_locked_out"(ロックアウト中のためログインを試行できない)
 
 
 #### wakarana_user::create_email_address_verification_code($email_address)

@@ -2400,11 +2400,19 @@ class wakarana_user {
     
     
     function authenticate ($password, $totp_pin = NULL) {
-        if ($this->check_password($password) && $this->wakarana->check_client_auth_interval($this->wakarana->get_client_ip_address()) && $this->check_auth_interval()) {
-            $status = $this->get_status();
-            if ($status !== WAKARANA_STATUS_NORMAL) {
-                $this->add_auth_log(TRUE);
-                return $status;
+        $this->rejection_reason = NULL;
+        
+        if (!($this->wakarana->check_client_auth_interval($this->wakarana->get_client_ip_address()) && $this->check_auth_interval())) {
+            $this->rejection_reason = "currently_locked_out";
+            $this->add_auth_log(FALSE);
+            return FALSE;
+        }
+        
+        if ($this->check_password($password)) {
+            if ($this->get_status() !== WAKARANA_STATUS_NORMAL) {
+                $this->rejection_reason = "unavailable_user";
+                $this->add_auth_log(FALSE);
+                return FALSE;
             }
             
             if ($this->get_totp_enabled()) {
@@ -2423,6 +2431,7 @@ class wakarana_user {
             }
         }
         
+        $this->rejection_reason = "parameters_not_matched";
         $this->add_auth_log(FALSE);
         return FALSE;
     }
