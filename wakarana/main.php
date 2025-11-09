@@ -2484,8 +2484,15 @@ class wakarana_user {
     
     
     function email_address_verify ($email_address, $verification_code, $verification_only = FALSE) {
+        $this->rejection_reason = NULL;
+        
         if (!$this->wakarana->check_email_address($email_address)) {
-            $this->wakarana->print_error("使用できないメールアドレスです。");
+            $this->rejection_reason = $this->wakarana->get_rejection_reason();
+            return FALSE;
+        }
+        
+        if (!$this->wakarana->config["allow_nonunique_email_address"] && !empty($this->wakarana->search_users_with_email_address($email_address))) {
+            $this->rejection_reason = "email_address_already_exists";
             return FALSE;
         }
         
@@ -2524,6 +2531,7 @@ class wakarana_user {
                 return TRUE;
             }
         } else {
+            $this->rejection_reason = "parameters_not_matched";
             return FALSE;
         }
     }
