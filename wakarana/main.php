@@ -2438,20 +2438,27 @@ class wakarana_user {
     
     
     function create_email_address_verification_code ($email_address) {
+        $this->rejection_reason = NULL;
+        
+        if (count($this->get_email_addresses()) >= $this->wakarana->config["email_addresses_per_user"]) {
+            $this->rejection_reason = "registration_limit_over";
+            return FALSE;
+        }
+        
         if (!$this->wakarana->check_email_address($email_address)) {
-            $this->wakarana->print_error("使用できないメールアドレスです。");
+            $this->rejection_reason = $this->wakarana->get_rejection_reason();
             return FALSE;
         }
         
         if (!$this->wakarana->config["allow_nonunique_email_address"] && !empty($this->wakarana->search_users_with_email_address($email_address))) {
-            $this->wakarana->print_error("現在の設定では同一メールアドレスの復数アカウントでの使用は許可されていません。");
-            return NULL;
+            $this->rejection_reason = "email_address_already_exists";
+            return FALSE;
         }
         
         $this->wakarana->delete_email_address_verification_codes();
         
         if (!$this->wakarana->check_email_sending_interval($email_address)) {
-            $this->wakarana->print_error("前回に確認コードを発行してから十分な時間が経過していません。");
+            $this->rejection_reason = "currently_locked_out";
             return FALSE;
         }
         
