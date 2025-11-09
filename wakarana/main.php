@@ -1629,20 +1629,22 @@ class wakarana_user {
     
     
     function add_email_address ($email_address) {
+        $this->rejection_reason = NULL;
+        
         $email_addresses_count = count($this->get_email_addresses());
         
         if ($email_addresses_count >= $this->wakarana->config["email_addresses_per_user"]) {
-            $this->wakarana->print_error("現在の設定ではこのアカウントにはこれ以上メールアドレスを追加できません。");
+            $this->rejection_reason = "registration_limit_over";
             return FALSE;
         }
         
         if (!$this->wakarana->check_email_address($email_address)) {
-            $this->wakarana->print_error("使用できないメールアドレスです。");
+            $this->rejection_reason = $this->wakarana->get_rejection_reason();
             return FALSE;
         }
         
         if (!$this->wakarana->config["allow_nonunique_email_address"] && !empty($this->wakarana->search_users_with_email_address($email_address))) {
-            $this->wakarana->print_error("現在の設定では同一メールアドレスの復数アカウントでの使用は許可されていません。");
+            $this->rejection_reason = "email_address_already_exists";
             return FALSE;
         }
         
