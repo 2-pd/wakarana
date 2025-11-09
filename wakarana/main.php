@@ -656,9 +656,12 @@ class wakarana extends wakarana_common {
     
     
     function authenticate ($user_id, $password, $totp_pin = NULL) {
+        $this->rejection_reason = NULL;
+        
         $user = $this->get_user($user_id);
         
         if (empty($user)) {
+            $this->rejection_reason = "parameters_not_matched";
             return FALSE;
         }
         
@@ -667,6 +670,7 @@ class wakarana extends wakarana_common {
         if ($result === TRUE) {
             return $user;
         } else {
+            $this->rejection_reason = $user->get_rejection_reason();
             return $result;
         }
     }
