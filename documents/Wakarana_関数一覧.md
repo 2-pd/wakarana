@@ -795,6 +795,12 @@ wakarana_userインスタンスはこの関数以外の方法(unsetや変数の�
 **$wakarana_user** : メモリから解放するwakarana_userインスタンス
 
 
+#### wakarana_user::get_rejection_reason()
+wakarana_userインスタンスで直前に行われた各種認証・登録処理の結果が拒絶だった場合、その理由を取得する。  
+  
+**返り値** ： 認証・登録が拒絶されていた場合はその理由を表す文字列を返し、まだ認証・登録処理が行われていない場合や認証・登録が承認されていた場合、内部エラーにより認証・登録処理が中断されていた場合はNULLを返す。拒絶理由を表す文字列の候補は直前に行われた認証・登録処理により異なる。
+
+
 #### wakarana_user::get_id()
 ユーザーのIDを取得する。  
   
@@ -879,7 +885,9 @@ wakarana_userインスタンスはこの関数以外の方法(unsetや変数の�
   
 **$password** ： パスワード  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。  
+  
+**拒絶理由文字列** : "weak_password"(弱いパスワードである)
 
 
 #### wakarana_user::set_name($user_name)
@@ -896,7 +904,9 @@ wakarana_userインスタンスはこの関数以外の方法(unsetや変数の�
   
 **$email_address** ： 新しいメールアドレス  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。  
+  
+**拒絶理由文字列** : "invalid_email_address"(メールアドレスとして正しくない文字列である)、"blacklisted_email_domain"(メールドメインがブラックリストに登録されている)、"email_address_already_exists"(既に登録されているメールアドレスである)、"registration_limit_over"(メールアドレス登録数の上限に達している)
 
 
 #### wakarana_user::set_primary_email_address($email_address)
@@ -1152,7 +1162,9 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
 **$password** ： パスワード  
 **$totp_pin** ： 6桁のTOTPコード。2要素認証を使用しない場合と2要素認証の入力画面を分ける場合は省略。  
   
-**返り値** ： 認証された場合はTRUE、ユーザーアカウントが停止中の場合はその状態値(WAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_UNAPPROVED)、ユーザーIDが2段階認証の対象ユーザーでTOTPコードがNULLだった場合は仮トークン、それ以外の場合はFALSEを返す。
+**返り値** ： 認証された場合はTRUE、そうでない場合はFALSEを返す。  
+  
+**拒絶理由文字列** : "parameters_not_matched"(パスワードまたはTOTPコードが誤っている)、"unavailable_user"(ユーザーアカウントが停止中である)、"currently_locked_out"(ロックアウト中のためログインを試行できない)
 
 
 #### wakarana_user::create_email_address_verification_code($email_address)
@@ -1162,7 +1174,9 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
   
 **$email_address** : コードの送信先メールアドレス。  
   
-**返り値** ： 成功した場合は8桁のメールアドレス確認コード、失敗した場合はFALSEを返す。同じメールアドレスでの複数のアカウント作成を許可しない設定の場合、既に使用されているメールアドレスならNULLを返す。
+**返り値** ： 成功した場合は8桁のメールアドレス確認コードを返し、失敗した場合はFALSEを返す。  
+  
+**拒絶理由文字列** : "invalid_email_address"(メールアドレスとして正しくない文字列である)、"blacklisted_email_domain"(メールドメインがブラックリストに登録されている)、"email_address_already_exists"(既に登録されているメールアドレスである)、"registration_limit_over"(メールアドレス登録数の上限に達している)、"currently_locked_out"(ロックアウト中のためログインを試行できない)
 
 
 #### wakarana_user::email_address_verify($email_address, $verification_code, $verification_only=FALSE)
@@ -1172,7 +1186,9 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
 **$verification_code** : メールアドレス確認コード。大文字小文字を区別しない。  
 **$verification_only** : TRUEを指定した場合、認証のみを実行してメールアドレスの追加を行わない  
   
-**返り値** ： 認証された場合はTRUEを返し、それ以外の場合はFALSEを返す。
+**返り値** ： 認証された場合はTRUEを返し、それ以外の場合はFALSEを返す。  
+  
+**拒絶理由文字列** : "invalid_email_address"(メールアドレスとして正しくない文字列である)、"blacklisted_email_domain"(メールドメインがブラックリストに登録されている)、"email_address_already_exists"(既に登録されているメールアドレスである)、"registration_limit_over"(メールアドレス登録数の上限に達している)、"parameters_not_matched"(メールアドレスまたは確認コードが誤っている)
 
 
 #### wakarana_user::get_email_address_verification_code_expire($email_address, $verification_code)
