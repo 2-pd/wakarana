@@ -1041,6 +1041,8 @@ class wakarana extends wakarana_common {
     
     
     function reset_password ($token, $new_password) {
+        $this->rejection_reason = NULL;
+        
         $this->delete_password_reset_tokens();
         
         try {
@@ -1054,9 +1056,21 @@ class wakarana extends wakarana_common {
             return FALSE;
         }
         
-        $user = $this->get_user($stmt->fetchColumn());
+        $user_id = $stmt->fetchColumn();
         
-        if ($user !== FALSE && $user->set_password($new_password)) {
+        if ($user_id === FALSE) {
+            $this->rejection_reason = "invalid_token";
+            return FALSE;
+        }
+        
+        $user = $this->get_user($user_id);
+        
+        if (empty($user)) {
+            $this->print_error("ユーザー情報の取得に失敗しました。");
+            return FALSE;
+        }
+        
+        if ($user->set_password($new_password)) {
             try {
                 $stmt = $this->db_obj->prepare('DELETE FROM "wakarana_password_reset_tokens" WHERE "token" = :token');
                 
@@ -1070,6 +1084,7 @@ class wakarana extends wakarana_common {
             
             return $user;
         } else {
+            $this->rejection_reason = $user->get_rejection_reason();
             return FALSE;
         }
     }
