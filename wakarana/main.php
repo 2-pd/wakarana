@@ -656,9 +656,12 @@ class wakarana extends wakarana_common {
     
     
     function authenticate ($user_id, $password, $totp_pin = NULL) {
+        $this->rejection_reason = NULL;
+        
         $user = $this->get_user($user_id);
         
         if (empty($user)) {
+            $this->rejection_reason = "parameters_not_matched";
             return FALSE;
         }
         
@@ -667,6 +670,7 @@ class wakarana extends wakarana_common {
         if ($result === TRUE) {
             return $user;
         } else {
+            $this->rejection_reason = $user->get_rejection_reason();
             return $result;
         }
     }
@@ -684,6 +688,8 @@ class wakarana extends wakarana_common {
     
     
     function authenticate_with_email_address ($email_address, $password, $totp_pin = NULL) {
+        $this->rejection_reason = NULL;
+        
         if ($this->config["allow_nonunique_email_address"]) {
             $this->print_error("同一メールアドレスの複数アカウントへの登録を容認する設定では、メールアドレスでのログインは利用できません。");
             return FALSE;
@@ -692,6 +698,7 @@ class wakarana extends wakarana_common {
         $users = $this->search_users_with_email_address($email_address);
         
         if (empty($users)) {
+            $this->rejection_reason = "parameters_not_matched";
             return FALSE;
         }
         
@@ -700,6 +707,7 @@ class wakarana extends wakarana_common {
         if ($result === TRUE) {
             return $users[0];
         } else {
+            $this->rejection_reason = $users[0]->get_rejection_reason();
             return $result;
         }
     }
@@ -1033,6 +1041,8 @@ class wakarana extends wakarana_common {
     
     
     function reset_password ($token, $new_password) {
+        $this->rejection_reason = NULL;
+        
         $this->delete_password_reset_tokens();
         
         try {
@@ -1046,9 +1056,21 @@ class wakarana extends wakarana_common {
             return FALSE;
         }
         
-        $user = $this->get_user($stmt->fetchColumn());
+        $user_id = $stmt->fetchColumn();
         
-        if ($user !== FALSE && $user->set_password($new_password)) {
+        if ($user_id === FALSE) {
+            $this->rejection_reason = "invalid_token";
+            return FALSE;
+        }
+        
+        $user = $this->get_user($user_id);
+        
+        if (empty($user)) {
+            $this->print_error("ユーザー情報の取得に失敗しました。");
+            return FALSE;
+        }
+        
+        if ($user->set_password($new_password)) {
             try {
                 $stmt = $this->db_obj->prepare('DELETE FROM "wakarana_password_reset_tokens" WHERE "token" = :token');
                 
@@ -1062,6 +1084,7 @@ class wakarana extends wakarana_common {
             
             return $user;
         } else {
+            $this->rejection_reason = $user->get_rejection_reason();
             return FALSE;
         }
     }
