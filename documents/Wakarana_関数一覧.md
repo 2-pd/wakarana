@@ -59,10 +59,11 @@ wakarana_config.iniの設定に基づき、データベースに接続する。
 ◆クラス内呼び出し専用。
 
 
-#### wakarana_common::print_error($error_text)
+#### ◆ wakarana_common::print_error($error_text)
 エラーメッセージを出力する。  
 ただし、wakarana_config.iniにおいてdisplay_errors=trueが設定されていなければ出力しない。  
-wakaranaクラスインスタンスとwakarana_configクラスインスタンス、及び、wakaranaクラスインスタンスにより生成されたwakarana_userクラスインスタンスではエラー時にこの関数を実行する。  
+wakaranaクラスのインスタンスとwakarana_configクラスのインスタンスではエラー時にこの関数を実行する。  
+◆クラス内呼び出し専用。  
   
 **$error_text** : エラーメッセージ
 
@@ -179,12 +180,18 @@ Base32エンコード用の変換対応表。
 
 
 ### class wakarana
-wakarana_commonの派生クラス。
+wakarana_commonの派生クラス。Wakaranaの主要機能を提供し、wakarana_data_itemの子孫クラスのインスタンスは全てこのクラスのインスタンスにより生成される。
 
 #### wakarana::__construct($base_dir=NULL)
 wakarana_common::__constructとwakarana_common::connect_dbを順に実行する。  
   
 **$base_dir** : wakarana_config.iniのあるフォルダのパス。省略時はcommon.phpのあるフォルダを使用する。
+
+
+#### wakarana::get_rejection_reason()
+wakaranaインスタンスで直前に行われた各種認証・登録処理の結果が拒絶だった場合、その理由を取得する。  
+  
+**返り値** ： 認証・登録が拒絶されていた場合はその理由を表す文字列を返し、まだ認証・登録処理が行われていない場合や認証・登録が承認されていた場合、内部エラーにより認証・登録処理が中断されていた場合はNULLを返す。拒絶理由を表す文字列の候補は直前に行われた認証・登録処理により異なる。
 
 
 #### ☆ wakarana::hash_password($user_id, $password)
@@ -248,7 +255,9 @@ wakarana_userインスタンスを生成する。
 **$user_name** ： 追加するユーザーのハンドルネーム  
 **$status** ： WAKARANA_STATUS_UNAPPROVEDを指定すると未承認ユーザー(ログイン不可)として作成することができる。  
   
-**返り値** ： 成功した場合は追加したユーザーのwakarana_userインスタンスを返す。失敗した場合はFALSEを返す。
+**返り値** ： 成功した場合は追加したユーザーのwakarana_userインスタンスを返す。失敗した場合はFALSEを返す。  
+  
+**拒絶理由文字列** : "invalid_user_id"(ユーザーIDに使用できない文字が含まれる)、"user_already_exists"(ユーザーアカウントが既に存在している)、"weak_password"(弱いパスワードである)
 
 
 #### wakarana::new_wakarana_role($role_info)
@@ -279,7 +288,9 @@ wakarana_roleインスタンスを生成する。
 **$role_name** ： ロールの表示名  
 **$role_description** : ロールについての説明文  
   
-**返り値** ： 成功した場合は作成したロールのwakarana_roleインスタンスを、失敗した場合はFALSEを返す。
+**返り値** ： 成功した場合は作成したロールのwakarana_roleインスタンスを、失敗した場合はFALSEを返す。  
+  
+**拒絶理由文字列** : "invalid_role_id"(ロールIDに使用できない文字が含まれる)、"role_already_exists"(ロールが既に存在している)
 
 
 #### ☆ wakarana::check_resource_id_string($resource_id)
@@ -331,7 +342,9 @@ wakarana_permissionインスタンスを生成する。
 **$permission_name** ： 権限の表示名  
 **$permission_description** : 権限についての説明文  
   
-**返り値** ： 成功した場合は作成した権限のwakarana_permissionインスタンスを、失敗した場合はFALSEを返す。
+**返り値** ： 成功した場合は作成した権限のwakarana_permissionインスタンスを、失敗した場合はFALSEを返す。  
+  
+**拒絶理由文字列** : "invalid_resource_id"(リソースIDに使用できない文字が含まれる)、"resource_already_exists"(権限対象リソースが既に存在している)、"parent_resource_not_exists"(親となる権限対象リソースが存在しない)
 
 
 #### ◆ wakarana::new_wakarana_permitted_value($permitted_value_info)
@@ -362,7 +375,9 @@ wakarana_permitted_valueインスタンスを生成する。
 **$ppermitted_value_name** ： 権限値の表示名   
 **$permitted_value_description** : 権限値についての説明文  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。  
+  
+**拒絶理由文字列** : "invalid_permitted_value_id"(権限値IDに使用できない文字が含まれる)、"permitted_value_already_exists"(権限値が既に存在している)
 
 
 #### ☆ wakarana::create_random_password($length=14)
@@ -433,7 +448,9 @@ wakarana_permitted_valueインスタンスを生成する。
 **$password** ： パスワード  
 **$totp_pin** ： 6桁のTOTPコード。2要素認証を使用しない場合と2要素認証の入力画面を分ける場合は省略。  
   
-**返り値** ： 認証された場合はユーザーのwakarana_userインスタンス、ユーザーアカウントが停止中の場合はその状態値(WAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_UNAPPROVED)、ユーザーIDが2段階認証の対象ユーザーでTOTPコードがNULLだった場合は仮トークン、それ以外の場合はFALSEを返す。
+**返り値** ： 認証された場合はユーザーのwakarana_userインスタンス、ユーザーアカウントが停止中の場合はその状態値(WAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_UNAPPROVED)、ユーザーIDが2段階認証の対象ユーザーでTOTPコードがNULLだった場合は仮トークン、それ以外の場合はFALSEを返す。  
+  
+**拒絶理由文字列** : "parameters_not_matched"(ユーザーIDまたはパスワード、TOTPコードのいずれかが誤っている)、"unavailable_user"(ユーザーアカウントが停止中である)、"currently_locked_out"(ロックアウト中のためログインを試行できない)
 
 
 #### wakarana::login($user_id, $password, $totp_pin=NULL)
@@ -445,7 +462,9 @@ wakarana_permitted_valueインスタンスを生成する。
 **$password** ： パスワード  
 **$totp_pin** ： 6桁のTOTPコード。2要素認証を使用しない場合と2要素認証の入力画面を分ける場合は省略。  
   
-**返り値** ： ログインが完了した場合はwakarana_userインスタンス、ユーザーアカウントが停止中の場合はその状態値(WAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_UNAPPROVED)、ユーザーIDが2要素認証の対象ユーザーでTOTPコードがNULLだった場合は仮トークン、それ以外の場合はFALSEを返す。
+**返り値** ： ログインが完了した場合はwakarana_userインスタンス、ユーザーアカウントが停止中の場合はその状態値(WAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_UNAPPROVED)、ユーザーIDが2要素認証の対象ユーザーでTOTPコードがNULLだった場合は仮トークン、それ以外の場合はFALSEを返す。  
+  
+**拒絶理由文字列** : "parameters_not_matched"(ユーザーIDまたはパスワード、TOTPコードのいずれかが誤っている)、"unavailable_user"(ユーザーアカウントが停止中である)、"currently_locked_out"(ロックアウト中のためログインを試行できない)
 
 
 #### wakarana::authenticate_with_email_address($email_address, $password, $totp_pin=NULL)
@@ -458,7 +477,9 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
 **$password** ： パスワード  
 **$totp_pin** ： 6桁のTOTPコード。2要素認証を使用しない場合と2要素認証の入力画面を分ける場合は省略。  
   
-**返り値** ： 認証された場合はユーザーのwakarana_userインスタンス、ユーザーアカウントが停止中の場合はその状態値(WAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_UNAPPROVED)、ユーザーIDが2段階認証の対象ユーザーでTOTPコードがNULLだった場合は仮トークン、それ以外の場合はFALSEを返す。
+**返り値** ： 認証された場合はユーザーのwakarana_userインスタンス、ユーザーアカウントが停止中の場合はその状態値(WAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_UNAPPROVED)、ユーザーIDが2段階認証の対象ユーザーでTOTPコードがNULLだった場合は仮トークン、それ以外の場合はFALSEを返す。  
+  
+**拒絶理由文字列** : "parameters_not_matched"(メールアドレスまたはパスワード、TOTPコードのいずれかが誤っている)、"unavailable_user"(ユーザーアカウントが停止中である)、"currently_locked_out"(ロックアウト中のためログインを試行できない)
 
 
 #### wakarana::login_with_email_address($email_address, $password, $totp_pin=NULL)
@@ -471,7 +492,9 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
 **$password** ： パスワード  
 **$totp_pin** ： 6桁のTOTPコード。2要素認証を使用しない場合と2要素認証の入力画面を分ける場合は省略。  
   
-**返り値** ： ログインが完了した場合はwakarana_userインスタンス、ユーザーアカウントが停止中の場合はその状態値(WAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_UNAPPROVED)、ユーザーIDが2要素認証の対象ユーザーでTOTPコードがNULLだった場合は仮トークン、それ以外の場合はFALSEを返す。
+**返り値** ： ログインが完了した場合はwakarana_userインスタンス、ユーザーアカウントが停止中の場合はその状態値(WAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_UNAPPROVED)、ユーザーIDが2要素認証の対象ユーザーでTOTPコードがNULLだった場合は仮トークン、それ以外の場合はFALSEを返す。  
+  
+**拒絶理由文字列** : "parameters_not_matched"(メールアドレスまたはパスワード、TOTPコードのいずれかが誤っている)、"unavailable_user"(ユーザーアカウントが停止中である)、"currently_locked_out"(ロックアウト中のためログインを試行できない)
 
 
 #### wakarana::delete_login_tokens($expire=-1)
@@ -495,7 +518,9 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
   
 **$email_address** : メールアドレス  
   
-**返り値** ： メールアドレスの規格に沿った文字列であり、かつ、メールドメインブラックリストに含まれないドメインの場合はTRUE、それ以外の場合はFALSEを返す。
+**返り値** ： メールアドレスの規格に沿った文字列であり、かつ、メールドメインブラックリストに含まれないドメインの場合はTRUE、それ以外の場合はFALSEを返す。  
+  
+**拒絶理由文字列** : "invalid_email_address"(メールアドレスとして正しくない文字列である)、"blacklisted_email_domain"(メールドメインがブラックリストに登録されている)
 
 
 #### wakarana::check_email_sending_interval($email_address)
@@ -512,7 +537,9 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
   
 **$email_address** : コードの送信先メールアドレス  
   
-**返り値** ： 成功した場合は8桁のメールアドレス確認コード文字列を、失敗した場合はFALSEを返す。同じメールアドレスでの複数のアカウント作成を許可しない設定の場合、既に使用されているメールアドレスならNULLを返す。
+**返り値** ： 成功した場合は8桁のメールアドレス確認コード文字列を、失敗した場合はFALSEを返す。  
+  
+**拒絶理由文字列** : "invalid_email_address"(メールアドレスとして正しくない文字列である)、"blacklisted_email_domain"(メールドメインがブラックリストに登録されている)、"email_address_already_exists"(既に登録されているメールアドレスである)、"currently_locked_out"(前回のメールアドレス確認コード発行時から規定の時間が経過していない)
 
 
 #### wakarana::email_address_verify($email_address, $verification_code)
@@ -521,7 +548,9 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
 **$email_address** : コードが紐付けられたメールアドレス  
 **$verification_code** : メールアドレス確認コード。大文字小文字を区別しない。  
   
-**返り値** ： 認証された場合はTRUEを返し、それ以外の場合はFALSEを返す。
+**返り値** ： 認証された場合はTRUEを返し、それ以外の場合はFALSEを返す。  
+  
+**拒絶理由文字列** : "invalid_email_address"(メールアドレスとして正しくない文字列である)、"blacklisted_email_domain"(メールドメインがブラックリストに登録されている)、"email_address_already_exists"(既に登録されているメールアドレスである)、"parameters_not_matched"(メールアドレスまたは確認コードが誤っている)
 
 
 #### wakarana::get_email_address_verification_code_expire($email_address, $verification_code)
@@ -584,7 +613,9 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
 **$token** : パスワードリセット用トークン  
 **$new_password** : 新しいパスワード  
   
-**返り値** ： 成功した場合はトークンに紐付けられたユーザーのwakarana_userクラスのインスタンスを返し、それ以外の場合はFALSEを返す。
+**返り値** ： 成功した場合はトークンに紐付けられたユーザーのwakarana_userクラスのインスタンスを返し、それ以外の場合はFALSEを返す。  
+  
+**拒絶理由文字列** : "invalid_token"(有効なトークンではない)、"weak_password"(弱いパスワードである)
 
 
 #### wakarana::get_password_reset_token_expire($token)
@@ -634,7 +665,9 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
 **tmp_token** ： wakarana::authenticateにより発行される仮トークン  
 **$totp_pin** ： 6桁のTOTPコード  
   
-**返り値** ： 認証された場合はユーザーのwakarana_userインスタンス、ユーザーアカウントが停止中の場合はその状態値(WAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_UNAPPROVED)、それ以外の場合はFALSEを返す。
+**返り値** ： 認証された場合はユーザーのwakarana_userインスタンス、そうでない場合はFALSEを返す。  
+  
+**拒絶理由文字列** : "invalid_token"(有効な仮トークンではない)、"pin_not_matched"(TOTPコードが一致しない)、"unavailable_user"(ユーザーアカウントが停止中である)、"currently_locked_out"(ロックアウト中のためログインを試行できない)
 
 
 #### wakarana::totp_login($tmp_token, $totp_pin)
@@ -645,7 +678,9 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
 **tmp_token** ： wakarana::loginにより発行される仮トークン  
 **$totp_pin** ： 6桁のTOTPコード  
   
-**返り値** ： ログインが完了した場合はユーザーのwakarana_userインスタンス、ユーザーアカウントが停止中の場合はその状態値(WAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_UNAPPROVED)、それ以外の場合はFALSEを返す。
+**返り値** ： ログインが完了した場合はユーザーのwakarana_userインスタンス、そうでない場合はFALSEを返す。  
+  
+**拒絶理由文字列** : "invalid_token"(有効な仮トークンではない)、"pin_not_matched"(TOTPコードが一致しない)、"unavailable_user"(ユーザーアカウントが停止中である)、"currently_locked_out"(ロックアウト中のためログインを試行できない)
 
 
 #### wakarana::check($token=NULL, $update_last_access=TRUE)
@@ -743,8 +778,25 @@ TOTP生成鍵と現在時刻からワンタイムコードを生成する。
 **返り値** ： ワンタイムコードを返す。
 
 
+### class wakarana_data_item
+wakarana_userクラスとwakarana_roleクラス、wakarana_permissionクラス、wakarana_permitted_valueクラスの親クラス。
+
+#### ◆ wakarana_data_item::print_error($error_text)
+エラーメッセージを出力する。  
+ただし、このwakarana_data_item(及びその子孫)クラスのインスタンスを生成したwakaranaインスタンスに読み込まれているwakarana_config.iniにおいてdisplay_errors=trueが設定されていなければ出力しない。  
+◆クラス内呼び出し専用。  
+  
+**$error_text** : エラーメッセージ
+
+
+#### wakarana_data_item::get_last_error_text()
+wakarana_data_item::print_errorにて直近に入力されたエラーメッセージを返す。  
+  
+**返り値** ： エラーメッセージの文字列を返す。エラーがまだ発生していない場合はNULLを返す。
+
+
 ### class wakarana_user
-ユーザーの情報を読み書きするためのクラス。1インスタンスごとに1ユーザーの情報が割り当てられる。
+wakarana_data_itemの派生クラス。ユーザーの情報を読み書きするために使用する。1インスタンスごとに1ユーザーの情報が割り当てられる。
 
 #### wakarana_user::__construct($wakarana, $user_info)
 コンストラクタ。wakarana::get_user実行時に呼び出されるものであり、直接インスタンス化するべきではない。  
@@ -759,6 +811,12 @@ wakarana_userインスタンスはこの関数以外の方法(unsetや変数の�
 ☆staticメソッド。  
   
 **$wakarana_user** : メモリから解放するwakarana_userインスタンス
+
+
+#### wakarana_user::get_rejection_reason()
+wakarana_userインスタンスで直前に行われた各種認証・登録処理の結果が拒絶だった場合、その理由を取得する。  
+  
+**返り値** ： 認証・登録が拒絶されていた場合はその理由を表す文字列を返し、まだ認証・登録処理が行われていない場合や認証・登録が承認されていた場合、内部エラーにより認証・登録処理が中断されていた場合はNULLを返す。拒絶理由を表す文字列の候補は直前に行われた認証・登録処理により異なる。
 
 
 #### wakarana_user::get_id()
@@ -845,7 +903,9 @@ wakarana_userインスタンスはこの関数以外の方法(unsetや変数の�
   
 **$password** ： パスワード  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。  
+  
+**拒絶理由文字列** : "weak_password"(弱いパスワードである)
 
 
 #### wakarana_user::set_name($user_name)
@@ -862,7 +922,9 @@ wakarana_userインスタンスはこの関数以外の方法(unsetや変数の�
   
 **$email_address** ： 新しいメールアドレス  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。  
+  
+**拒絶理由文字列** : "invalid_email_address"(メールアドレスとして正しくない文字列である)、"blacklisted_email_domain"(メールドメインがブラックリストに登録されている)、"email_address_already_exists"(既に登録されているメールアドレスである)、"registration_limit_over"(メールアドレス登録数の上限に達している)
 
 
 #### wakarana_user::set_primary_email_address($email_address)
@@ -1118,7 +1180,9 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
 **$password** ： パスワード  
 **$totp_pin** ： 6桁のTOTPコード。2要素認証を使用しない場合と2要素認証の入力画面を分ける場合は省略。  
   
-**返り値** ： 認証された場合はTRUE、ユーザーアカウントが停止中の場合はその状態値(WAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_UNAPPROVED)、ユーザーIDが2段階認証の対象ユーザーでTOTPコードがNULLだった場合は仮トークン、それ以外の場合はFALSEを返す。
+**返り値** ： 認証された場合はTRUE、そうでない場合はFALSEを返す。  
+  
+**拒絶理由文字列** : "parameters_not_matched"(パスワードまたはTOTPコードが誤っている)、"unavailable_user"(ユーザーアカウントが停止中である)、"currently_locked_out"(ロックアウト中のためログインを試行できない)
 
 
 #### wakarana_user::create_email_address_verification_code($email_address)
@@ -1128,7 +1192,9 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
   
 **$email_address** : コードの送信先メールアドレス。  
   
-**返り値** ： 成功した場合は8桁のメールアドレス確認コード、失敗した場合はFALSEを返す。同じメールアドレスでの複数のアカウント作成を許可しない設定の場合、既に使用されているメールアドレスならNULLを返す。
+**返り値** ： 成功した場合は8桁のメールアドレス確認コードを返し、失敗した場合はFALSEを返す。  
+  
+**拒絶理由文字列** : "invalid_email_address"(メールアドレスとして正しくない文字列である)、"blacklisted_email_domain"(メールドメインがブラックリストに登録されている)、"email_address_already_exists"(既に登録されているメールアドレスである)、"registration_limit_over"(メールアドレス登録数の上限に達している)、"currently_locked_out"(ロックアウト中のためログインを試行できない)
 
 
 #### wakarana_user::email_address_verify($email_address, $verification_code, $verification_only=FALSE)
@@ -1138,7 +1204,9 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
 **$verification_code** : メールアドレス確認コード。大文字小文字を区別しない。  
 **$verification_only** : TRUEを指定した場合、認証のみを実行してメールアドレスの追加を行わない  
   
-**返り値** ： 認証された場合はTRUEを返し、それ以外の場合はFALSEを返す。
+**返り値** ： 認証された場合はTRUEを返し、それ以外の場合はFALSEを返す。  
+  
+**拒絶理由文字列** : "invalid_email_address"(メールアドレスとして正しくない文字列である)、"blacklisted_email_domain"(メールドメインがブラックリストに登録されている)、"email_address_already_exists"(既に登録されているメールアドレスである)、"registration_limit_over"(メールアドレス登録数の上限に達している)、"parameters_not_matched"(メールアドレスまたは確認コードが誤っている)
 
 
 #### wakarana_user::get_email_address_verification_code_expire($email_address, $verification_code)
@@ -1236,7 +1304,7 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
 
 
 ### class wakarana_role
-ロールの情報を読み書きするためのクラス。1インスタンスごとに1ロールの情報が割り当てられる。
+wakarana_data_itemの派生クラス。ロールの情報を読み書きするために使用する。1インスタンスごとに1ロールの情報が割り当てられる。
 
 #### wakarana_role::__construct($wakarana, $role_info)
 コンストラクタ。wakarana::get_roleの実行時に呼び出されるものであり、直接インスタンス化するべきではない。  
@@ -1364,7 +1432,7 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
 
 
 ### class wakarana_permission
-権限の情報を読み書きするためのクラス。1インスタンスごとに1権限の情報が割り当てられる。
+wakarana_data_itemの派生クラス。権限の情報を読み書きするために使用する。1インスタンスごとに1権限の情報が割り当てられる。
 
 #### wakarana_permission::__construct($wakarana, $permission_info)
 コンストラクタ。wakarana::get_permissionの実行時に呼び出されるものであり、直接インスタンス化するべきではない。  
@@ -1461,7 +1529,7 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
 
 
 ### class wakarana_permitted_value
-権限値の情報を読み書きするためのクラス。1インスタンスごとに1権限値の情報が割り当てられる。
+wakarana_data_itemの派生クラス。権限値の情報を読み書きするために使用する。1インスタンスごとに1権限値の情報が割り当てられる。
 
 #### wakarana_permitted_value::__construct($wakarana, $permitted_value_info)
 コンストラクタ。wakarana::get_permitted_valueの実行時に呼び出されるものであり、直接インスタンス化するべきではない。  
@@ -1532,7 +1600,7 @@ wakarana_config.iniの既定値一覧。
 
 
 ### class wakarana_config
-wakarana_commonの派生クラス。
+wakarana_commonの派生クラス。Wakaranaが組み込まれたアプリケーション本体のセットアップや設定変更の際に使用する。
 
 #### wakarana_config::__construct($base_dir=NULL)
 ベースフォルダに各種設定ファイル(wakarana_config.ini、wakarana_custom_fields.json、wakarana_email_domain_blacklist.conf)がなければ作成し、wakarana_common::__constructを実行する。  
