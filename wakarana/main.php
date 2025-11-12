@@ -1449,8 +1449,28 @@ class wakarana extends wakarana_common {
 }
 
 
-class wakarana_user {
+class wakarana_data_item {
     protected $wakarana;
+    
+    private $last_error_text = NULL;
+    
+    
+    protected function print_error ($error_text) {
+        $this->last_error_text = $error_text;
+        
+        if ($this->wakarana->config["display_errors"]) {
+            print "An error occurred in Wakarana : ".$error_text;
+        }
+    }
+    
+    
+    function get_last_error_text () {
+        return $this->last_error_text;
+    }
+}
+
+
+class wakarana_user extends wakarana_data_item {
     protected $user_info;
     protected $rejection_reason = NULL;
     
@@ -1495,7 +1515,7 @@ class wakarana_user {
         try {
             $stmt = $this->wakarana->db_obj->query('SELECT "email_address" FROM "wakarana_user_email_addresses" WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "is_primary" = TRUE');
         } catch (PDOException $err) {
-            $this->wakarana->print_error("プライマリメールアドレスの取得に失敗しました。".$err->getMessage());
+            $this->print_error("プライマリメールアドレスの取得に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -1513,7 +1533,7 @@ class wakarana_user {
         try {
             $stmt = $this->wakarana->db_obj->query('SELECT "email_address" FROM "wakarana_user_email_addresses" WHERE "user_id" = \''.$this->user_info["user_id"].'\' ORDER BY "email_address" ASC');
         } catch (PDOException $err) {
-            $this->wakarana->print_error("メールアドレスの取得に失敗しました。".$err->getMessage());
+            $this->print_error("メールアドレスの取得に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -1552,12 +1572,12 @@ class wakarana_user {
     
     function get_value ($custom_field_name) {
         if (!wakarana::check_id_string($custom_field_name) || !isset($this->wakarana->custom_fields[$custom_field_name])) {
-            $this->wakarana->print_error("指定されたカスタムフィールドは存在しません。");
+            $this->print_error("指定されたカスタムフィールドは存在しません。");
             return FALSE;
         }
         
         if ($this->wakarana->custom_fields[$custom_field_name]["records_per_user"] !== 1) {
-            $this->wakarana->print_error("指定されたカスタムフィールドは単一値ではありません。");
+            $this->print_error("指定されたカスタムフィールドは単一値ではありません。");
             return FALSE;
         }
         
@@ -1570,7 +1590,7 @@ class wakarana_user {
         try {
             $stmt = $this->wakarana->db_obj->query('SELECT "custom_field_value" FROM "'.$table_name.'" WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "custom_field_name" = \''.$custom_field_name.'\'');
         } catch (PDOException $err) {
-            $this->wakarana->print_error("カスタムフィールド値の取得に失敗しました。".$err->getMessage());
+            $this->print_error("カスタムフィールド値の取得に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -1585,7 +1605,7 @@ class wakarana_user {
     
     function get_values ($custom_field_name) {
         if (!wakarana::check_id_string($custom_field_name) || !isset($this->wakarana->custom_fields[$custom_field_name])) {
-            $this->wakarana->print_error("指定されたカスタムフィールドは存在しません。");
+            $this->print_error("指定されたカスタムフィールドは存在しません。");
             return FALSE;
         }
         
@@ -1598,7 +1618,7 @@ class wakarana_user {
         try {
             $stmt = $this->wakarana->db_obj->query('SELECT "custom_field_value" FROM "'.$table_name.'" WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "custom_field_name" = \''.$custom_field_name.'\' ORDER BY "value_number" ASC');
         } catch (PDOException $err) {
-            $this->wakarana->print_error("カスタムフィールド値の取得に失敗しました。".$err->getMessage());
+            $this->print_error("カスタムフィールド値の取得に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -1619,7 +1639,7 @@ class wakarana_user {
         try {
             $this->wakarana->db_obj->exec('UPDATE "wakarana_users" SET "password" = \''.$password_hash.'\', "last_updated" = \''.date("Y-m-d H:i:s").'\'  WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
         } catch (PDOException $err) {
-            $this->wakarana->print_error("パスワードの変更に失敗しました。".$err->getMessage());
+            $this->print_error("パスワードの変更に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -1641,7 +1661,7 @@ class wakarana_user {
             
             $stmt->execute();
         } catch (PDOException $err) {
-            $this->wakarana->print_error("ユーザー名の変更に失敗しました。".$err->getMessage());
+            $this->print_error("ユーザー名の変更に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -1684,7 +1704,7 @@ class wakarana_user {
             
             $stmt->execute();
         } catch (PDOException $err) {
-            $this->wakarana->print_error("メールアドレスの変更に失敗しました。".$err->getMessage());
+            $this->print_error("メールアドレスの変更に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -1694,7 +1714,7 @@ class wakarana_user {
     
     function set_primary_email_address ($email_address) {
         if (array_search($email_address, $this->get_email_addresses()) === FALSE) {
-            $this->wakarana->print_error("未登録のメールアドレスをプライマリメールアドレスに設定することはできません。");
+            $this->print_error("未登録のメールアドレスをプライマリメールアドレスに設定することはできません。");
             return FALSE;
         }
         
@@ -1707,7 +1727,7 @@ class wakarana_user {
             
             $stmt->execute();
         } catch (PDOException $err) {
-            $this->wakarana->print_error("プライマリメールアドレスの変更に失敗しました。".$err->getMessage());
+            $this->print_error("プライマリメールアドレスの変更に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -1717,7 +1737,7 @@ class wakarana_user {
     
     function remove_email_address ($email_address) {
         if ($this->get_primary_email_address() === $email_address) {
-            $this->wakarana->print_error("この関数ではプライマリメールアドレスを削除することはできません。");
+            $this->print_error("この関数ではプライマリメールアドレスを削除することはできません。");
             return FALSE;
         }
         
@@ -1728,7 +1748,7 @@ class wakarana_user {
             
             $stmt->execute();
         } catch (PDOException $err) {
-            $this->wakarana->print_error("メールアドレスの削除に失敗しました。".$err->getMessage());
+            $this->print_error("メールアドレスの削除に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -1740,7 +1760,7 @@ class wakarana_user {
         try {
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_user_email_addresses" WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
         } catch (PDOException $err) {
-            $this->wakarana->print_error("ユーザーの全メールアドレスの削除に失敗しました。".$err->getMessage());
+            $this->print_error("ユーザーの全メールアドレスの削除に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -1758,7 +1778,7 @@ class wakarana_user {
         try {
             $this->wakarana->db_obj->exec('UPDATE "wakarana_users" SET "status" = \''.$status.'\', "last_updated" = \''.date("Y-m-d H:i:s").'\'  WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
         } catch (PDOException $err) {
-            $this->wakarana->print_error("ユーザーアカウントの状態の変更に失敗しました。".$err->getMessage());
+            $this->print_error("ユーザーアカウントの状態の変更に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -1772,7 +1792,7 @@ class wakarana_user {
         if (empty($totp_key)) {
             $totp_key = wakarana::create_random_code();
         } elseif (preg_match("/\A[A-Z2-7]{16}\z/", $totp_key) !== 1) {
-            $this->wakarana->print_error("TOTP生成鍵が不正です。");
+            $this->print_error("TOTP生成鍵が不正です。");
             return FALSE;
         }
         
@@ -1783,7 +1803,7 @@ class wakarana_user {
             
             $stmt->execute();
         } catch (PDOException $err) {
-            $this->wakarana->print_error("2要素認証の有効化に失敗しました。".$err->getMessage());
+            $this->print_error("2要素認証の有効化に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -1797,7 +1817,7 @@ class wakarana_user {
         try {
             $this->wakarana->db_obj->exec('UPDATE "wakarana_users" SET "totp_key" = NULL WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
         } catch (PDOException $err) {
-            $this->wakarana->print_error("2要素認証の無効化に失敗しました。".$err->getMessage());
+            $this->print_error("2要素認証の無効化に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -1809,12 +1829,12 @@ class wakarana_user {
     
     function set_value ($custom_field_name, $custom_field_value) {
         if (!wakarana::check_id_string($custom_field_name) || !isset($this->wakarana->custom_fields[$custom_field_name])) {
-            $this->wakarana->print_error("指定されたカスタムフィールドは存在しません。");
+            $this->print_error("指定されたカスタムフィールドは存在しません。");
             return FALSE;
         }
         
         if ($this->wakarana->custom_fields[$custom_field_name]["records_per_user"] !== 1) {
-            $this->wakarana->print_error("指定されたカスタムフィールドは単一値ではありません。");
+            $this->print_error("指定されたカスタムフィールドは単一値ではありません。");
             return FALSE;
         }
         
@@ -1822,7 +1842,7 @@ class wakarana_user {
             $table_name = "wakarana_user_custom_numerical_fields";
             
             if (!is_numeric($custom_field_value)) {
-                $this->wakarana->print_error("数値型のカスタムフィールドに格納できない値が指定されました。");
+                $this->print_error("数値型のカスタムフィールドに格納できない値が指定されました。");
                 return FALSE;
             }
         } else {
@@ -1835,7 +1855,7 @@ class wakarana_user {
             $other_users = $this->wakarana->search_users_with_custom_field($custom_field_name, $custom_field_value);
             
             if (!empty($other_users) && $other_users[0]->get_id() !== $this->get_id()) {
-                $this->wakarana->print_error("他のユーザーに割り当て済みの値です。指定されたカスタムフィールドでは複数のアカウントに同じ値を設定することは許可されていません。");
+                $this->print_error("他のユーザーに割り当て済みの値です。指定されたカスタムフィールドでは複数のアカウントに同じ値を設定することは許可されていません。");
                 return FALSE;
             }
         }
@@ -1848,7 +1868,7 @@ class wakarana_user {
             
             $stmt->execute();
         } catch (PDOException $err) {
-            $this->wakarana->print_error("カスタムフィールド値の設定に失敗しました。".$err->getMessage());
+            $this->print_error("カスタムフィールド値の設定に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -1858,14 +1878,14 @@ class wakarana_user {
     
     function add_value ($custom_field_name, $custom_field_value, $value_number = -1) {
         if (!wakarana::check_id_string($custom_field_name) || !isset($this->wakarana->custom_fields[$custom_field_name])) {
-            $this->wakarana->print_error("指定されたカスタムフィールドは存在しません。");
+            $this->print_error("指定されたカスタムフィールドは存在しません。");
             return FALSE;
         }
         
         $value_count = count($this->get_values($custom_field_name));
         
         if ($value_count >= $this->wakarana->custom_fields[$custom_field_name]["records_per_user"]) {
-            $this->wakarana->print_error("指定されたカスタムフィールドにはこれ以上項目を追加できません。");
+            $this->print_error("指定されたカスタムフィールドにはこれ以上項目を追加できません。");
             return FALSE;
         }
         
@@ -1874,7 +1894,7 @@ class wakarana_user {
         } elseif($value_number <= $value_count + 1) {
             $value_number = intval($value_number);
         } else {
-            $this->wakarana->print_error("並び順番号として使用可能な数値は既存の項目数に1を加えた値以下です。");
+            $this->print_error("並び順番号として使用可能な数値は既存の項目数に1を加えた値以下です。");
             return FALSE;
         }
         
@@ -1882,7 +1902,7 @@ class wakarana_user {
             $table_name = "wakarana_user_custom_numerical_fields";
             
             if (!is_numeric($custom_field_value)) {
-                $this->wakarana->print_error("数値型のカスタムフィールドに格納できない値が指定されました。");
+                $this->print_error("数値型のカスタムフィールドに格納できない値が指定されました。");
                 return FALSE;
             }
         } else {
@@ -1892,7 +1912,7 @@ class wakarana_user {
         }
         
         if (!$this->wakarana->custom_fields[$custom_field_name]["allow_nonunique_value"] && !empty($this->wakarana->search_users_with_custom_field($custom_field_name, $custom_field_value))) {
-            $this->wakarana->print_error("使用できない値です。指定されたカスタムフィールドでは複数のアカウントに同じ値を設定することは許可されていません。");
+            $this->print_error("使用できない値です。指定されたカスタムフィールドでは複数のアカウントに同じ値を設定することは許可されていません。");
             return FALSE;
         }
         
@@ -1908,7 +1928,7 @@ class wakarana_user {
             
             $stmt->execute();
         } catch (PDOException $err) {
-            $this->wakarana->print_error("カスタムフィールド値の追加に失敗しました。".$err->getMessage());
+            $this->print_error("カスタムフィールド値の追加に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -1918,7 +1938,7 @@ class wakarana_user {
     
     function update_value ($custom_field_name, $value_number, $custom_field_value) {
         if (!wakarana::check_id_string($custom_field_name) || !isset($this->wakarana->custom_fields[$custom_field_name])) {
-            $this->wakarana->print_error("指定されたカスタムフィールドは存在しません。");
+            $this->print_error("指定されたカスタムフィールドは存在しません。");
             return FALSE;
         }
         
@@ -1934,7 +1954,7 @@ class wakarana_user {
             $other_users = $this->wakarana->search_users_with_custom_field($custom_field_name, $custom_field_value);
             
             if (!empty($other_users) && $other_users[0]->get_id() !== $this->get_id()) {
-                $this->wakarana->print_error("他のユーザーに割り当て済みの値です。指定されたカスタムフィールドでは複数のアカウントに同じ値を設定することは許可されていません。");
+                $this->print_error("他のユーザーに割り当て済みの値です。指定されたカスタムフィールドでは複数のアカウントに同じ値を設定することは許可されていません。");
                 return FALSE;
             }
         }
@@ -1946,7 +1966,7 @@ class wakarana_user {
             
             $stmt->execute();
         } catch (PDOException $err) {
-            $this->wakarana->print_error("カスタムフィールド値の変更に失敗しました。".$err->getMessage());
+            $this->print_error("カスタムフィールド値の変更に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -1956,22 +1976,22 @@ class wakarana_user {
     
     function increment_value ($custom_field_name, $increments = 1) {
         if (!wakarana::check_id_string($custom_field_name) || !isset($this->wakarana->custom_fields[$custom_field_name])) {
-            $this->wakarana->print_error("指定されたカスタムフィールドは存在しません。");
+            $this->print_error("指定されたカスタムフィールドは存在しません。");
             return FALSE;
         }
         
         if (!$this->wakarana->custom_fields[$custom_field_name]["is_numeric"]) {
-            $this->wakarana->print_error("指定されたカスタムフィールドは数値型ではありません。");
+            $this->print_error("指定されたカスタムフィールドは数値型ではありません。");
             return FALSE;
         }
         
         if ($this->wakarana->custom_fields[$custom_field_name]["records_per_user"] !== 1) {
-            $this->wakarana->print_error("指定されたカスタムフィールドは単一値ではありません。");
+            $this->print_error("指定されたカスタムフィールドは単一値ではありません。");
             return FALSE;
         }
         
         if (!$this->wakarana->custom_fields[$custom_field_name]["allow_nonunique_value"]) {
-            $this->wakarana->print_error("複数のアカウントに同一の値を割り当てできないカスタムフィールドが指定されました。");
+            $this->print_error("複数のアカウントに同一の値を割り当てできないカスタムフィールドが指定されました。");
             return FALSE;
         }
         
@@ -1980,7 +2000,7 @@ class wakarana_user {
         try {
             $this->wakarana->db_obj->exec('INSERT INTO "wakarana_user_custom_numerical_fields"("user_id", "custom_field_name", "value_number", "custom_field_value") VALUES (\''.$this->user_info["user_id"].'\', \''.$custom_field_name.'\', 1, \''.$increments.'\') ON CONFLICT("user_id", "custom_field_name", "value_number") DO UPDATE SET "custom_field_value" = "custom_field_value" + '.$increments.'');
         } catch (PDOException $err) {
-            $this->wakarana->print_error("カスタムフィールド値の変更に失敗しました。".$err->getMessage());
+            $this->print_error("カスタムフィールド値の変更に失敗しました。".$err->getMessage());
             return FALSE;
         }
     }
@@ -1988,7 +2008,7 @@ class wakarana_user {
     
     function delete_value ($custom_field_name, $value_number = NULL) {
         if (!wakarana::check_id_string($custom_field_name) || !isset($this->wakarana->custom_fields[$custom_field_name])) {
-            $this->wakarana->print_error("指定されたカスタムフィールドは存在しません。");
+            $this->print_error("指定されたカスタムフィールドは存在しません。");
             return FALSE;
         }
         
@@ -2014,7 +2034,7 @@ class wakarana_user {
                 $this->wakarana->db_obj->exec('UPDATE "'.$table_name.'" SET "value_number" = "value_number" - '.($this->wakarana->custom_fields[$custom_field_name]["records_per_user"] + 1).' WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "custom_field_name" = \''.$custom_field_name.'\' AND "value_number" >= '.$this->wakarana->custom_fields[$custom_field_name]["records_per_user"]);
             }
         } catch (PDOException $err) {
-            $this->wakarana->print_error("カスタムフィールド値の削除に失敗しました。".$err->getMessage());
+            $this->print_error("カスタムフィールド値の削除に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -2024,14 +2044,14 @@ class wakarana_user {
     
     function remove_value ($custom_field_name, $custom_field_value) {
         if (!wakarana::check_id_string($custom_field_name) || !isset($this->wakarana->custom_fields[$custom_field_name])) {
-            $this->wakarana->print_error("指定されたカスタムフィールドは存在しません。");
+            $this->print_error("指定されたカスタムフィールドは存在しません。");
             return FALSE;
         }
         
         $index = array_search($custom_field_value, $this->get_values($custom_field_name));
         
         if ($index === FALSE) {
-            $this->wakarana->print_error("指定されたカスタムフィールド値は存在しません。");
+            $this->print_error("指定されたカスタムフィールド値は存在しません。");
             return FALSE;
         }
         
@@ -2046,7 +2066,7 @@ class wakarana_user {
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_user_custom_fields" WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_user_custom_numerical_fields" WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
         } catch (PDOException $err) {
-            $this->wakarana->print_error("カスタムフィールド値の削除に失敗しました。".$err->getMessage());
+            $this->print_error("カスタムフィールド値の削除に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -2058,7 +2078,7 @@ class wakarana_user {
         try {
             $stmt = $this->wakarana->db_obj->query('SELECT "wakarana_roles".* FROM "wakarana_roles", "wakarana_user_roles" WHERE "wakarana_user_roles"."user_id" = \''.$this->user_info["user_id"].'\' AND "wakarana_roles"."role_id" = "wakarana_user_roles"."role_id" ORDER BY "wakarana_user_roles"."role_id" ASC');
         } catch (PDOException $err) {
-            $this->wakarana->print_error("ロールの取得に失敗しました。".$err->getMessage());
+            $this->print_error("ロールの取得に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -2077,7 +2097,7 @@ class wakarana_user {
         $role = $this->wakarana->get_role($role_id);
         
         if (!is_object($role)) {
-            $this->wakarana->print_error("正しいロールIDではありません。");
+            $this->print_error("正しいロールIDではありません。");
             return FALSE;
         }
         
@@ -2088,7 +2108,7 @@ class wakarana_user {
             $this->wakarana->db_obj->exec('INSERT INTO "wakarana_user_permission_caches"("user_id", "resource_id", "action") SELECT \''.$this->user_info["user_id"].'\', "resource_id", "action" FROM "wakarana_role_permissions" WHERE "role_id" = \''.$role_id.'\' ON CONFLICT ("user_id", "resource_id", "action") DO NOTHING');
             $this->wakarana->db_obj->exec('INSERT INTO "wakarana_user_permitted_value_caches"("user_id", "permitted_value_id", "maximum_permitted_value") SELECT \''.$this->user_info["user_id"].'\', "permitted_value_id", "permitted_value" FROM "wakarana_role_permitted_values" WHERE "role_id" = \''.$role_id.'\' ON CONFLICT("user_id", "permitted_value_id") DO UPDATE SET "maximum_permitted_value" = (SELECT MAX("wakarana_role_permitted_values"."permitted_value") FROM "wakarana_user_roles", "wakarana_role_permitted_values" WHERE "wakarana_user_roles"."user_id" = \''.$this->user_info["user_id"].'\' AND "wakarana_role_permitted_values"."role_id" = "wakarana_user_roles"."role_id" AND "wakarana_role_permitted_values"."permitted_value_id" = EXCLUDED."permitted_value_id" GROUP BY "wakarana_role_permitted_values"."permitted_value_id")');
         } catch (PDOException $err) {
-            $this->wakarana->print_error("ロールの付与に失敗しました。".$err->getMessage());
+            $this->print_error("ロールの付与に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -2099,14 +2119,14 @@ class wakarana_user {
     function remove_role ($role_id = NULL) {
         if (!empty($role_id)) {
             if (!wakarana::check_id_string($role_id)) {
-                $this->wakarana->print_error("ロールIDに使用できない文字列が指定されました。");
+                $this->print_error("ロールIDに使用できない文字列が指定されました。");
                 return FALSE;
             }
             
             $role_id = strtolower($role_id);
             
             if ($role_id === WAKARANA_BASE_ROLE) {
-                $this->wakarana->print_error("ベースロールを剥奪することはできません。");
+                $this->print_error("ベースロールを剥奪することはできません。");
                 return FALSE;
             }
             
@@ -2124,7 +2144,7 @@ class wakarana_user {
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_user_permitted_value_caches" WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
             $this->wakarana->db_obj->exec('INSERT INTO "wakarana_user_permitted_value_caches"("user_id", "permitted_value_id", "maximum_permitted_value") SELECT \''.$this->user_info["user_id"].'\', "wakarana_role_permitted_values"."permitted_value_id", MAX("wakarana_role_permitted_values"."permitted_value") FROM "wakarana_user_roles", "wakarana_role_permitted_values" WHERE "wakarana_user_roles"."user_id" = \''.$this->user_info["user_id"].'\' AND  "wakarana_role_permitted_values"."role_id" = "wakarana_user_roles"."role_id" GROUP BY "wakarana_role_permitted_values"."permitted_value_id"');
         } catch (PDOException $err) {
-            $this->wakarana->print_error("ロールの剥奪に失敗しました。".$err->getMessage());
+            $this->print_error("ロールの剥奪に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -2134,14 +2154,14 @@ class wakarana_user {
     
     function check_permission($resource_id, $action = "any") {
         if (!wakarana::check_resource_id_string($resource_id) || !wakarana::check_id_string($action)) {
-            $this->wakarana->print_error("識別名として使用できない文字列が指定されました。");
+            $this->print_error("識別名として使用できない文字列が指定されました。");
             return FALSE;
         }
         
         try {
             $stmt = $this->wakarana->db_obj->query('SELECT COUNT(*) FROM "wakarana_user_permission_caches" WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "resource_id" = \''.strtolower($resource_id).'\' AND "action" = \''.strtolower($action).'\'');
         } catch (PDOException $err) {
-            $this->wakarana->print_error("ユーザーの権限確認に失敗しました。".$err->getMessage());
+            $this->print_error("ユーザーの権限確認に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -2157,7 +2177,7 @@ class wakarana_user {
         try {
             $stmt = $this->wakarana->db_obj->query('SELECT "resource_id", "action" FROM "wakarana_user_permission_caches" WHERE "user_id" = \''.$this->user_info["user_id"].'\' ORDER BY "resource_id", "action" ASC');
         } catch (PDOException $err) {
-            $this->wakarana->print_error("ユーザーの権限一覧の取得に失敗しました。".$err->getMessage());
+            $this->print_error("ユーザーの権限一覧の取得に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -2195,14 +2215,14 @@ class wakarana_user {
     
     function get_permitted_value ($permitted_value_id) {
         if (!wakarana::check_id_string($permitted_value_id)) {
-            $this->wakarana->print_error("権限値変数IDに使用できない文字列が指定されました。");
+            $this->print_error("権限値変数IDに使用できない文字列が指定されました。");
             return FALSE;
         }
         
         try {
             $stmt = $this->wakarana->db_obj->query('SELECT "maximum_permitted_value" FROM "wakarana_user_permitted_value_caches" WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "permitted_value_id" = \''.$permitted_value_id.'\'');
         } catch (PDOException $err) {
-            $this->wakarana->print_error("ユーザーの権限値取得に失敗しました。".$err->getMessage());
+            $this->print_error("ユーザーの権限値取得に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -2220,7 +2240,7 @@ class wakarana_user {
         try {
             $stmt = $this->wakarana->db_obj->query('SELECT "permitted_value_id", "maximum_permitted_value" FROM "wakarana_user_permitted_value_caches" WHERE "user_id" = \''.$this->user_info["user_id"].'\' ORDER BY "permitted_value_id" ASC');
         } catch (PDOException $err) {
-            $this->wakarana->print_error("ユーザーの権限値一覧の取得に失敗しました。".$err->getMessage());
+            $this->print_error("ユーザーの権限値一覧の取得に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -2243,7 +2263,7 @@ class wakarana_user {
             
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $err) {
-            $this->wakarana->print_error("認証試行ログの取得に失敗しました。".$err->getMessage());
+            $this->print_error("認証試行ログの取得に失敗しました。".$err->getMessage());
             return FALSE;
         }
     }
@@ -2265,7 +2285,7 @@ class wakarana_user {
                 return TRUE;
             }
         } catch (PDOException $err) {
-            $this->wakarana->print_error("認証試行間隔の確認に失敗しました。".$err->getMessage());
+            $this->print_error("認証試行間隔の確認に失敗しました。".$err->getMessage());
             return FALSE;
         }
     }
@@ -2283,7 +2303,7 @@ class wakarana_user {
             
             $this->wakarana->db_obj->exec('INSERT INTO "wakarana_authenticate_logs"("user_id", "succeeded", "authenticate_datetime", "ip_address") VALUES (\''.$this->user_info["user_id"].'\', '.$succeeded_q.', \''.(new DateTime())->format("Y-m-d H:i:s.u").'\', \''.$this->wakarana->get_client_ip_address().'\')');
         } catch (PDOException $err) {
-            $this->wakarana->print_error("認証試行ログの追加に失敗しました。".$err->getMessage());
+            $this->print_error("認証試行ログの追加に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -2295,7 +2315,7 @@ class wakarana_user {
         try {
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_authenticate_logs" WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
         } catch (PDOException $err) {
-            $this->wakarana->print_error("認証試行ログの削除に失敗しました。".$err->getMessage());
+            $this->print_error("認証試行ログの削除に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -2309,7 +2329,7 @@ class wakarana_user {
         try {
             $this->wakarana->db_obj->exec('UPDATE "wakarana_users" SET "last_access" = \''.$last_access.'\'  WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
         } catch (PDOException $err) {
-            $this->wakarana->print_error("ユーザーの最終アクセス日時の更新に失敗しました。".$err->getMessage());
+            $this->print_error("ユーザーの最終アクセス日時の更新に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -2323,7 +2343,7 @@ class wakarana_user {
                 
                 $stmt->execute();
             } catch (PDOException $err) {
-                $this->wakarana->print_error("ログイントークンの最終アクセス日時の更新に失敗しました。".$err->getMessage());
+                $this->print_error("ログイントークンの最終アクセス日時の更新に失敗しました。".$err->getMessage());
                 return FALSE;
             }
         }
@@ -2338,7 +2358,7 @@ class wakarana_user {
             
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $err) {
-            $this->wakarana->print_error("ログイントークン情報の取得に失敗しました。".$err->getMessage());
+            $this->print_error("ログイントークン情報の取得に失敗しました。".$err->getMessage());
             return FALSE;
         }
     }
@@ -2372,7 +2392,7 @@ class wakarana_user {
             
             $stmt->execute();
         } catch (PDOException $err) {
-            $this->wakarana->print_error("ログイントークンの保存に失敗しました。".$err->getMessage());
+            $this->print_error("ログイントークンの保存に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -2388,7 +2408,7 @@ class wakarana_user {
         if (!empty($token) && setcookie($this->wakarana->config["login_token_cookie_name"], $token, time() + $this->wakarana->config["login_token_expire"], "/", $this->wakarana->config["cookie_domain"], FALSE, TRUE)) {
             return TRUE;
         } else {
-            $this->wakarana->print_error("ログイントークンの送信に失敗しました。");
+            $this->print_error("ログイントークンの送信に失敗しました。");
             return FALSE;
         }
     }
@@ -2402,7 +2422,7 @@ class wakarana_user {
             
             $stmt->execute();
         } catch (PDOException $err) {
-            $this->wakarana->print_error("指定されたログイントークンの削除に失敗しました。".$err->getMessage());
+            $this->print_error("指定されたログイントークンの削除に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -2414,7 +2434,7 @@ class wakarana_user {
         try {
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_login_tokens" WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
         } catch (PDOException $err) {
-            $this->wakarana->print_error("ユーザーのログイントークンの削除に失敗しました。".$err->getMessage());
+            $this->print_error("ユーザーのログイントークンの削除に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -2498,7 +2518,7 @@ class wakarana_user {
             
             $stmt->execute();
         } catch (PDOException $err) {
-            $this->wakarana->print_error("メールアドレス確認コードの生成に失敗しました。".$err->getMessage());
+            $this->print_error("メールアドレス確認コードの生成に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -2531,7 +2551,7 @@ class wakarana_user {
             
             $stmt->execute();
         } catch (PDOException $err) {
-            $this->wakarana->print_error("メールアドレス確認コードの認証に失敗しました。".$err->getMessage());
+            $this->print_error("メールアドレス確認コードの認証に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -2544,7 +2564,7 @@ class wakarana_user {
                 
                 $stmt->execute();
             } catch (PDOException $err) {
-                $this->wakarana->print_error("使用済みのメールアドレス確認コードの削除に失敗しました。".$err->getMessage());
+                $this->print_error("使用済みのメールアドレス確認コードの削除に失敗しました。".$err->getMessage());
                 return FALSE;
             }
             
@@ -2573,7 +2593,7 @@ class wakarana_user {
             
             $stmt->execute();
         } catch (PDOException $err) {
-            $this->wakarana->print_error("メールアドレス確認コードの情報取得に失敗しました。".$err->getMessage());
+            $this->print_error("メールアドレス確認コードの情報取得に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -2591,7 +2611,7 @@ class wakarana_user {
         try {
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_email_address_verification_codes" WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
         } catch (PDOException $err) {
-            $this->wakarana->print_error("ユーザーのメールアドレス確認コードの削除に失敗しました。".$err->getMessage());
+            $this->print_error("ユーザーのメールアドレス確認コードの削除に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -2606,7 +2626,7 @@ class wakarana_user {
             $code_expire_q = "NULL";
         } else {
             if (!preg_match("/\A[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01]) ([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]\z/u", $code_expire)) {
-                $this->wakarana->print_error("異常な有効期限が指定されました。");
+                $this->print_error("異常な有効期限が指定されました。");
                 return FALSE;
             }
             
@@ -2626,7 +2646,7 @@ class wakarana_user {
         try {
             $this->wakarana->db_obj->exec('INSERT INTO "wakarana_invite_codes"("invite_code", "user_id", "code_created", "code_expire", "remaining_number") VALUES (\''.$invite_code.'\', \''.$this->user_info["user_id"].'\', \''.$code_created.'\', '.$code_expire_q.', '.$remaining_number_q.')');
         } catch (PDOException $err) {
-            $this->wakarana->print_error("招待コードの生成に失敗しました。".$err->getMessage());
+            $this->print_error("招待コードの生成に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -2640,7 +2660,7 @@ class wakarana_user {
         try {
             $stmt = $this->wakarana->db_obj->query('SELECT * FROM "wakarana_invite_codes" WHERE "user_id" = \''.$this->user_info["user_id"].'\' ORDER BY "code_created" ASC');
         } catch (PDOException $err) {
-            $this->wakarana->print_error("ユーザーの招待コード一覧の取得に失敗しました。".$err->getMessage());
+            $this->print_error("ユーザーの招待コード一覧の取得に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -2654,7 +2674,7 @@ class wakarana_user {
         try {
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_invite_codes" WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
         } catch (PDOException $err) {
-            $this->wakarana->print_error("ユーザーが発行した招待コードの削除に失敗しました。".$err->getMessage());
+            $this->print_error("ユーザーが発行した招待コードの削除に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -2672,7 +2692,7 @@ class wakarana_user {
         try {
             $this->wakarana->db_obj->exec('INSERT INTO "wakarana_password_reset_tokens"("token", "user_id", "token_created") VALUES (\''.$token.'\', \''.$this->user_info["user_id"].'\', \''.$token_created.'\') ON CONFLICT("user_id") DO UPDATE SET "token" = \''.$token.'\', "token_created"=\''.$token_created.'\'');
         } catch (PDOException $err) {
-            $this->wakarana->print_error("パスワード再設定用トークンの生成に失敗しました。".$err->getMessage());
+            $this->print_error("パスワード再設定用トークンの生成に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -2684,7 +2704,7 @@ class wakarana_user {
         try {
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_password_reset_tokens" WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
         } catch (PDOException $err) {
-            $this->wakarana->print_error("ユーザーのパスワード再設定用トークンの削除に失敗しました。".$err->getMessage());
+            $this->print_error("ユーザーのパスワード再設定用トークンの削除に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -2702,7 +2722,7 @@ class wakarana_user {
         try {
             $this->wakarana->db_obj->exec('INSERT INTO "wakarana_two_step_verification_tokens"("token", "user_id", "token_created") VALUES (\''.$token.'\', \''.$this->user_info["user_id"].'\', \''.$token_created.'\') ON CONFLICT("user_id") DO UPDATE SET "token" = \''.$token.'\', "token_created"=\''.$token_created.'\'');
         } catch (PDOException $err) {
-            $this->wakarana->print_error("2段階認証用一時トークンの生成に失敗しました。".$err->getMessage());
+            $this->print_error("2段階認証用一時トークンの生成に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -2714,7 +2734,7 @@ class wakarana_user {
         try {
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_two_step_verification_tokens" WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
         } catch (PDOException $err) {
-            $this->wakarana->print_error("ユーザーの2段階認証用一時トークンの削除に失敗しました。".$err->getMessage());
+            $this->print_error("ユーザーの2段階認証用一時トークンの削除に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -2734,7 +2754,7 @@ class wakarana_user {
             
             $this->wakarana->db_obj->exec('INSERT INTO "wakarana_one_time_tokens"("token", "user_id", "token_created") VALUES (\''.$token.'\', \''.$this->user_info["user_id"].'\', \''.date("Y-m-d H:i:s").'\')');
         } catch (PDOException $err) {
-            $this->wakarana->print_error("ワンタイムトークンの生成に失敗しました。".$err->getMessage());
+            $this->print_error("ワンタイムトークンの生成に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -2752,7 +2772,7 @@ class wakarana_user {
             
             $stmt->execute();
         } catch (PDOException $err) {
-            $this->wakarana->print_error("ワンタイムトークンの確認に失敗しました。".$err->getMessage());
+            $this->print_error("ワンタイムトークンの確認に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -2764,7 +2784,7 @@ class wakarana_user {
                 
                 $stmt->execute();
             } catch (PDOException $err) {
-                $this->wakarana->print_error("使用済みワンタイムトークンの削除に失敗しました。".$err->getMessage());
+                $this->print_error("使用済みワンタイムトークンの削除に失敗しました。".$err->getMessage());
                 return FALSE;
             }
             
@@ -2779,7 +2799,7 @@ class wakarana_user {
         try {
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_one_time_tokens" WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
         } catch (PDOException $err) {
-            $this->wakarana->print_error("ユーザーのワンタイムトークンの削除に失敗しました。".$err->getMessage());
+            $this->print_error("ユーザーのワンタイムトークンの削除に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -2807,7 +2827,7 @@ class wakarana_user {
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_user_permission_caches" WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_user_permitted_value_caches" WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
         } catch (PDOException $err) {
-            $this->wakarana->print_error("ユーザーの削除に失敗しました。".$err->getMessage());
+            $this->print_error("ユーザーの削除に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -2821,8 +2841,7 @@ class wakarana_user {
 }
 
 
-class wakarana_role {
-    protected $wakarana;
+class wakarana_role extends wakarana_data_item {
     protected $role_info;
     
     
@@ -2872,7 +2891,7 @@ class wakarana_role {
             
             $stmt->execute();
         } catch (PDOException $err) {
-            $this->wakarana->print_error("ロール情報の変更に失敗しました。".$err->getMessage());
+            $this->print_error("ロール情報の変更に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -2887,7 +2906,7 @@ class wakarana_role {
         try {
             $stmt = $this->wakarana->db_obj->query('SELECT "wakarana_users".* FROM "wakarana_users", "wakarana_user_roles" WHERE "wakarana_user_roles"."role_id" = \''.$this->role_info["role_id"].'\' AND "wakarana_users"."user_id" = "wakarana_user_roles"."user_id" ORDER BY "wakarana_user_roles"."user_id" ASC');
         } catch (PDOException $err) {
-            $this->wakarana->print_error("ロールを持つユーザーの一覧取得に失敗しました。".$err->getMessage());
+            $this->print_error("ロールを持つユーザーの一覧取得に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -2906,7 +2925,7 @@ class wakarana_role {
         try {
             $stmt = $this->wakarana->db_obj->query('SELECT "resource_id", "action" FROM "wakarana_role_permissions" WHERE "role_id" = \''.$this->role_info["role_id"].'\' ORDER BY "resource_id", "action" ASC');
         } catch (PDOException $err) {
-            $this->wakarana->print_error("ロールの権限一覧の取得に失敗しました。".$err->getMessage());
+            $this->print_error("ロールの権限一覧の取得に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -2944,7 +2963,7 @@ class wakarana_role {
     
     function check_permission ($resource_id, $action = "any") {
         if (!wakarana::check_resource_id_string($resource_id) || !wakarana::check_id_string($action)) {
-            $this->wakarana->print_error("識別名として使用できない文字列が指定されました。");
+            $this->print_error("識別名として使用できない文字列が指定されました。");
             return FALSE;
         }
         
@@ -2954,7 +2973,7 @@ class wakarana_role {
         try {
             $stmt = $this->wakarana->db_obj->query('SELECT COUNT(*) FROM "wakarana_role_permissions" WHERE "role_id" = \''.$this->role_info["role_id"].'\' AND "resource_id" = \''.$resource_id.'\' AND "action" = \''.$action.'\'');
         } catch (PDOException $err) {
-            $this->wakarana->print_error("ロールの権限確認に失敗しました。".$err->getMessage());
+            $this->print_error("ロールの権限確認に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -2968,7 +2987,7 @@ class wakarana_role {
     
     function add_permission ($resource_id, $action = "any") {
         if (!wakarana::check_resource_id_string($resource_id) || !wakarana::check_id_string($action)) {
-            $this->wakarana->print_error("識別名として使用できない文字列が指定されました。");
+            $this->print_error("識別名として使用できない文字列が指定されました。");
             return FALSE;
         }
         
@@ -2977,7 +2996,7 @@ class wakarana_role {
         
         $permission = $this->wakarana->get_permission($resource_id);
         if (empty($permission) || !in_array($action, $permission->get_actions())) {
-            $this->wakarana->print_error("存在しない権限を割り当てることはできません。");
+            $this->print_error("存在しない権限を割り当てることはできません。");
             return FALSE;
         }
         
@@ -2985,7 +3004,7 @@ class wakarana_role {
             $this->wakarana->db_obj->exec('INSERT INTO "wakarana_role_permissions"("role_id", "resource_id", "action") SELECT \''.$this->role_info["role_id"].'\', "resource_id", \''.$action.'\' FROM "wakarana_permissions" WHERE "resource_id" = \''.$resource_id.'\' OR "resource_id" LIKE \''.$resource_id.'/%\' ON CONFLICT ("role_id", "resource_id", "action") DO NOTHING');
             $this->wakarana->db_obj->exec('INSERT INTO "wakarana_user_permission_caches"("user_id", "resource_id", "action") SELECT "wakarana_user_roles"."user_id", "wakarana_role_permissions"."resource_id", \''.$action.'\' FROM "wakarana_user_roles", "wakarana_role_permissions" WHERE "wakarana_user_roles"."role_id" = "wakarana_role_permissions"."role_id" AND ("wakarana_role_permissions"."resource_id" = \''.$resource_id.'\' OR "wakarana_role_permissions"."resource_id" LIKE \''.$resource_id.'/%\') AND "wakarana_role_permissions"."action" = \''.$action.'\' ON CONFLICT ("user_id", "resource_id", "action") DO NOTHING');
         } catch (PDOException $err) {
-            $this->wakarana->print_error("権限の追加に失敗しました。".$err->getMessage());
+            $this->print_error("権限の追加に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -2995,12 +3014,12 @@ class wakarana_role {
     
     function remove_permission ($resource_id, $action = "any") {
         if ($this->role_info["role_id"] === WAKARANA_ADMIN_ROLE) {
-            $this->wakarana->print_error("管理者ロールから権限を剥奪することはできません。");
+            $this->print_error("管理者ロールから権限を剥奪することはできません。");
             return FALSE;
         }
         
         if (!wakarana::check_resource_id_string($resource_id)) {
-            $this->wakarana->print_error("権限対象リソースIDに使用できない文字列が指定されました。");
+            $this->print_error("権限対象リソースIDに使用できない文字列が指定されました。");
             return FALSE;
         }
         
@@ -3012,7 +3031,7 @@ class wakarana_role {
                 $permissions = array_keys($this->get_permissions());
                 
                 if (in_array($parent_resource_id, $permissions)) {
-                    $this->wakarana->print_error("このロールには親権限が割り当てられているため、子権限を削除できません。");
+                    $this->print_error("このロールには親権限が割り当てられているため、子権限を削除できません。");
                     return FALSE;
                 }
             }
@@ -3020,14 +3039,14 @@ class wakarana_role {
             $action_q = '';
         } else {
             if (!wakarana::check_id_string($action)) {
-                $this->wakarana->print_error("動作識別名に使用できない文字列が指定されました。");
+                $this->print_error("動作識別名に使用できない文字列が指定されました。");
                 return FALSE;
             }
             
             $action = strtolower($action);
             
             if (!empty($parent_resource_id) && $this->check_permission($parent_resource_id, $action)) {
-                $this->wakarana->print_error("このロールには親権限が割り当てられているため、子権限を削除できません。");
+                $this->print_error("このロールには親権限が割り当てられているため、子権限を削除できません。");
                 return FALSE;
             }
             
@@ -3039,7 +3058,7 @@ class wakarana_role {
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_user_permission_caches" WHERE "user_id" IN (SELECT "user_id" FROM "wakarana_user_roles" WHERE "role_id" = \''.$this->role_info["role_id"].'\') AND ("resource_id" = \''.$resource_id.'\' OR "resource_id" LIKE \''.$resource_id.'%\')'.$action_q);
             $this->wakarana->db_obj->exec('INSERT INTO "wakarana_user_permission_caches"("user_id", "resource_id", "action") SELECT DISTINCT "wakarana_user_roles"."user_id", "wakarana_role_permissions"."resource_id", "wakarana_role_permissions"."action" FROM "wakarana_user_roles", "wakarana_role_permissions" WHERE "wakarana_user_roles"."user_id" IN (SELECT "user_id" FROM "wakarana_user_roles" WHERE "role_id" = \''.$this->role_info["role_id"].'\') AND "wakarana_role_permissions"."role_id" = "wakarana_user_roles"."role_id" AND ("resource_id" = \''.$resource_id.'\' OR "resource_id" LIKE \''.$resource_id.'%\')'.$action_q);
         } catch (PDOException $err) {
-            $this->wakarana->print_error("ロールからの権限剥奪に失敗しました。".$err->getMessage());
+            $this->print_error("ロールからの権限剥奪に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -3049,7 +3068,7 @@ class wakarana_role {
     
     function remove_all_permissions () {
         if ($this->role_info["role_id"] === WAKARANA_ADMIN_ROLE) {
-            $this->wakarana->print_error("管理者ロールから権限を剥奪することはできません。");
+            $this->print_error("管理者ロールから権限を剥奪することはできません。");
             return FALSE;
         }
         
@@ -3058,7 +3077,7 @@ class wakarana_role {
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_user_permission_caches" WHERE "user_id" IN (SELECT "user_id" FROM "wakarana_user_roles" WHERE "role_id" = \''.$this->role_info["role_id"].'\')');
             $this->wakarana->db_obj->exec('INSERT INTO "wakarana_user_permission_caches"("user_id", "resource_id", "action") SELECT DISTINCT "wakarana_user_roles"."user_id", "wakarana_role_permissions"."resource_id", "wakarana_role_permissions"."action" FROM "wakarana_user_roles", "wakarana_role_permissions" WHERE "wakarana_user_roles"."user_id" IN (SELECT "user_id" FROM "wakarana_user_roles" WHERE "role_id" = \''.$this->role_info["role_id"].'\') AND "wakarana_role_permissions"."role_id" = "wakarana_user_roles"."role_id"');
         } catch (PDOException $err) {
-            $this->wakarana->print_error("ロールからの全権限剥奪に失敗しました。".$err->getMessage());
+            $this->print_error("ロールからの全権限剥奪に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -3070,7 +3089,7 @@ class wakarana_role {
         try {
             $stmt = $this->wakarana->db_obj->query('SELECT "permitted_value_id", "permitted_value" FROM "wakarana_role_permitted_values" WHERE "role_id" = \''.$this->role_info["role_id"].'\' ORDER BY "permitted_value_id" ASC');
         } catch (PDOException $err) {
-            $this->wakarana->print_error("ロールの権限値一覧の取得に失敗しました。".$err->getMessage());
+            $this->print_error("ロールの権限値一覧の取得に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -3080,7 +3099,7 @@ class wakarana_role {
     
     function get_permitted_value ($permitted_value_id) {
         if (!wakarana::check_id_string($permitted_value_id)) {
-            $this->wakarana->print_error("権限値変数IDに使用できない文字列が指定されました。");
+            $this->print_error("権限値変数IDに使用できない文字列が指定されました。");
             return FALSE;
         }
         
@@ -3089,7 +3108,7 @@ class wakarana_role {
         try {
             $stmt = $this->wakarana->db_obj->query('SELECT "permitted_value" FROM "wakarana_role_permitted_values" WHERE "role_id" = \''.$this->role_info["role_id"].'\' AND "permitted_value_id" = \''.$permitted_value_id.'\'');
         } catch (PDOException $err) {
-            $this->wakarana->print_error("ロールの権限値の取得に失敗しました。".$err->getMessage());
+            $this->print_error("ロールの権限値の取得に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -3104,7 +3123,7 @@ class wakarana_role {
     
     function set_permitted_value ($permitted_value_id, $permitted_value) {
         if (!wakarana::check_id_string($permitted_value_id)) {
-            $this->wakarana->print_error("権限値変数IDに使用できない文字列が指定されました。");
+            $this->print_error("権限値変数IDに使用できない文字列が指定されました。");
             return FALSE;
         }
         
@@ -3114,7 +3133,7 @@ class wakarana_role {
         $old_permitted_value = $this->get_permitted_value($permitted_value_id);
         
         if (is_null($old_permitted_value) && empty($this->wakarana->get_permitted_value($permitted_value_id))) {
-            $this->wakarana->print_error("存在しない権限値を設定することはできません。");
+            $this->print_error("存在しない権限値を設定することはできません。");
             return FALSE;
         }
         
@@ -3128,7 +3147,7 @@ class wakarana_role {
                 $this->wakarana->db_obj->exec('INSERT INTO "wakarana_user_permitted_value_caches"("user_id", "permitted_value_id", "maximum_permitted_value") SELECT "user_id", \''.$permitted_value_id.'\', '.$permitted_value.' FROM "wakarana_user_roles" WHERE "role_id" = \''.$this->role_info["role_id"].'\' ON CONFLICT ("user_id", "permitted_value_id") DO UPDATE SET "maximum_permitted_value" = '.$permitted_value.' WHERE "maximum_permitted_value" < '.$permitted_value.'');
             }
         } catch (PDOException $err) {
-            $this->wakarana->print_error("ロールの権限値設定に失敗しました。".$err->getMessage());
+            $this->print_error("ロールの権限値設定に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -3139,7 +3158,7 @@ class wakarana_role {
     function remove_permitted_value ($permitted_value_id = NULL) {
         if (!empty($permitted_value_id)) {
             if (!wakarana::check_id_string($permitted_value_id)) {
-                $this->wakarana->print_error("権限値変数IDに使用できない文字列が指定されました。");
+                $this->print_error("権限値変数IDに使用できない文字列が指定されました。");
                 return FALSE;
             }
             
@@ -3160,7 +3179,7 @@ class wakarana_role {
                 $this->wakarana->db_obj->exec('INSERT INTO "wakarana_user_permitted_value_caches"("user_id", "permitted_value_id", "maximum_permitted_value") SELECT "wakarana_user_roles"."user_id", "wakarana_role_permitted_values"."permitted_value_id", MAX("wakarana_role_permitted_values"."permitted_value") FROM "wakarana_user_roles", "wakarana_role_permitted_values" WHERE "wakarana_user_roles"."user_id" IN (SELECT "user_id" FROM "wakarana_user_roles" WHERE "role_id" = \''.$this->role_info["role_id"].'\') AND "wakarana_role_permitted_values"."role_id" = "wakarana_user_roles"."role_id" GROUP BY "wakarana_user_roles"."user_id", "wakarana_role_permitted_values"."permitted_value_id"');
             }
         } catch (PDOException $err) {
-            $this->wakarana->print_error("ロールからの権限値削除に失敗しました。".$err->getMessage());
+            $this->print_error("ロールからの権限値削除に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -3170,7 +3189,7 @@ class wakarana_role {
     
     function delete_role () {
         if ($this->role_info["role_id"] === WAKARANA_BASE_ROLE || $this->role_info["role_id"] === WAKARANA_ADMIN_ROLE) {
-            $this->wakarana->print_error("初期ロールを削除することはできません。");
+            $this->print_error("初期ロールを削除することはできません。");
             return FALSE;
         }
         
@@ -3182,7 +3201,7 @@ class wakarana_role {
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_roles" WHERE "role_id" = \''.$this->role_info["role_id"].'\'');
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_user_roles" WHERE "role_id" = \''.$this->role_info["role_id"].'\'');
         } catch (PDOException $err) {
-            $this->wakarana->print_error("ロールの削除に失敗しました。".$err->getMessage());
+            $this->print_error("ロールの削除に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -3196,8 +3215,7 @@ class wakarana_role {
 }
 
 
-class wakarana_permission {
-    protected $wakarana;
+class wakarana_permission extends wakarana_data_item {
     protected $permission_info;
     
     
@@ -3247,7 +3265,7 @@ class wakarana_permission {
             
             $stmt->execute();
         } catch (PDOException $err) {
-            $this->wakarana->print_error("権限情報の変更に失敗しました。".$err->getMessage());
+            $this->print_error("権限情報の変更に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -3262,7 +3280,7 @@ class wakarana_permission {
         try {
             $stmt = $this->wakarana->db_obj->query('SELECT "action" FROM "wakarana_permission_actions" WHERE "resource_id" = \''.$this->permission_info["resource_id"].'\' ORDER BY "action" ASC');
         } catch (PDOException $err) {
-            $this->wakarana->print_error("動作一覧の取得に失敗しました。".$err->getMessage());
+            $this->print_error("動作一覧の取得に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -3272,7 +3290,7 @@ class wakarana_permission {
     
     function add_action ($action) {
         if (!wakarana::check_id_string($action)) {
-            $this->wakarana->print_error("動作識別名に使用できない文字列が指定されました。");
+            $this->print_error("動作識別名に使用できない文字列が指定されました。");
             return FALSE;
         }
         
@@ -3281,7 +3299,7 @@ class wakarana_permission {
         try {
             $this->wakarana->db_obj->exec('INSERT INTO "wakarana_permission_actions"("resource_id", "action") SELECT "resource_id", \''.$action.'\' FROM "wakarana_permissions" WHERE "resource_id" = \''.$this->permission_info["resource_id"].'\' OR "resource_id" LIKE \''.$this->permission_info["resource_id"].'/%\' ON CONFLICT ("resource_id", "action") DO NOTHING');
         } catch (PDOException $err) {
-            $this->wakarana->print_error("動作の追加に失敗しました。".$err->getMessage());
+            $this->print_error("動作の追加に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -3304,24 +3322,24 @@ class wakarana_permission {
             $action_q = '"action" != \'any\'';
             
             if (count($actions) >= 2) {
-                $this->wakarana->print_error("親権限から \"any\" 以外の動作を継承しているため、動作識別名を省略することはできません。");
+                $this->print_error("親権限から \"any\" 以外の動作を継承しているため、動作識別名を省略することはできません。");
                 return FALSE;
             }
         } else {
             if (!wakarana::check_id_string($action)) {
-                $this->wakarana->print_error("動作識別名に使用できない文字列が指定されました。");
+                $this->print_error("動作識別名に使用できない文字列が指定されました。");
                 return FALSE;
             }
             
             $action = strtolower($action);
             
             if ($action === "any") {
-                $this->wakarana->print_error("初期動作 \"any\" を削除することはできません。");
+                $this->print_error("初期動作 \"any\" を削除することはできません。");
                 return FALSE;
             }
             
             if (in_array($action, $actions)) {
-                $this->wakarana->print_error("親権限から継承した動作を削除することはできません。");
+                $this->print_error("親権限から継承した動作を削除することはできません。");
                 return FALSE;
             }
             
@@ -3333,7 +3351,7 @@ class wakarana_permission {
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_role_permissions" WHERE ("resource_id" = \''.$this->permission_info["resource_id"].'\' OR "resource_id" LIKE \''.$this->permission_info["resource_id"].'/%\') AND '.$action_q);
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_user_permission_caches" WHERE ("resource_id" = \''.$this->permission_info["resource_id"].'\' OR "resource_id" LIKE \''.$this->permission_info["resource_id"].'/%\') AND '.$action_q);
         } catch (PDOException $err) {
-            $this->wakarana->print_error("動作の削除に失敗しました。".$err->getMessage());
+            $this->print_error("動作の削除に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -3356,7 +3374,7 @@ class wakarana_permission {
         try {
             $stmt = $this->wakarana->db_obj->query('SELECT * FROM "wakarana_permissions" WHERE "resource_id" LIKE \''.$this->permission_info["resource_id"].'/%\' ORDER BY "resource_id" ASC');
         } catch (PDOException $err) {
-            $this->wakarana->print_error("権限一覧の取得に失敗しました。".$err->getMessage());
+            $this->print_error("権限一覧の取得に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -3373,7 +3391,7 @@ class wakarana_permission {
     
     function get_roles ($action = "any") {
         if (!wakarana::check_id_string($action)) {
-            $this->wakarana->print_error("動作識別名に使用できない文字列が指定されました。");
+            $this->print_error("動作識別名に使用できない文字列が指定されました。");
             return FALSE;
         }
         
@@ -3382,7 +3400,7 @@ class wakarana_permission {
         try {
             $stmt = $this->wakarana->db_obj->query('SELECT "wakarana_roles".* FROM "wakarana_roles", "wakarana_role_permissions" WHERE "wakarana_role_permissions"."resource_id" = \''.$this->permission_info["resource_id"].'\' AND "wakarana_role_permissions"."action" = \''.$action.'\' AND "wakarana_role_permissions"."role_id" = "wakarana_roles"."role_id" ORDER BY "wakarana_role_permissions"."role_id" ASC');
         } catch (PDOException $err) {
-            $this->wakarana->print_error("権限を持つロールの一覧取得に失敗しました。".$err->getMessage());
+            $this->print_error("権限を持つロールの一覧取得に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -3399,7 +3417,7 @@ class wakarana_permission {
     
     function get_users ($action = "any") {
         if (!wakarana::check_id_string($action)) {
-            $this->wakarana->print_error("動作識別名に使用できない文字列が指定されました。");
+            $this->print_error("動作識別名に使用できない文字列が指定されました。");
             return FALSE;
         }
         
@@ -3408,7 +3426,7 @@ class wakarana_permission {
         try {
             $stmt = $this->wakarana->db_obj->query('SELECT "wakarana_users".* FROM "wakarana_users", "wakarana_user_permission_caches" WHERE "wakarana_user_permission_caches"."resource_id" = \''.$this->permission_info["resource_id"].'\' AND "wakarana_user_permission_caches"."action" = \''.$action.'\' AND "wakarana_users"."user_id" = "wakarana_user_permission_caches"."user_id" ORDER BY "wakarana_user_permission_caches"."user_id" ASC');
         } catch (PDOException $err) {
-            $this->wakarana->print_error("権限を持つユーザーの一覧取得に失敗しました。".$err->getMessage());
+            $this->print_error("権限を持つユーザーの一覧取得に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -3430,7 +3448,7 @@ class wakarana_permission {
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_role_permissions" WHERE "resource_id" = \''.$this->permission_info["resource_id"].'\' OR "resource_id" LIKE \''.$this->permission_info["resource_id"].'/%\'');
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_user_permission_caches" WHERE "resource_id" = \''.$this->permission_info["resource_id"].'\' OR "resource_id" LIKE \''.$this->permission_info["resource_id"].'/%\'');
         } catch (PDOException $err) {
-            $this->wakarana->print_error("権限の削除に失敗しました。".$err->getMessage());
+            $this->print_error("権限の削除に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -3444,8 +3462,7 @@ class wakarana_permission {
 }
 
 
-class wakarana_permitted_value {
-    protected $wakarana;
+class wakarana_permitted_value extends wakarana_data_item {
     protected $permitted_value_info;
     
     
@@ -3495,7 +3512,7 @@ class wakarana_permitted_value {
             
             $stmt->execute();
         } catch (PDOException $err) {
-            $this->wakarana->print_error("権限値情報の変更に失敗しました。".$err->getMessage());
+            $this->print_error("権限値情報の変更に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -3522,7 +3539,7 @@ class wakarana_permitted_value {
         try {
             $stmt = $this->wakarana->db_obj->query('SELECT "wakarana_roles".*, "wakarana_role_permitted_values"."permitted_value" FROM "wakarana_roles", "wakarana_role_permitted_values" WHERE "wakarana_role_permitted_values"."permitted_value_id" = \''.$this->permitted_value_info["permitted_value_id"].'\' '.$min_q.$max_q.'AND "wakarana_role_permitted_values"."role_id" = "wakarana_roles"."role_id" ORDER BY "wakarana_role_permitted_values"."permitted_value" DESC');
         } catch (PDOException $err) {
-            $this->wakarana->print_error("権限値を持つロールの一覧取得に失敗しました。".$err->getMessage());
+            $this->print_error("権限値を持つロールの一覧取得に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -3558,7 +3575,7 @@ class wakarana_permitted_value {
         try {
             $stmt = $this->wakarana->db_obj->query('SELECT "wakarana_users".*, "wakarana_user_permitted_value_caches"."maximum_permitted_value" FROM "wakarana_users", "wakarana_user_permitted_value_caches" WHERE "wakarana_user_permitted_value_caches"."permitted_value_id" = \''.$this->permitted_value_info["permitted_value_id"].'\' '.$min_q.$max_q.'AND "wakarana_user_permitted_value_caches"."user_id" = "wakarana_users"."user_id" ORDER BY "wakarana_user_permitted_value_caches"."maximum_permitted_value" DESC');
         } catch (PDOException $err) {
-            $this->wakarana->print_error("権限値を持つユーザーの一覧取得に失敗しました。".$err->getMessage());
+            $this->print_error("権限値を持つユーザーの一覧取得に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -3583,7 +3600,7 @@ class wakarana_permitted_value {
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_role_permitted_values" WHERE "permitted_value_id" = \''.$this->permitted_value_info["permitted_value_id"].'\'');
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_user_permitted_value_caches" WHERE "permitted_value_id" = \''.$this->permitted_value_info["permitted_value_id"].'\'');
         } catch (PDOException $err) {
-            $this->wakarana->print_error("権限値の削除に失敗しました。".$err->getMessage());
+            $this->print_error("権限値の削除に失敗しました。".$err->getMessage());
             return FALSE;
         }
         

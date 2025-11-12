@@ -24,7 +24,7 @@ class wakarana_common {
     protected $custom_fields;
     protected $email_domain_blacklist;
     
-    private $last_error_text;
+    private $last_error_text = NULL;
     
     
     function __construct ($base_dir = NULL) {
@@ -114,7 +114,7 @@ class wakarana_common {
     }
     
     
-    function print_error ($error_text) {
+    protected function print_error ($error_text) {
         $this->last_error_text = $error_text;
         
         if (empty($this->config) || $this->config["display_errors"]) {

@@ -59,10 +59,11 @@ wakarana_config.iniの設定に基づき、データベースに接続する。
 ◆クラス内呼び出し専用。
 
 
-#### wakarana_common::print_error($error_text)
+#### ◆ wakarana_common::print_error($error_text)
 エラーメッセージを出力する。  
 ただし、wakarana_config.iniにおいてdisplay_errors=trueが設定されていなければ出力しない。  
-wakaranaクラスインスタンスとwakarana_configクラスインスタンス、及び、wakaranaクラスインスタンスにより生成されたwakarana_userクラスインスタンスではエラー時にこの関数を実行する。  
+wakaranaクラスのインスタンスとwakarana_configクラスのインスタンスではエラー時にこの関数を実行する。  
+◆クラス内呼び出し専用。  
   
 **$error_text** : エラーメッセージ
 
@@ -179,7 +180,7 @@ Base32エンコード用の変換対応表。
 
 
 ### class wakarana
-wakarana_commonの派生クラス。
+wakarana_commonの派生クラス。Wakaranaの主要機能を提供し、wakarana_data_itemの子孫クラスのインスタンスは全てこのクラスのインスタンスにより生成される。
 
 #### wakarana::__construct($base_dir=NULL)
 wakarana_common::__constructとwakarana_common::connect_dbを順に実行する。  
@@ -777,8 +778,25 @@ TOTP生成鍵と現在時刻からワンタイムコードを生成する。
 **返り値** ： ワンタイムコードを返す。
 
 
+### class wakarana_data_item
+wakarana_userクラスとwakarana_roleクラス、wakarana_permissionクラス、wakarana_permitted_valueクラスの親クラス。
+
+#### ◆ wakarana_data_item::print_error($error_text)
+エラーメッセージを出力する。  
+ただし、このwakarana_data_item(及びその子孫)クラスのインスタンスを生成したwakaranaインスタンスに読み込まれているwakarana_config.iniにおいてdisplay_errors=trueが設定されていなければ出力しない。  
+◆クラス内呼び出し専用。  
+  
+**$error_text** : エラーメッセージ
+
+
+#### wakarana_data_item::get_last_error_text()
+wakarana_data_item::print_errorにて直近に入力されたエラーメッセージを返す。  
+  
+**返り値** ： エラーメッセージの文字列を返す。エラーがまだ発生していない場合はNULLを返す。
+
+
 ### class wakarana_user
-ユーザーの情報を読み書きするためのクラス。1インスタンスごとに1ユーザーの情報が割り当てられる。
+wakarana_data_itemの派生クラス。ユーザーの情報を読み書きするために使用する。1インスタンスごとに1ユーザーの情報が割り当てられる。
 
 #### wakarana_user::__construct($wakarana, $user_info)
 コンストラクタ。wakarana::get_user実行時に呼び出されるものであり、直接インスタンス化するべきではない。  
@@ -1286,7 +1304,7 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
 
 
 ### class wakarana_role
-ロールの情報を読み書きするためのクラス。1インスタンスごとに1ロールの情報が割り当てられる。
+wakarana_data_itemの派生クラス。ロールの情報を読み書きするために使用する。1インスタンスごとに1ロールの情報が割り当てられる。
 
 #### wakarana_role::__construct($wakarana, $role_info)
 コンストラクタ。wakarana::get_roleの実行時に呼び出されるものであり、直接インスタンス化するべきではない。  
@@ -1414,7 +1432,7 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
 
 
 ### class wakarana_permission
-権限の情報を読み書きするためのクラス。1インスタンスごとに1権限の情報が割り当てられる。
+wakarana_data_itemの派生クラス。権限の情報を読み書きするために使用する。1インスタンスごとに1権限の情報が割り当てられる。
 
 #### wakarana_permission::__construct($wakarana, $permission_info)
 コンストラクタ。wakarana::get_permissionの実行時に呼び出されるものであり、直接インスタンス化するべきではない。  
@@ -1511,7 +1529,7 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
 
 
 ### class wakarana_permitted_value
-権限値の情報を読み書きするためのクラス。1インスタンスごとに1権限値の情報が割り当てられる。
+wakarana_data_itemの派生クラス。権限値の情報を読み書きするために使用する。1インスタンスごとに1権限値の情報が割り当てられる。
 
 #### wakarana_permitted_value::__construct($wakarana, $permitted_value_info)
 コンストラクタ。wakarana::get_permitted_valueの実行時に呼び出されるものであり、直接インスタンス化するべきではない。  
@@ -1582,7 +1600,7 @@ wakarana_config.iniの既定値一覧。
 
 
 ### class wakarana_config
-wakarana_commonの派生クラス。
+wakarana_commonの派生クラス。Wakaranaが組み込まれたアプリケーション本体のセットアップや設定変更の際に使用する。
 
 #### wakarana_config::__construct($base_dir=NULL)
 ベースフォルダに各種設定ファイル(wakarana_config.ini、wakarana_custom_fields.json、wakarana_email_domain_blacklist.conf)がなければ作成し、wakarana_common::__constructを実行する。  
