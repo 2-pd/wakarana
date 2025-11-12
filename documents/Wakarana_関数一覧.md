@@ -780,9 +780,10 @@ TOTP生成鍵と現在時刻からワンタイムコードを生成する。
 ### class wakarana_data_item
 wakarana_userクラスとwakarana_roleクラス、wakarana_permissionクラス、wakarana_permitted_valueクラスの親クラス。
 
-#### wakarana_data_item::print_error($error_text)
+#### ◆ wakarana_data_item::print_error($error_text)
 エラーメッセージを出力する。  
 ただし、このwakarana_data_item(及びその子孫)クラスのインスタンスを生成したwakaranaインスタンスに読み込まれているwakarana_config.iniにおいてdisplay_errors=trueが設定されていなければ出力しない。  
+◆クラス内呼び出し専用。  
   
 **$error_text** : エラーメッセージ
 
@@ -790,7 +791,7 @@ wakarana_userクラスとwakarana_roleクラス、wakarana_permissionクラス�
 #### wakarana_data_item::get_last_error_text()
 wakarana_data_item::print_errorにて直近に入力されたエラーメッセージを返す。  
   
-**返り値** ： エラーメッセージの文字列
+**返り値** ： エラーメッセージの文字列を返す。エラーがまだ発生していない場合はNULLを返す。
 
 
 ### class wakarana_user
