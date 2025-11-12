@@ -1449,6 +1449,27 @@ class wakarana extends wakarana_common {
 }
 
 
+class wakarana_data_item {
+    protected $wakarana;
+    
+    private $last_error_text = "";
+    
+    
+    function print_error ($error_text) {
+        $this->last_error_text = $error_text;
+        
+        if ($this->wakarana->config["display_errors"]) {
+            print "An error occurred in Wakarana : ".$error_text;
+        }
+    }
+    
+    
+    function get_last_error_text () {
+        return $this->last_error_text;
+    }
+}
+
+
 class wakarana_user {
     protected $wakarana;
     protected $user_info;
