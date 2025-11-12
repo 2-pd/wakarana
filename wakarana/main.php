@@ -3462,8 +3462,7 @@ class wakarana_permission extends wakarana_data_item {
 }
 
 
-class wakarana_permitted_value {
-    protected $wakarana;
+class wakarana_permitted_value extends wakarana_data_item {
     protected $permitted_value_info;
     
     
@@ -3513,7 +3512,7 @@ class wakarana_permitted_value {
             
             $stmt->execute();
         } catch (PDOException $err) {
-            $this->wakarana->print_error("権限値情報の変更に失敗しました。".$err->getMessage());
+            $this->print_error("権限値情報の変更に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -3540,7 +3539,7 @@ class wakarana_permitted_value {
         try {
             $stmt = $this->wakarana->db_obj->query('SELECT "wakarana_roles".*, "wakarana_role_permitted_values"."permitted_value" FROM "wakarana_roles", "wakarana_role_permitted_values" WHERE "wakarana_role_permitted_values"."permitted_value_id" = \''.$this->permitted_value_info["permitted_value_id"].'\' '.$min_q.$max_q.'AND "wakarana_role_permitted_values"."role_id" = "wakarana_roles"."role_id" ORDER BY "wakarana_role_permitted_values"."permitted_value" DESC');
         } catch (PDOException $err) {
-            $this->wakarana->print_error("権限値を持つロールの一覧取得に失敗しました。".$err->getMessage());
+            $this->print_error("権限値を持つロールの一覧取得に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -3576,7 +3575,7 @@ class wakarana_permitted_value {
         try {
             $stmt = $this->wakarana->db_obj->query('SELECT "wakarana_users".*, "wakarana_user_permitted_value_caches"."maximum_permitted_value" FROM "wakarana_users", "wakarana_user_permitted_value_caches" WHERE "wakarana_user_permitted_value_caches"."permitted_value_id" = \''.$this->permitted_value_info["permitted_value_id"].'\' '.$min_q.$max_q.'AND "wakarana_user_permitted_value_caches"."user_id" = "wakarana_users"."user_id" ORDER BY "wakarana_user_permitted_value_caches"."maximum_permitted_value" DESC');
         } catch (PDOException $err) {
-            $this->wakarana->print_error("権限値を持つユーザーの一覧取得に失敗しました。".$err->getMessage());
+            $this->print_error("権限値を持つユーザーの一覧取得に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -3601,7 +3600,7 @@ class wakarana_permitted_value {
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_role_permitted_values" WHERE "permitted_value_id" = \''.$this->permitted_value_info["permitted_value_id"].'\'');
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_user_permitted_value_caches" WHERE "permitted_value_id" = \''.$this->permitted_value_info["permitted_value_id"].'\'');
         } catch (PDOException $err) {
-            $this->wakarana->print_error("権限値の削除に失敗しました。".$err->getMessage());
+            $this->print_error("権限値の削除に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
