@@ -567,9 +567,15 @@ class wakarana extends wakarana_common {
     
     
     function delete_all_tokens () {
-        if($this->delete_login_tokens(0) && $this->delete_one_time_tokens(0) && $this->delete_email_address_verification_codes(0) && $this->delete_invite_code() && $this->delete_password_reset_tokens(0) && $this->delete_2sv_tokens(0)){
+        $this->begin_transaction();
+        
+        if ($this->delete_login_tokens(0) && $this->delete_one_time_tokens(0) && $this->delete_email_address_verification_codes(0) && $this->delete_invite_code() && $this->delete_password_reset_tokens(0) && $this->delete_2sv_tokens(0)) {
+            $this->commit_transaction();
+            
             return TRUE;
         } else {
+            $this->rollback_transaction();
+            
             return FALSE;
         }
     }
