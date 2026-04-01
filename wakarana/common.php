@@ -131,6 +131,25 @@ class wakarana_common {
     }
     
     
+    function commit_transaction () {
+        try {
+            if ($this->transaction_cnt === 1) {
+                $this->db_obj->exec("COMMIT");
+            } else {
+                $this->db_obj->exec("RELEASE SAVEPOINT sp_".$this->transaction_cnt);
+            }
+        } catch (PDOException $err) {
+            $this->print_error("トランザクションの完了に失敗しました。".$err->getMessage());
+            
+            return FALSE;
+        }
+        
+        $this->transaction_cnt--;
+        
+        return TRUE;
+    }
+    
+    
     protected function disconnect_db () {
         $this->db_obj = NULL;
     }
