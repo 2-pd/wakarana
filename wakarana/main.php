@@ -179,6 +179,8 @@ class wakarana extends wakarana_common {
             return FALSE;
         }
         
+        $this->begin_transaction();
+        
         try {
             $stmt = $this->db_obj->prepare('INSERT INTO "wakarana_users"("user_id", "password", "user_name", "user_created", "last_updated", "last_access", "status", "totp_key") VALUES (\''.$user_id.'\', \''.$password_hash.'\', :user_name, \''.$date_time.'\', \''.$date_time.'\', \''.$date_time.'\', '.intval($status).', NULL)');
             
@@ -191,12 +193,21 @@ class wakarana extends wakarana_common {
             $stmt->execute();
         } catch (PDOException $err) {
             $this->print_error("ユーザーの作成に失敗しました。".$err->getMessage());
+            
+            $this->rollback_transaction();
+            
             return FALSE;
         }
         
         $user = $this->get_user($user_id);
         
-        $user->add_role(WAKARANA_BASE_ROLE);
+        if (!$user->add_role(WAKARANA_BASE_ROLE)) {
+            $this->rollback_transaction();
+            
+            return FALSE;
+        }
+        
+        $this->commit_transaction();
         
         return $user;
     }
