@@ -406,6 +406,8 @@ class wakarana extends wakarana_common {
             return FALSE;
         }
         
+        $this->begin_transaction();
+        
         try {
             $stmt = $this->db_obj->prepare('INSERT INTO "wakarana_permissions"("resource_id", "permission_name", "permission_description") VALUES (\''.$resource_id.'\', :permission_name, :permission_description)');
             
@@ -415,6 +417,9 @@ class wakarana extends wakarana_common {
             $stmt->execute();
         } catch (PDOException $err) {
             $this->print_error("権限の作成に失敗しました。".$err->getMessage());
+            
+            $this->rollback_transaction();
+            
             return FALSE;
         }
         
@@ -425,6 +430,9 @@ class wakarana extends wakarana_common {
                 $this->db_obj->exec('INSERT INTO "wakarana_user_permission_caches"("user_id", "resource_id", "action") SELECT "user_id", \''.$resource_id.'\', "action" FROM "wakarana_user_permission_caches" WHERE "resource_id" = \''.$parent_resource_id.'\'');
             } catch (PDOException $err) {
                 $this->print_error("親権限から子権限への設定継承に失敗しました。".$err->getMessage());
+                
+                $this->rollback_transaction();
+                
                 return FALSE;
             }
         }
@@ -432,8 +440,14 @@ class wakarana extends wakarana_common {
         $permission = $this->get_permission($resource_id);
         
         if (empty($parent_resource_id)) {
-            $permission->add_action("any");
+            if (!$permission->add_action("any")) {
+                $this->rollback_transaction();
+                
+                return FALSE;
+            }
         }
+        
+        $this->commit_transaction();
         
         return $permission;
     }
