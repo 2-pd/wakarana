@@ -1971,6 +1971,8 @@ class wakarana_user extends wakarana_data_item {
             return FALSE;
         }
         
+        $this->wakarana->begin_transaction();
+        
         try {
             if ($value_number <= $value_count) {
                 $this->wakarana->db_obj->exec('UPDATE "'.$table_name.'" SET "value_number" = "value_number" + '.$this->wakarana->custom_fields[$custom_field_name]["records_per_user"].' WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "custom_field_name" = \''.$custom_field_name.'\' AND "value_number" >= '.$value_number);
@@ -1984,8 +1986,13 @@ class wakarana_user extends wakarana_data_item {
             $stmt->execute();
         } catch (PDOException $err) {
             $this->print_error("カスタムフィールド値の追加に失敗しました。".$err->getMessage());
+            
+            $this->wakarana->rollback_transaction();
+            
             return FALSE;
         }
+        
+        $this->wakarana->commit_transaction();
         
         return TRUE;
     }
