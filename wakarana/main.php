@@ -1754,10 +1754,12 @@ class wakarana_user extends wakarana_data_item {
     
     
     function set_primary_email_address ($email_address) {
-        if (array_search($email_address, $this->get_email_addresses()) === FALSE) {
+        if (!in_array($email_address, $this->get_email_addresses())) {
             $this->print_error("未登録のメールアドレスをプライマリメールアドレスに設定することはできません。");
             return FALSE;
         }
+        
+        $this->wakarana->begin_transaction();
         
         try {
             $this->wakarana->db_obj->exec('UPDATE "wakarana_user_email_addresses" SET "is_primary" = FALSE  WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
@@ -1769,8 +1771,13 @@ class wakarana_user extends wakarana_data_item {
             $stmt->execute();
         } catch (PDOException $err) {
             $this->print_error("プライマリメールアドレスの変更に失敗しました。".$err->getMessage());
+            
+            $this->wakarana->rollback_transaction();
+            
             return FALSE;
         }
+        
+        $this->wakarana->commit_transaction();
         
         return TRUE;
     }
