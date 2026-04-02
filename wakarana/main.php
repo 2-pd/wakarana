@@ -2856,14 +2856,21 @@ class wakarana_user extends wakarana_data_item {
         
         $token_created = date("Y-m-d H:i:s");
         
+        $this->wakarana->begin_transaction();
+        
         try {
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_one_time_tokens" WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "token" NOT IN (SELECT "token" FROM "wakarana_one_time_tokens" WHERE "user_id" = \''.$this->user_info["user_id"].'\' ORDER BY "token_created" DESC LIMIT '.($this->wakarana->config["one_time_tokens_per_user"] - 1).')');
             
             $this->wakarana->db_obj->exec('INSERT INTO "wakarana_one_time_tokens"("token", "user_id", "token_created") VALUES (\''.$token.'\', \''.$this->user_info["user_id"].'\', \''.date("Y-m-d H:i:s").'\')');
         } catch (PDOException $err) {
             $this->print_error("ワンタイムトークンの生成に失敗しました。".$err->getMessage());
+            
+            $this->wakarana->rollback_transaction();
+            
             return FALSE;
         }
+        
+        $this->wakarana->commit_transaction();
         
         return $token;
     }
