@@ -619,14 +619,14 @@ class wakarana extends wakarana_common {
         $environment = array("operating_system" => NULL, "browser_name" => NULL);
         
         foreach ($os_names as $os_name) {
-            if (strpos($_SERVER["HTTP_USER_AGENT"], $os_name) !== FALSE){
+            if (strpos($_SERVER["HTTP_USER_AGENT"], $os_name) !== FALSE) {
                 $environment["operating_system"] = $os_name;
                 break;
             }
         }
         
         foreach ($browser_names as $browser_name) {
-            if (strpos($_SERVER["HTTP_USER_AGENT"], $browser_name) !== FALSE){
+            if (strpos($_SERVER["HTTP_USER_AGENT"], $browser_name) !== FALSE) {
                 $environment["browser_name"] = $browser_name;
                 break;
             }
@@ -1946,7 +1946,7 @@ class wakarana_user extends wakarana_data_item {
         
         if ($value_number === -1) {
             $value_number = $value_count + 1;
-        } elseif($value_number <= $value_count + 1) {
+        } elseif ($value_number <= $value_count + 1) {
             $value_number = intval($value_number);
         } else {
             $this->print_error("並び順番号として使用可能な数値は既存の項目数に1を加えた値以下です。");
@@ -2271,7 +2271,7 @@ class wakarana_user extends wakarana_data_item {
             return FALSE;
         }
         
-        if ($get_descendant_permissions){
+        if ($get_descendant_permissions) {
             return $stmt->fetchAll(PDO::FETCH_COLUMN|PDO::FETCH_GROUP);
         } else {
             $permissions = array();
@@ -2339,9 +2339,15 @@ class wakarana_user extends wakarana_data_item {
     
     
     function delete_all_tokens () {
-        if($this->delete_login_tokens() && $this->delete_one_time_tokens() && $this->delete_email_address_verification_code() && $this->delete_invite_codes() && $this->delete_password_reset_token() && $this->delete_2sv_token()){
+        $this->wakarana->begin_transaction();
+        
+        if ($this->delete_login_tokens() && $this->delete_one_time_tokens() && $this->delete_email_address_verification_code() && $this->delete_invite_codes() && $this->delete_password_reset_token() && $this->delete_2sv_token()) {
+            $this->wakarana->commit_transaction();
+            
             return TRUE;
         } else {
+            $this->wakarana->rollback_transaction();
+            
             return FALSE;
         }
     }
