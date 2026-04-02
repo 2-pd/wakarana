@@ -85,7 +85,7 @@ class wakarana extends wakarana_common {
     }
     
     
-    function count_user() {
+    function count_user () {
         try {
             $stmt = $this->db_obj->query('SELECT COUNT(*) FROM "wakarana_users"');
         } catch (PDOException $err) {
@@ -2242,7 +2242,7 @@ class wakarana_user extends wakarana_data_item {
     }
     
     
-    function check_permission($resource_id, $action = "any") {
+    function check_permission ($resource_id, $action = "any") {
         if (!wakarana::check_resource_id_string($resource_id) || !wakarana::check_id_string($action)) {
             $this->print_error("識別名として使用できない文字列が指定されました。");
             return FALSE;
@@ -2365,7 +2365,7 @@ class wakarana_user extends wakarana_data_item {
     }
 
 
-    function check_auth_interval($unsucceeded_only = FALSE) {
+    function check_auth_interval ($unsucceeded_only = FALSE) {
         if ($unsucceeded_only) {
             $succeeded_q = ' AND "succeeded" = FALSE';
         } else {
@@ -2469,6 +2469,8 @@ class wakarana_user extends wakarana_data_item {
         
         $client_env = wakarana::get_client_environment();
         
+        $this->wakarana->begin_transaction();
+        
         try {
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_login_tokens" WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "token" NOT IN (SELECT "token" FROM "wakarana_login_tokens" WHERE "user_id" = \''.$this->user_info["user_id"].'\' ORDER BY "token_created" DESC LIMIT '.($this->wakarana->config["login_tokens_per_user"] - 1).')');
             
@@ -2489,12 +2491,21 @@ class wakarana_user extends wakarana_data_item {
             $stmt->execute();
         } catch (PDOException $err) {
             $this->print_error("ログイントークンの保存に失敗しました。".$err->getMessage());
+            
+            $this->wakarana->rollback_transaction();
+            
             return FALSE;
         }
         
-        $this->update_last_access();
-        
-        return $token;
+        if ($this->update_last_access()) {
+            $this->wakarana->commit_transaction();
+            
+            return $token;
+        } else {
+            $this->wakarana->rollback_transaction();
+            
+            return FALSE;
+        }
     }
     
     
