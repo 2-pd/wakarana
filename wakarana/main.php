@@ -3351,7 +3351,11 @@ class wakarana_role extends wakarana_data_item {
             return FALSE;
         }
         
+        $this->wakarana->begin_transaction();
+        
         if (!$this->remove_all_permissions() || !$this->remove_permitted_value()) {
+            $this->wakarana->rollback_transaction();
+            
             return FALSE;
         }
         
@@ -3360,8 +3364,13 @@ class wakarana_role extends wakarana_data_item {
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_user_roles" WHERE "role_id" = \''.$this->role_info["role_id"].'\'');
         } catch (PDOException $err) {
             $this->print_error("ロールの削除に失敗しました。".$err->getMessage());
+            
+            $this->wakarana->rollback_transaction();
+            
             return FALSE;
         }
+        
+        $this->wakarana->commit_transaction();
         
         unset($this->wakarana->role_ids[$this->role_info["role_id"]]);
         
