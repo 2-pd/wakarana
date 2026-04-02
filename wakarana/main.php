@@ -3320,6 +3320,8 @@ class wakarana_role extends wakarana_data_item {
             $permitted_value_id_q = '';
         }
         
+        $this->wakarana->begin_transaction();
+        
         try {
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_role_permitted_values" WHERE "role_id" = \''.$this->role_info["role_id"].'\''.$permitted_value_id_q);
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_user_permitted_value_caches" WHERE "user_id" IN (SELECT "user_id" FROM "wakarana_user_roles" WHERE "role_id" = \''.$this->role_info["role_id"].'\')'.$permitted_value_id_q);
@@ -3331,8 +3333,13 @@ class wakarana_role extends wakarana_data_item {
             }
         } catch (PDOException $err) {
             $this->print_error("ロールからの権限値削除に失敗しました。".$err->getMessage());
+            
+            $this->wakarana->rollback_transaction();
+            
             return FALSE;
         }
+        
+        $this->wakarana->commit_transaction();
         
         return TRUE;
     }
