@@ -1819,6 +1819,8 @@ class wakarana_user extends wakarana_data_item {
     function set_status ($status) {
         $status = intval($status);
         
+        $this->wakarana->begin_transaction();
+        
         if ($status !== WAKARANA_STATUS_NORMAL) {
             $this->delete_login_tokens();
         }
@@ -1827,8 +1829,13 @@ class wakarana_user extends wakarana_data_item {
             $this->wakarana->db_obj->exec('UPDATE "wakarana_users" SET "status" = \''.$status.'\', "last_updated" = \''.date("Y-m-d H:i:s").'\'  WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
         } catch (PDOException $err) {
             $this->print_error("ユーザーアカウントの状態の変更に失敗しました。".$err->getMessage());
+            
+            $this->wakarana->rollback_transaction();
+            
             return FALSE;
         }
+        
+        $this->wakarana->commit_transaction();
         
         $this->user_info["status"] = $status;
         
