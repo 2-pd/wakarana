@@ -2088,6 +2088,8 @@ class wakarana_user extends wakarana_data_item {
             $value_number_q = ' AND "value_number" = '.$value_number;
         }
         
+        $this->wakarana->begin_transaction();
+        
         try {
             $this->wakarana->db_obj->exec('DELETE FROM "'.$table_name.'" WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "custom_field_name" = \''.$custom_field_name.'\''.$value_number_q);
             
@@ -2097,8 +2099,13 @@ class wakarana_user extends wakarana_data_item {
             }
         } catch (PDOException $err) {
             $this->print_error("カスタムフィールド値の削除に失敗しました。".$err->getMessage());
+            
+            $this->wakarana->rollback_transaction();
+            
             return FALSE;
         }
+        
+        $this->wakarana->commit_transaction();
         
         return TRUE;
     }
