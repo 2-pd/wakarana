@@ -3183,14 +3183,21 @@ class wakarana_role extends wakarana_data_item {
             $action_q = ' AND "action" = \''.$action.'\'';
         }
         
+        $this->wakarana->begin_transaction();
+        
         try {
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_role_permissions" WHERE "role_id" = \''.$this->role_info["role_id"].'\' AND ("resource_id" = \''.$resource_id.'\' OR "resource_id" LIKE \''.$resource_id.'%\')'.$action_q);
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_user_permission_caches" WHERE "user_id" IN (SELECT "user_id" FROM "wakarana_user_roles" WHERE "role_id" = \''.$this->role_info["role_id"].'\') AND ("resource_id" = \''.$resource_id.'\' OR "resource_id" LIKE \''.$resource_id.'%\')'.$action_q);
             $this->wakarana->db_obj->exec('INSERT INTO "wakarana_user_permission_caches"("user_id", "resource_id", "action") SELECT DISTINCT "wakarana_user_roles"."user_id", "wakarana_role_permissions"."resource_id", "wakarana_role_permissions"."action" FROM "wakarana_user_roles", "wakarana_role_permissions" WHERE "wakarana_user_roles"."user_id" IN (SELECT "user_id" FROM "wakarana_user_roles" WHERE "role_id" = \''.$this->role_info["role_id"].'\') AND "wakarana_role_permissions"."role_id" = "wakarana_user_roles"."role_id" AND ("resource_id" = \''.$resource_id.'\' OR "resource_id" LIKE \''.$resource_id.'%\')'.$action_q);
         } catch (PDOException $err) {
             $this->print_error("ロールからの権限剥奪に失敗しました。".$err->getMessage());
+            
+            $this->wakarana->rollback_transaction();
+            
             return FALSE;
         }
+        
+        $this->wakarana->commit_transaction();
         
         return TRUE;
     }
