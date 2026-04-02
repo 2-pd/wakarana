@@ -2131,13 +2131,20 @@ class wakarana_user extends wakarana_data_item {
     
     
     function delete_all_values () {
+        $this->wakarana->begin_transaction();
+        
         try {
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_user_custom_fields" WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_user_custom_numerical_fields" WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
         } catch (PDOException $err) {
             $this->print_error("カスタムフィールド値の削除に失敗しました。".$err->getMessage());
+            
+            $this->wakarana->rollback_transaction();
+            
             return FALSE;
         }
+        
+        $this->wakarana->commit_transaction();
         
         return TRUE;
     }
