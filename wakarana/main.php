@@ -3281,6 +3281,8 @@ class wakarana_role extends wakarana_data_item {
             return FALSE;
         }
         
+        $this->wakarana->begin_transaction();
+        
         try {
             $this->wakarana->db_obj->exec('INSERT INTO "wakarana_role_permitted_values"("role_id", "permitted_value_id", "permitted_value") VALUES (\''.$this->role_info["role_id"].'\', \''.$permitted_value_id.'\', '.$permitted_value.') ON CONFLICT ("role_id", "permitted_value_id") DO UPDATE SET "permitted_value" = '.$permitted_value);
             
@@ -3292,8 +3294,13 @@ class wakarana_role extends wakarana_data_item {
             }
         } catch (PDOException $err) {
             $this->print_error("ロールの権限値設定に失敗しました。".$err->getMessage());
+            
+            $this->wakarana->rollback_transaction();
+            
             return FALSE;
         }
+        
+        $this->wakarana->commit_transaction();
         
         return TRUE;
     }
