@@ -3524,14 +3524,21 @@ class wakarana_permission extends wakarana_data_item {
             $action_q = '"action" = \''.$action.'\'';
         }
         
+        $this->wakarana->begin_transaction();
+        
         try {
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_permission_actions" WHERE ("resource_id" = \''.$this->permission_info["resource_id"].'\' OR "resource_id" LIKE \''.$this->permission_info["resource_id"].'/%\') AND '.$action_q);
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_role_permissions" WHERE ("resource_id" = \''.$this->permission_info["resource_id"].'\' OR "resource_id" LIKE \''.$this->permission_info["resource_id"].'/%\') AND '.$action_q);
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_user_permission_caches" WHERE ("resource_id" = \''.$this->permission_info["resource_id"].'\' OR "resource_id" LIKE \''.$this->permission_info["resource_id"].'/%\') AND '.$action_q);
         } catch (PDOException $err) {
             $this->print_error("動作の削除に失敗しました。".$err->getMessage());
+            
+            $this->wakarana->rollback_transaction();
+            
             return FALSE;
         }
+        
+        $this->wakarana->commit_transaction();
         
         return TRUE;
     }
