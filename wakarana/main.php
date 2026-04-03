@@ -3463,17 +3463,28 @@ class wakarana_permission extends wakarana_data_item {
         
         $action = strtolower($action);
         
+        $this->wakarana->begin_transaction();
+        
         try {
             $this->wakarana->db_obj->exec('INSERT INTO "wakarana_permission_actions"("resource_id", "action") SELECT "resource_id", \''.$action.'\' FROM "wakarana_permissions" WHERE "resource_id" = \''.$this->permission_info["resource_id"].'\' OR "resource_id" LIKE \''.$this->permission_info["resource_id"].'/%\' ON CONFLICT ("resource_id", "action") DO NOTHING');
         } catch (PDOException $err) {
             $this->print_error("動作の追加に失敗しました。".$err->getMessage());
+            
+            $this->wakarana->rollback_transaction();
+            
             return FALSE;
         }
         
         $admin_role = $this->wakarana->get_role(WAKARANA_ADMIN_ROLE);
-        $admin_role->add_permission($this->permission_info["resource_id"], $action);
-        
-        return TRUE;
+        if ($admin_role->add_permission($this->permission_info["resource_id"], $action)) {
+            $this->wakarana->commit_transaction();
+            
+            return TRUE;
+        } else {
+            $this->wakarana->rollback_transaction();
+            
+            return FALSE;
+        }
     }
     
     
