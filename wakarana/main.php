@@ -3787,14 +3787,21 @@ class wakarana_permitted_value extends wakarana_data_item {
     
     
     function delete_permitted_value () {
+        $this->wakarana->begin_transaction();
+        
         try {
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_permitted_values" WHERE "permitted_value_id" = \''.$this->permitted_value_info["permitted_value_id"].'\'');
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_role_permitted_values" WHERE "permitted_value_id" = \''.$this->permitted_value_info["permitted_value_id"].'\'');
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_user_permitted_value_caches" WHERE "permitted_value_id" = \''.$this->permitted_value_info["permitted_value_id"].'\'');
         } catch (PDOException $err) {
             $this->print_error("権限値の削除に失敗しました。".$err->getMessage());
+            
+            $this->wakarana->rollback_transaction();
+            
             return FALSE;
         }
+        
+        $this->wakarana->commit_transaction();
         
         unset($this->wakarana->permitted_value_ids[$this->permitted_value_info["permitted_value_id"]]);
         
