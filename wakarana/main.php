@@ -3627,6 +3627,8 @@ class wakarana_permission extends wakarana_data_item {
     
     
     function delete_permission () {
+        $this->wakarana->begin_transaction();
+        
         try {
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_permissions" WHERE "resource_id" = \''.$this->permission_info["resource_id"].'\' OR "resource_id" LIKE \''.$this->permission_info["resource_id"].'/%\'');
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_permission_actions" WHERE "resource_id" = \''.$this->permission_info["resource_id"].'\' OR "resource_id" LIKE \''.$this->permission_info["resource_id"].'/%\'');
@@ -3634,8 +3636,13 @@ class wakarana_permission extends wakarana_data_item {
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_user_permission_caches" WHERE "resource_id" = \''.$this->permission_info["resource_id"].'\' OR "resource_id" LIKE \''.$this->permission_info["resource_id"].'/%\'');
         } catch (PDOException $err) {
             $this->print_error("権限の削除に失敗しました。".$err->getMessage());
+            
+            $this->wakarana->rollback_transaction();
+            
             return FALSE;
         }
+        
+        $this->wakarana->commit_transaction();
         
         unset($this->wakarana->resource_ids[$this->permission_info["resource_id"]]);
         
