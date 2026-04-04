@@ -2587,10 +2587,10 @@ class wakarana_user extends wakarana_data_item {
     }
     
     
-    function create_email_address_verification_code ($email_address) {
+    function create_email_address_verification_code ($email_address, $check_registration_limit = TRUE) {
         $this->rejection_reason = NULL;
         
-        if (count($this->get_email_addresses()) >= $this->wakarana->config["email_addresses_per_user"]) {
+        if ($check_registration_limit && count($this->get_email_addresses()) >= $this->wakarana->config["email_addresses_per_user"]) {
             $this->rejection_reason = "registration_limit_over";
             return FALSE;
         }

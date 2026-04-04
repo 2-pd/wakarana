@@ -1205,16 +1205,17 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
 **拒絶理由文字列** : "parameters_not_matched"(パスワードまたはTOTPコードが誤っている)、"unavailable_user"(ユーザーアカウントが停止中である)、"currently_locked_out"(ロックアウト中のためログインを試行できない)
 
 
-#### wakarana_user::create_email_address_verification_code($email_address)
+#### wakarana_user::create_email_address_verification_code($email_address, $check_registration_limit=TRUE)
 メールアドレス確認コードを生成し、ユーザーに割り当てる。  
 前に同じユーザーに対して生成されたメールアドレス確認コードがデータベースに残っていた場合、古いコードは削除される。  
 この関数によりメールが送信されるわけではない。  
   
 **$email_address** : コードの送信先メールアドレス。  
+**$check_registration_limit** : TRUEを指定すると、ユーザーのメールアドレス登録数が上限に達している場合は確認コードを生成しない。  
   
 **返り値** : 成功した場合は8桁のメールアドレス確認コードを返し、失敗した場合はFALSEを返す。  
   
-**拒絶理由文字列** : "invalid_email_address"(メールアドレスとして正しくない文字列である)、"blacklisted_email_domain"(メールドメインがブラックリストに登録されている)、"email_address_already_exists"(既に登録されているメールアドレスである)、"registration_limit_over"(メールアドレス登録数の上限に達している)、"currently_locked_out"(ロックアウト中のためログインを試行できない)
+**拒絶理由文字列** : "invalid_email_address"(メールアドレスとして正しくない文字列である)、"blacklisted_email_domain"(メールドメインがブラックリストに登録されている)、"email_address_already_exists"(既に登録されているメールアドレスである)、"registration_limit_over"(メールアドレス登録数の上限に達している)、"currently_locked_out"(前回のメールアドレス確認コード発行時から規定の時間が経過していない)
 
 
 #### wakarana_user::email_address_verify($email_address, $verification_code, $verification_only=FALSE)
