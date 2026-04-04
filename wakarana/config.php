@@ -251,13 +251,13 @@ class wakarana_config extends wakarana_common {
     }
     
     
-    function add_email_domain_to_blacklist ($damain_name) {
+    function add_email_domain_to_blacklist ($damain_name, $save_now = TRUE) {
         if ($this->check_email_domain($damain_name)) {
             $this->email_domain_blacklist[] = mb_strtolower($damain_name);
             
-            return $this->save_email_domain_blacklist();
+            return $save_now ? $this->save_email_domain_blacklist() : TRUE;
         } else {
-            return FALSE;
+            return NULL;
         }
     }
     
