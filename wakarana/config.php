@@ -273,6 +273,27 @@ class wakarana_config extends wakarana_common {
     }
     
     
+    function merge_email_domain_blacklists ($damain_names) {
+        $lines = preg_split("/\R/u", $damain_names);
+        
+        $added_count = 0;
+        foreach ($lines as $line) {
+            $trimmed_line = trim($line);
+            if ($trimmed_line !== "") {
+                if (!empty($this->add_email_domain_to_blacklist($trimmed_line, FALSE))) {
+                    $added_count++;
+                }
+            }
+        }
+        
+        if ($added_count === 0) {
+            return 0;
+        }
+        
+        return $this->save_email_domain_blacklist() ? $added_count : FALSE;
+    }
+    
+    
     function setup_db () {
         $this->connect_db();
         

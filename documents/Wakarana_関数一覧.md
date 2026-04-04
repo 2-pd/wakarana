@@ -1716,7 +1716,7 @@ wakarana_config.iniの設定値を全て既定値に戻す。
 **返り値** : 成功した場合はTRUE、もとからブラックリストに登録されていないドメインだった場合や失敗した場合はFALSEを返す。
 
 
-#### wakarana_config::merge_email_domains_to_blacklist($damain_names)
+#### wakarana_config::merge_email_domain_blacklists($damain_names)
 複数のドメインをまとめてメールドメインブラックリストに追加する。  
 既にブラックリストに登録されているドメインが含まれていた場合、そのドメインは無視される。  
   
