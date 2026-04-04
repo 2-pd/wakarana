@@ -85,7 +85,7 @@ class wakarana extends wakarana_common {
     }
     
     
-    function count_user() {
+    function count_user () {
         try {
             $stmt = $this->db_obj->query('SELECT COUNT(*) FROM "wakarana_users"');
         } catch (PDOException $err) {
@@ -179,6 +179,8 @@ class wakarana extends wakarana_common {
             return FALSE;
         }
         
+        $this->begin_transaction();
+        
         try {
             $stmt = $this->db_obj->prepare('INSERT INTO "wakarana_users"("user_id", "password", "user_name", "user_created", "last_updated", "last_access", "status", "totp_key") VALUES (\''.$user_id.'\', \''.$password_hash.'\', :user_name, \''.$date_time.'\', \''.$date_time.'\', \''.$date_time.'\', '.intval($status).', NULL)');
             
@@ -191,12 +193,21 @@ class wakarana extends wakarana_common {
             $stmt->execute();
         } catch (PDOException $err) {
             $this->print_error("ユーザーの作成に失敗しました。".$err->getMessage());
+            
+            $this->rollback_transaction();
+            
             return FALSE;
         }
         
         $user = $this->get_user($user_id);
         
-        $user->add_role(WAKARANA_BASE_ROLE);
+        if (!$user->add_role(WAKARANA_BASE_ROLE)) {
+            $this->rollback_transaction();
+            
+            return FALSE;
+        }
+        
+        $this->commit_transaction();
         
         return $user;
     }
@@ -395,6 +406,8 @@ class wakarana extends wakarana_common {
             return FALSE;
         }
         
+        $this->begin_transaction();
+        
         try {
             $stmt = $this->db_obj->prepare('INSERT INTO "wakarana_permissions"("resource_id", "permission_name", "permission_description") VALUES (\''.$resource_id.'\', :permission_name, :permission_description)');
             
@@ -404,6 +417,9 @@ class wakarana extends wakarana_common {
             $stmt->execute();
         } catch (PDOException $err) {
             $this->print_error("権限の作成に失敗しました。".$err->getMessage());
+            
+            $this->rollback_transaction();
+            
             return FALSE;
         }
         
@@ -414,6 +430,9 @@ class wakarana extends wakarana_common {
                 $this->db_obj->exec('INSERT INTO "wakarana_user_permission_caches"("user_id", "resource_id", "action") SELECT "user_id", \''.$resource_id.'\', "action" FROM "wakarana_user_permission_caches" WHERE "resource_id" = \''.$parent_resource_id.'\'');
             } catch (PDOException $err) {
                 $this->print_error("親権限から子権限への設定継承に失敗しました。".$err->getMessage());
+                
+                $this->rollback_transaction();
+                
                 return FALSE;
             }
         }
@@ -421,8 +440,14 @@ class wakarana extends wakarana_common {
         $permission = $this->get_permission($resource_id);
         
         if (empty($parent_resource_id)) {
-            $permission->add_action("any");
+            if (!$permission->add_action("any")) {
+                $this->rollback_transaction();
+                
+                return FALSE;
+            }
         }
+        
+        $this->commit_transaction();
         
         return $permission;
     }
@@ -542,9 +567,15 @@ class wakarana extends wakarana_common {
     
     
     function delete_all_tokens () {
-        if($this->delete_login_tokens(0) && $this->delete_one_time_tokens(0) && $this->delete_email_address_verification_codes(0) && $this->delete_invite_code() && $this->delete_password_reset_tokens(0) && $this->delete_2sv_tokens(0)){
+        $this->begin_transaction();
+        
+        if ($this->delete_login_tokens(0) && $this->delete_one_time_tokens(0) && $this->delete_email_address_verification_codes(0) && $this->delete_invite_code() && $this->delete_password_reset_tokens(0) && $this->delete_2sv_tokens(0)) {
+            $this->commit_transaction();
+            
             return TRUE;
         } else {
+            $this->rollback_transaction();
+            
             return FALSE;
         }
     }
@@ -588,14 +619,14 @@ class wakarana extends wakarana_common {
         $environment = array("operating_system" => NULL, "browser_name" => NULL);
         
         foreach ($os_names as $os_name) {
-            if (strpos($_SERVER["HTTP_USER_AGENT"], $os_name) !== FALSE){
+            if (strpos($_SERVER["HTTP_USER_AGENT"], $os_name) !== FALSE) {
                 $environment["operating_system"] = $os_name;
                 break;
             }
         }
         
         foreach ($browser_names as $browser_name) {
-            if (strpos($_SERVER["HTTP_USER_AGENT"], $browser_name) !== FALSE){
+            if (strpos($_SERVER["HTTP_USER_AGENT"], $browser_name) !== FALSE) {
                 $environment["browser_name"] = $browser_name;
                 break;
             }
@@ -1070,6 +1101,8 @@ class wakarana extends wakarana_common {
             return FALSE;
         }
         
+        $this->begin_transaction();
+        
         if ($user->set_password($new_password)) {
             try {
                 $stmt = $this->db_obj->prepare('DELETE FROM "wakarana_password_reset_tokens" WHERE "token" = :token');
@@ -1079,12 +1112,20 @@ class wakarana extends wakarana_common {
                 $stmt->execute();
             } catch (PDOException $err) {
                 $this->print_error("使用済みのパスワード再設定用トークンの削除に失敗しました。".$err->getMessage());
+                
+                $this->rollback_transaction();
+                
                 return FALSE;
             }
+            
+            $this->commit_transaction();
             
             return $user;
         } else {
             $this->rejection_reason = $user->get_rejection_reason();
+            
+            $this->rollback_transaction();
+            
             return FALSE;
         }
     }
@@ -1713,10 +1754,12 @@ class wakarana_user extends wakarana_data_item {
     
     
     function set_primary_email_address ($email_address) {
-        if (array_search($email_address, $this->get_email_addresses()) === FALSE) {
+        if (!in_array($email_address, $this->get_email_addresses())) {
             $this->print_error("未登録のメールアドレスをプライマリメールアドレスに設定することはできません。");
             return FALSE;
         }
+        
+        $this->wakarana->begin_transaction();
         
         try {
             $this->wakarana->db_obj->exec('UPDATE "wakarana_user_email_addresses" SET "is_primary" = FALSE  WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
@@ -1728,8 +1771,13 @@ class wakarana_user extends wakarana_data_item {
             $stmt->execute();
         } catch (PDOException $err) {
             $this->print_error("プライマリメールアドレスの変更に失敗しました。".$err->getMessage());
+            
+            $this->wakarana->rollback_transaction();
+            
             return FALSE;
         }
+        
+        $this->wakarana->commit_transaction();
         
         return TRUE;
     }
@@ -1771,6 +1819,8 @@ class wakarana_user extends wakarana_data_item {
     function set_status ($status) {
         $status = intval($status);
         
+        $this->wakarana->begin_transaction();
+        
         if ($status !== WAKARANA_STATUS_NORMAL) {
             $this->delete_login_tokens();
         }
@@ -1779,8 +1829,13 @@ class wakarana_user extends wakarana_data_item {
             $this->wakarana->db_obj->exec('UPDATE "wakarana_users" SET "status" = \''.$status.'\', "last_updated" = \''.date("Y-m-d H:i:s").'\'  WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
         } catch (PDOException $err) {
             $this->print_error("ユーザーアカウントの状態の変更に失敗しました。".$err->getMessage());
+            
+            $this->wakarana->rollback_transaction();
+            
             return FALSE;
         }
+        
+        $this->wakarana->commit_transaction();
         
         $this->user_info["status"] = $status;
         
@@ -1891,7 +1946,7 @@ class wakarana_user extends wakarana_data_item {
         
         if ($value_number === -1) {
             $value_number = $value_count + 1;
-        } elseif($value_number <= $value_count + 1) {
+        } elseif ($value_number <= $value_count + 1) {
             $value_number = intval($value_number);
         } else {
             $this->print_error("並び順番号として使用可能な数値は既存の項目数に1を加えた値以下です。");
@@ -1916,6 +1971,8 @@ class wakarana_user extends wakarana_data_item {
             return FALSE;
         }
         
+        $this->wakarana->begin_transaction();
+        
         try {
             if ($value_number <= $value_count) {
                 $this->wakarana->db_obj->exec('UPDATE "'.$table_name.'" SET "value_number" = "value_number" + '.$this->wakarana->custom_fields[$custom_field_name]["records_per_user"].' WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "custom_field_name" = \''.$custom_field_name.'\' AND "value_number" >= '.$value_number);
@@ -1929,8 +1986,13 @@ class wakarana_user extends wakarana_data_item {
             $stmt->execute();
         } catch (PDOException $err) {
             $this->print_error("カスタムフィールド値の追加に失敗しました。".$err->getMessage());
+            
+            $this->wakarana->rollback_transaction();
+            
             return FALSE;
         }
+        
+        $this->wakarana->commit_transaction();
         
         return TRUE;
     }
@@ -2026,6 +2088,8 @@ class wakarana_user extends wakarana_data_item {
             $value_number_q = ' AND "value_number" = '.$value_number;
         }
         
+        $this->wakarana->begin_transaction();
+        
         try {
             $this->wakarana->db_obj->exec('DELETE FROM "'.$table_name.'" WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "custom_field_name" = \''.$custom_field_name.'\''.$value_number_q);
             
@@ -2035,8 +2099,13 @@ class wakarana_user extends wakarana_data_item {
             }
         } catch (PDOException $err) {
             $this->print_error("カスタムフィールド値の削除に失敗しました。".$err->getMessage());
+            
+            $this->wakarana->rollback_transaction();
+            
             return FALSE;
         }
+        
+        $this->wakarana->commit_transaction();
         
         return TRUE;
     }
@@ -2062,13 +2131,20 @@ class wakarana_user extends wakarana_data_item {
     
     
     function delete_all_values () {
+        $this->wakarana->begin_transaction();
+        
         try {
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_user_custom_fields" WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_user_custom_numerical_fields" WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
         } catch (PDOException $err) {
             $this->print_error("カスタムフィールド値の削除に失敗しました。".$err->getMessage());
+            
+            $this->wakarana->rollback_transaction();
+            
             return FALSE;
         }
+        
+        $this->wakarana->commit_transaction();
         
         return TRUE;
     }
@@ -2103,14 +2179,21 @@ class wakarana_user extends wakarana_data_item {
         
         $role_id = $role->get_id();
         
+        $this->wakarana->begin_transaction();
+        
         try {
             $this->wakarana->db_obj->exec('INSERT INTO "wakarana_user_roles"("user_id", "role_id") VALUES (\''.$this->user_info["user_id"].'\', \''.$role_id.'\') ON CONFLICT ("user_id", "role_id") DO NOTHING');
             $this->wakarana->db_obj->exec('INSERT INTO "wakarana_user_permission_caches"("user_id", "resource_id", "action") SELECT \''.$this->user_info["user_id"].'\', "resource_id", "action" FROM "wakarana_role_permissions" WHERE "role_id" = \''.$role_id.'\' ON CONFLICT ("user_id", "resource_id", "action") DO NOTHING');
             $this->wakarana->db_obj->exec('INSERT INTO "wakarana_user_permitted_value_caches"("user_id", "permitted_value_id", "maximum_permitted_value") SELECT \''.$this->user_info["user_id"].'\', "permitted_value_id", "permitted_value" FROM "wakarana_role_permitted_values" WHERE "role_id" = \''.$role_id.'\' ON CONFLICT("user_id", "permitted_value_id") DO UPDATE SET "maximum_permitted_value" = (SELECT MAX("wakarana_role_permitted_values"."permitted_value") FROM "wakarana_user_roles", "wakarana_role_permitted_values" WHERE "wakarana_user_roles"."user_id" = \''.$this->user_info["user_id"].'\' AND "wakarana_role_permitted_values"."role_id" = "wakarana_user_roles"."role_id" AND "wakarana_role_permitted_values"."permitted_value_id" = EXCLUDED."permitted_value_id" GROUP BY "wakarana_role_permitted_values"."permitted_value_id")');
         } catch (PDOException $err) {
             $this->print_error("ロールの付与に失敗しました。".$err->getMessage());
+            
+            $this->wakarana->rollback_transaction();
+            
             return FALSE;
         }
+        
+        $this->wakarana->commit_transaction();
         
         return TRUE;
     }
@@ -2135,6 +2218,8 @@ class wakarana_user extends wakarana_data_item {
             $role_id_q = '"role_id" != \''.WAKARANA_BASE_ROLE.'\'';
         }
         
+        $this->wakarana->begin_transaction();
+        
         try {
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_user_roles" WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND '.$role_id_q);
             
@@ -2145,14 +2230,19 @@ class wakarana_user extends wakarana_data_item {
             $this->wakarana->db_obj->exec('INSERT INTO "wakarana_user_permitted_value_caches"("user_id", "permitted_value_id", "maximum_permitted_value") SELECT \''.$this->user_info["user_id"].'\', "wakarana_role_permitted_values"."permitted_value_id", MAX("wakarana_role_permitted_values"."permitted_value") FROM "wakarana_user_roles", "wakarana_role_permitted_values" WHERE "wakarana_user_roles"."user_id" = \''.$this->user_info["user_id"].'\' AND  "wakarana_role_permitted_values"."role_id" = "wakarana_user_roles"."role_id" GROUP BY "wakarana_role_permitted_values"."permitted_value_id"');
         } catch (PDOException $err) {
             $this->print_error("ロールの剥奪に失敗しました。".$err->getMessage());
+            
+            $this->wakarana->rollback_transaction();
+            
             return FALSE;
         }
+        
+        $this->wakarana->commit_transaction();
         
         return TRUE;
     }
     
     
-    function check_permission($resource_id, $action = "any") {
+    function check_permission ($resource_id, $action = "any") {
         if (!wakarana::check_resource_id_string($resource_id) || !wakarana::check_id_string($action)) {
             $this->print_error("識別名として使用できない文字列が指定されました。");
             return FALSE;
@@ -2181,7 +2271,7 @@ class wakarana_user extends wakarana_data_item {
             return FALSE;
         }
         
-        if ($get_descendant_permissions){
+        if ($get_descendant_permissions) {
             return $stmt->fetchAll(PDO::FETCH_COLUMN|PDO::FETCH_GROUP);
         } else {
             $permissions = array();
@@ -2249,9 +2339,15 @@ class wakarana_user extends wakarana_data_item {
     
     
     function delete_all_tokens () {
-        if($this->delete_login_tokens() && $this->delete_one_time_tokens() && $this->delete_email_address_verification_code() && $this->delete_invite_codes() && $this->delete_password_reset_token() && $this->delete_2sv_token()){
+        $this->wakarana->begin_transaction();
+        
+        if ($this->delete_login_tokens() && $this->delete_one_time_tokens() && $this->delete_email_address_verification_code() && $this->delete_invite_codes() && $this->delete_password_reset_token() && $this->delete_2sv_token()) {
+            $this->wakarana->commit_transaction();
+            
             return TRUE;
         } else {
+            $this->wakarana->rollback_transaction();
+            
             return FALSE;
         }
     }
@@ -2269,7 +2365,7 @@ class wakarana_user extends wakarana_data_item {
     }
 
 
-    function check_auth_interval($unsucceeded_only = FALSE) {
+    function check_auth_interval ($unsucceeded_only = FALSE) {
         if ($unsucceeded_only) {
             $succeeded_q = ' AND "succeeded" = FALSE';
         } else {
@@ -2373,6 +2469,8 @@ class wakarana_user extends wakarana_data_item {
         
         $client_env = wakarana::get_client_environment();
         
+        $this->wakarana->begin_transaction();
+        
         try {
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_login_tokens" WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "token" NOT IN (SELECT "token" FROM "wakarana_login_tokens" WHERE "user_id" = \''.$this->user_info["user_id"].'\' ORDER BY "token_created" DESC LIMIT '.($this->wakarana->config["login_tokens_per_user"] - 1).')');
             
@@ -2393,12 +2491,21 @@ class wakarana_user extends wakarana_data_item {
             $stmt->execute();
         } catch (PDOException $err) {
             $this->print_error("ログイントークンの保存に失敗しました。".$err->getMessage());
+            
+            $this->wakarana->rollback_transaction();
+            
             return FALSE;
         }
         
-        $this->update_last_access();
-        
-        return $token;
+        if ($this->update_last_access()) {
+            $this->wakarana->commit_transaction();
+            
+            return $token;
+        } else {
+            $this->wakarana->rollback_transaction();
+            
+            return FALSE;
+        }
     }
     
     
@@ -2749,14 +2856,21 @@ class wakarana_user extends wakarana_data_item {
         
         $token_created = date("Y-m-d H:i:s");
         
+        $this->wakarana->begin_transaction();
+        
         try {
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_one_time_tokens" WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "token" NOT IN (SELECT "token" FROM "wakarana_one_time_tokens" WHERE "user_id" = \''.$this->user_info["user_id"].'\' ORDER BY "token_created" DESC LIMIT '.($this->wakarana->config["one_time_tokens_per_user"] - 1).')');
             
             $this->wakarana->db_obj->exec('INSERT INTO "wakarana_one_time_tokens"("token", "user_id", "token_created") VALUES (\''.$token.'\', \''.$this->user_info["user_id"].'\', \''.date("Y-m-d H:i:s").'\')');
         } catch (PDOException $err) {
             $this->print_error("ワンタイムトークンの生成に失敗しました。".$err->getMessage());
+            
+            $this->wakarana->rollback_transaction();
+            
             return FALSE;
         }
+        
+        $this->wakarana->commit_transaction();
         
         return $token;
     }
@@ -2808,7 +2922,7 @@ class wakarana_user extends wakarana_data_item {
     
     
     function totp_check ($totp_pin) {
-        if ($this->get_totp_enabled()){
+        if ($this->get_totp_enabled()) {
             return $this->wakarana->totp_compare($this->user_info["totp_key"], $totp_pin);
         } else {
             return FALSE;
@@ -2817,7 +2931,11 @@ class wakarana_user extends wakarana_data_item {
     
     
     function delete_user () {
+        $this->wakarana->begin_transaction();
+        
         if (!$this->delete_all_tokens() || !$this->remove_all_email_addresses() || !$this->delete_all_values() || !$this->delete_auth_logs()) {
+            $this->wakarana->rollback_transaction();
+            
             return FALSE;
         }
         
@@ -2828,8 +2946,13 @@ class wakarana_user extends wakarana_data_item {
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_user_permitted_value_caches" WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
         } catch (PDOException $err) {
             $this->print_error("ユーザーの削除に失敗しました。".$err->getMessage());
+            
+            $this->wakarana->rollback_transaction();
+            
             return FALSE;
         }
+        
+        $this->wakarana->commit_transaction();
         
         unset($this->wakarana->user_ids[$this->user_info["user_id"]]);
         
@@ -2929,7 +3052,7 @@ class wakarana_role extends wakarana_data_item {
             return FALSE;
         }
         
-        if ($get_descendant_permissions){
+        if ($get_descendant_permissions) {
             return $stmt->fetchAll(PDO::FETCH_COLUMN|PDO::FETCH_GROUP);
         } else {
             $permissions = array();
@@ -3000,13 +3123,20 @@ class wakarana_role extends wakarana_data_item {
             return FALSE;
         }
         
+        $this->wakarana->begin_transaction();
+        
         try {
             $this->wakarana->db_obj->exec('INSERT INTO "wakarana_role_permissions"("role_id", "resource_id", "action") SELECT \''.$this->role_info["role_id"].'\', "resource_id", \''.$action.'\' FROM "wakarana_permissions" WHERE "resource_id" = \''.$resource_id.'\' OR "resource_id" LIKE \''.$resource_id.'/%\' ON CONFLICT ("role_id", "resource_id", "action") DO NOTHING');
             $this->wakarana->db_obj->exec('INSERT INTO "wakarana_user_permission_caches"("user_id", "resource_id", "action") SELECT "wakarana_user_roles"."user_id", "wakarana_role_permissions"."resource_id", \''.$action.'\' FROM "wakarana_user_roles", "wakarana_role_permissions" WHERE "wakarana_user_roles"."role_id" = "wakarana_role_permissions"."role_id" AND ("wakarana_role_permissions"."resource_id" = \''.$resource_id.'\' OR "wakarana_role_permissions"."resource_id" LIKE \''.$resource_id.'/%\') AND "wakarana_role_permissions"."action" = \''.$action.'\' ON CONFLICT ("user_id", "resource_id", "action") DO NOTHING');
         } catch (PDOException $err) {
             $this->print_error("権限の追加に失敗しました。".$err->getMessage());
+            
+            $this->wakarana->rollback_transaction();
+            
             return FALSE;
         }
+        
+        $this->wakarana->commit_transaction();
         
         return TRUE;
     }
@@ -3053,14 +3183,21 @@ class wakarana_role extends wakarana_data_item {
             $action_q = ' AND "action" = \''.$action.'\'';
         }
         
+        $this->wakarana->begin_transaction();
+        
         try {
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_role_permissions" WHERE "role_id" = \''.$this->role_info["role_id"].'\' AND ("resource_id" = \''.$resource_id.'\' OR "resource_id" LIKE \''.$resource_id.'%\')'.$action_q);
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_user_permission_caches" WHERE "user_id" IN (SELECT "user_id" FROM "wakarana_user_roles" WHERE "role_id" = \''.$this->role_info["role_id"].'\') AND ("resource_id" = \''.$resource_id.'\' OR "resource_id" LIKE \''.$resource_id.'%\')'.$action_q);
             $this->wakarana->db_obj->exec('INSERT INTO "wakarana_user_permission_caches"("user_id", "resource_id", "action") SELECT DISTINCT "wakarana_user_roles"."user_id", "wakarana_role_permissions"."resource_id", "wakarana_role_permissions"."action" FROM "wakarana_user_roles", "wakarana_role_permissions" WHERE "wakarana_user_roles"."user_id" IN (SELECT "user_id" FROM "wakarana_user_roles" WHERE "role_id" = \''.$this->role_info["role_id"].'\') AND "wakarana_role_permissions"."role_id" = "wakarana_user_roles"."role_id" AND ("resource_id" = \''.$resource_id.'\' OR "resource_id" LIKE \''.$resource_id.'%\')'.$action_q);
         } catch (PDOException $err) {
             $this->print_error("ロールからの権限剥奪に失敗しました。".$err->getMessage());
+            
+            $this->wakarana->rollback_transaction();
+            
             return FALSE;
         }
+        
+        $this->wakarana->commit_transaction();
         
         return TRUE;
     }
@@ -3072,14 +3209,21 @@ class wakarana_role extends wakarana_data_item {
             return FALSE;
         }
         
+        $this->wakarana->begin_transaction();
+        
         try {
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_role_permissions" WHERE "role_id" = \''.$this->role_info["role_id"].'\'');
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_user_permission_caches" WHERE "user_id" IN (SELECT "user_id" FROM "wakarana_user_roles" WHERE "role_id" = \''.$this->role_info["role_id"].'\')');
             $this->wakarana->db_obj->exec('INSERT INTO "wakarana_user_permission_caches"("user_id", "resource_id", "action") SELECT DISTINCT "wakarana_user_roles"."user_id", "wakarana_role_permissions"."resource_id", "wakarana_role_permissions"."action" FROM "wakarana_user_roles", "wakarana_role_permissions" WHERE "wakarana_user_roles"."user_id" IN (SELECT "user_id" FROM "wakarana_user_roles" WHERE "role_id" = \''.$this->role_info["role_id"].'\') AND "wakarana_role_permissions"."role_id" = "wakarana_user_roles"."role_id"');
         } catch (PDOException $err) {
             $this->print_error("ロールからの全権限剥奪に失敗しました。".$err->getMessage());
+            
+            $this->wakarana->rollback_transaction();
+            
             return FALSE;
         }
+        
+        $this->wakarana->commit_transaction();
         
         return TRUE;
     }
@@ -3137,6 +3281,8 @@ class wakarana_role extends wakarana_data_item {
             return FALSE;
         }
         
+        $this->wakarana->begin_transaction();
+        
         try {
             $this->wakarana->db_obj->exec('INSERT INTO "wakarana_role_permitted_values"("role_id", "permitted_value_id", "permitted_value") VALUES (\''.$this->role_info["role_id"].'\', \''.$permitted_value_id.'\', '.$permitted_value.') ON CONFLICT ("role_id", "permitted_value_id") DO UPDATE SET "permitted_value" = '.$permitted_value);
             
@@ -3148,8 +3294,13 @@ class wakarana_role extends wakarana_data_item {
             }
         } catch (PDOException $err) {
             $this->print_error("ロールの権限値設定に失敗しました。".$err->getMessage());
+            
+            $this->wakarana->rollback_transaction();
+            
             return FALSE;
         }
+        
+        $this->wakarana->commit_transaction();
         
         return TRUE;
     }
@@ -3169,6 +3320,8 @@ class wakarana_role extends wakarana_data_item {
             $permitted_value_id_q = '';
         }
         
+        $this->wakarana->begin_transaction();
+        
         try {
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_role_permitted_values" WHERE "role_id" = \''.$this->role_info["role_id"].'\''.$permitted_value_id_q);
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_user_permitted_value_caches" WHERE "user_id" IN (SELECT "user_id" FROM "wakarana_user_roles" WHERE "role_id" = \''.$this->role_info["role_id"].'\')'.$permitted_value_id_q);
@@ -3180,8 +3333,13 @@ class wakarana_role extends wakarana_data_item {
             }
         } catch (PDOException $err) {
             $this->print_error("ロールからの権限値削除に失敗しました。".$err->getMessage());
+            
+            $this->wakarana->rollback_transaction();
+            
             return FALSE;
         }
+        
+        $this->wakarana->commit_transaction();
         
         return TRUE;
     }
@@ -3193,7 +3351,11 @@ class wakarana_role extends wakarana_data_item {
             return FALSE;
         }
         
+        $this->wakarana->begin_transaction();
+        
         if (!$this->remove_all_permissions() || !$this->remove_permitted_value()) {
+            $this->wakarana->rollback_transaction();
+            
             return FALSE;
         }
         
@@ -3202,8 +3364,13 @@ class wakarana_role extends wakarana_data_item {
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_user_roles" WHERE "role_id" = \''.$this->role_info["role_id"].'\'');
         } catch (PDOException $err) {
             $this->print_error("ロールの削除に失敗しました。".$err->getMessage());
+            
+            $this->wakarana->rollback_transaction();
+            
             return FALSE;
         }
+        
+        $this->wakarana->commit_transaction();
         
         unset($this->wakarana->role_ids[$this->role_info["role_id"]]);
         
@@ -3296,17 +3463,28 @@ class wakarana_permission extends wakarana_data_item {
         
         $action = strtolower($action);
         
+        $this->wakarana->begin_transaction();
+        
         try {
             $this->wakarana->db_obj->exec('INSERT INTO "wakarana_permission_actions"("resource_id", "action") SELECT "resource_id", \''.$action.'\' FROM "wakarana_permissions" WHERE "resource_id" = \''.$this->permission_info["resource_id"].'\' OR "resource_id" LIKE \''.$this->permission_info["resource_id"].'/%\' ON CONFLICT ("resource_id", "action") DO NOTHING');
         } catch (PDOException $err) {
             $this->print_error("動作の追加に失敗しました。".$err->getMessage());
+            
+            $this->wakarana->rollback_transaction();
+            
             return FALSE;
         }
         
         $admin_role = $this->wakarana->get_role(WAKARANA_ADMIN_ROLE);
-        $admin_role->add_permission($this->permission_info["resource_id"], $action);
-        
-        return TRUE;
+        if ($admin_role->add_permission($this->permission_info["resource_id"], $action)) {
+            $this->wakarana->commit_transaction();
+            
+            return TRUE;
+        } else {
+            $this->wakarana->rollback_transaction();
+            
+            return FALSE;
+        }
     }
     
     
@@ -3346,14 +3524,21 @@ class wakarana_permission extends wakarana_data_item {
             $action_q = '"action" = \''.$action.'\'';
         }
         
+        $this->wakarana->begin_transaction();
+        
         try {
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_permission_actions" WHERE ("resource_id" = \''.$this->permission_info["resource_id"].'\' OR "resource_id" LIKE \''.$this->permission_info["resource_id"].'/%\') AND '.$action_q);
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_role_permissions" WHERE ("resource_id" = \''.$this->permission_info["resource_id"].'\' OR "resource_id" LIKE \''.$this->permission_info["resource_id"].'/%\') AND '.$action_q);
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_user_permission_caches" WHERE ("resource_id" = \''.$this->permission_info["resource_id"].'\' OR "resource_id" LIKE \''.$this->permission_info["resource_id"].'/%\') AND '.$action_q);
         } catch (PDOException $err) {
             $this->print_error("動作の削除に失敗しました。".$err->getMessage());
+            
+            $this->wakarana->rollback_transaction();
+            
             return FALSE;
         }
+        
+        $this->wakarana->commit_transaction();
         
         return TRUE;
     }
@@ -3442,6 +3627,8 @@ class wakarana_permission extends wakarana_data_item {
     
     
     function delete_permission () {
+        $this->wakarana->begin_transaction();
+        
         try {
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_permissions" WHERE "resource_id" = \''.$this->permission_info["resource_id"].'\' OR "resource_id" LIKE \''.$this->permission_info["resource_id"].'/%\'');
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_permission_actions" WHERE "resource_id" = \''.$this->permission_info["resource_id"].'\' OR "resource_id" LIKE \''.$this->permission_info["resource_id"].'/%\'');
@@ -3449,8 +3636,13 @@ class wakarana_permission extends wakarana_data_item {
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_user_permission_caches" WHERE "resource_id" = \''.$this->permission_info["resource_id"].'\' OR "resource_id" LIKE \''.$this->permission_info["resource_id"].'/%\'');
         } catch (PDOException $err) {
             $this->print_error("権限の削除に失敗しました。".$err->getMessage());
+            
+            $this->wakarana->rollback_transaction();
+            
             return FALSE;
         }
+        
+        $this->wakarana->commit_transaction();
         
         unset($this->wakarana->resource_ids[$this->permission_info["resource_id"]]);
         
@@ -3595,14 +3787,21 @@ class wakarana_permitted_value extends wakarana_data_item {
     
     
     function delete_permitted_value () {
+        $this->wakarana->begin_transaction();
+        
         try {
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_permitted_values" WHERE "permitted_value_id" = \''.$this->permitted_value_info["permitted_value_id"].'\'');
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_role_permitted_values" WHERE "permitted_value_id" = \''.$this->permitted_value_info["permitted_value_id"].'\'');
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_user_permitted_value_caches" WHERE "permitted_value_id" = \''.$this->permitted_value_info["permitted_value_id"].'\'');
         } catch (PDOException $err) {
             $this->print_error("権限値の削除に失敗しました。".$err->getMessage());
+            
+            $this->wakarana->rollback_transaction();
+            
             return FALSE;
         }
+        
+        $this->wakarana->commit_transaction();
         
         unset($this->wakarana->permitted_value_ids[$this->permitted_value_info["permitted_value_id"]]);
         
