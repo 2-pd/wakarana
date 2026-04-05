@@ -505,7 +505,7 @@ class wakarana extends wakarana_common {
     }
     
     
-    function add_permitted_value ($permitted_value_id, $permitted_value_name, $permitted_value_description = "") {
+    function create_permitted_value ($permitted_value_id, $permitted_value_name, $permitted_value_description = "") {
         $this->rejection_reason = NULL;
         
         if (!self::check_id_string($permitted_value_id)) {
@@ -1501,6 +1501,10 @@ class wakarana extends wakarana_common {
     
     function add_permission ($resource_id, $permission_name, $permission_description = "") { //2027年5月以降のバージョンで削除
         return $this->create_permission($resource_id, $permission_name, $permission_description);
+    }
+    
+    function add_permitted_value ($permitted_value_id, $permitted_value_name, $permitted_value_description = "") { //2027年5月以降のバージョンで削除
+        return $this->create_permitted_value($permitted_value_id, $permitted_value_name, $permitted_value_description);
     }
 }
 
