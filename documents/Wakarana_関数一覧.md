@@ -29,7 +29,7 @@ wakaranaクラスとwakarana_configクラスの親クラス。このクラスの
 クラス内呼び出し用変数にクラス外からアクセスされた場合の処理。
 ベースディレクトリ、設定ファイル変数値、DB接続については読み出しを許可する。  
   
-**$name** : クラス内変数名。
+**$name** : クラス内変数名
 
 
 #### ☆ wakarana_common::check_id_string($id, $length=60)
@@ -39,7 +39,7 @@ wakaranaクラスとwakarana_configクラスの親クラス。このクラスの
 **$id** : 検査する文字列  
 **$length** : 文字列の長さの上限。検査する文字列がこれより長い場合は使用できない文字列とみなす。  
   
-**返り値** ： 識別名として使用可能な文字列ならTRUEを、それ以外の場合はFALSEを返す。
+**返り値** : 識別名として使用可能な文字列ならTRUEを、それ以外の場合はFALSEを返す。
 
 
 #### ◆ wakarana_common::update_base_path($base_dir)
@@ -51,7 +51,27 @@ wakaranaクラスとwakarana_configクラスの親クラス。このクラスの
 wakarana_config.iniの設定に基づき、データベースに接続する。  
 ◆クラス内呼び出し専用であり、wakaranaクラスとwakarana_configクラスはこの関数を自動的に実行する。  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
+#### wakarana_common::begin_transaction()
+データベースでトランザクションを開始する。  
+既に別のトランザクションが実行中の場合、内部的には新規のトランザクションではなくセーブポイントを作成する。  
+  
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
+#### wakarana_common::commit_transaction()
+データベースで最後に開始したトランザクション(またはセーブポイント)を完了する。  
+まだ解決していないトランザクションが存在する場合、内部的にはセーブポイントを破棄するのみでコミット処理を行わない。  
+  
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
+#### wakarana_common::rollback_transaction()
+データベースで最後に開始したトランザクション(またはセーブポイント)での変更内容を取り消す。  
+  
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
 #### ◆ wakarana_common::disconnect_db()
@@ -71,13 +91,13 @@ wakaranaクラスのインスタンスとwakarana_configクラスのインスタ
 #### wakarana_common::get_last_error_text()
 wakarana_common::print_errorにて直近に入力されたエラーメッセージを返す。  
   
-**返り値** ： エラーメッセージの文字列
+**返り値** : エラーメッセージの文字列
 
 
 #### wakarana_common::get_config_keys()
 wakarana_config.iniの変数名一覧を取得する。  
   
-**返り値** ： wakarana_config.iniの変数名一覧を配列で返す。
+**返り値** : wakarana_config.iniの変数名一覧を配列で返す。
 
 
 #### wakarana_common::get_config_value($key)
@@ -85,13 +105,13 @@ wakarana_config.iniの設定値を取得する。
   
 **$key** : wakarana_config.iniの変数名  
   
-**返り値** ： 指定した変数名が存在すればその設定値、なければNULLを返す。
+**返り値** : 指定した変数名が存在すればその設定値、なければNULLを返す。
 
 
 #### wakarana_common::get_custom_field_names()
 ユーザーデータに追加可能なカスタムフィールド名一覧を取得する。  
   
-**返り値** ： wakarana_custom_fields.jsonのキー一覧を配列で返す。
+**返り値** : wakarana_custom_fields.jsonのキー一覧を配列で返す。
 
 
 #### wakarana_common::get_custom_field_is_numeric($custom_field_name)
@@ -99,7 +119,7 @@ wakarana_config.iniの設定値を取得する。
   
 **$custom_field_name** : カスタムフィールド名  
   
-**返り値** ： カスタムフィールド名がwakarana_custom_fields.jsonに存在する場合、数値型であればTRUE、文字列型ならFALSEを返す。カスタムフィールド名が存在しなければNULLを返す。
+**返り値** : カスタムフィールド名がwakarana_custom_fields.jsonに存在する場合、数値型であればTRUE、文字列型ならFALSEを返す。カスタムフィールド名が存在しなければNULLを返す。
 
 
 #### wakarana_common::get_custom_field_maximum_length($custom_field_name)
@@ -107,7 +127,7 @@ wakarana_config.iniの設定値を取得する。
   
 **$custom_field_name** : カスタムフィールド名  
   
-**返り値** ： カスタムフィールド名がwakarana_custom_fields.jsonに存在すればその最大文字数、存在しないかカスタムフィールドが数値型ならばNULLを返す。
+**返り値** : カスタムフィールド名がwakarana_custom_fields.jsonに存在すればその最大文字数、存在しないかカスタムフィールドが数値型ならばNULLを返す。
 
 
 #### wakarana_common::get_custom_field_records_per_user($custom_field_name)
@@ -115,7 +135,7 @@ wakarana_config.iniの設定値を取得する。
   
 **$custom_field_name** : カスタムフィールド名  
   
-**返り値** ： カスタムフィールド名がwakarana_custom_fields.jsonに存在すればその上限件数、存在しなければNULLを返す。
+**返り値** : カスタムフィールド名がwakarana_custom_fields.jsonに存在すればその上限件数、存在しなければNULLを返す。
 
 
 #### wakarana_common::get_custom_field_allow_nonunique_value($custom_field_name)
@@ -123,7 +143,7 @@ wakarana_config.iniの設定値を取得する。
   
 **$custom_field_name** : カスタムフィールド名  
   
-**返り値** ： カスタムフィールド名がwakarana_custom_fields.jsonに存在する場合、一意でない値を持てるならTRUE、持てないならFALSEを返す。カスタムフィールド名が存在しなければNULLを返す。
+**返り値** : カスタムフィールド名がwakarana_custom_fields.jsonに存在する場合、一意でない値を持てるならTRUE、持てないならFALSEを返す。カスタムフィールド名が存在しなければNULLを返す。
 
 
 #### ◆ wakarana_common::load_email_domain_blacklist()
@@ -136,13 +156,13 @@ wakarana_config.iniの設定値を取得する。
   
 **$domain_name** : ドメイン名  
   
-**返り値** ： ドメインがメールドメインブラックリストに含まれない場合はTRUE、含まれればFALSEを返す。
+**返り値** : ドメインがメールドメインブラックリストに含まれない場合はTRUE、含まれればFALSEを返す。
 
 
 #### wakarana_common::get_email_domain_blacklist()
 メールドメインブラックリストを配列で取得する。  
   
-**返り値** ： メールドメインブラックリストのドメインを配列で返す。
+**返り値** : メールドメインブラックリストのドメインを配列で返す。
 
 
 
@@ -191,7 +211,7 @@ wakarana_common::__constructとwakarana_common::connect_dbを順に実行する�
 #### wakarana::get_rejection_reason()
 wakaranaインスタンスで直前に行われた各種認証・登録処理の結果が拒絶だった場合、その理由を取得する。  
   
-**返り値** ： 認証・登録が拒絶されていた場合はその理由を表す文字列を返し、まだ認証・登録処理が行われていない場合や認証・登録が承認されていた場合、内部エラーにより認証・登録処理が中断されていた場合はNULLを返す。拒絶理由を表す文字列の候補は直前に行われた認証・登録処理により異なる。
+**返り値** : 認証・登録が拒絶されていた場合はその理由を表す文字列を返し、まだ認証・登録処理が行われていない場合や認証・登録が承認されていた場合、内部エラーにより認証・登録処理が中断されていた場合はNULLを返す。拒絶理由を表す文字列の候補は直前に行われた認証・登録処理により異なる。
 
 
 #### ☆ wakarana::hash_password($user_id, $password)
@@ -201,7 +221,7 @@ wakaranaインスタンスで直前に行われた各種認証・登録処理の
 **$user_id** : ユーザーID  
 **$password** : パスワード   
   
-**返り値** ： ハッシュ化されたパスワードを返す。
+**返り値** : ハッシュ化されたパスワードを返す。
 
 
 #### ☆ wakarana::check_password_strength($password, $min_length=10)
@@ -211,7 +231,7 @@ wakaranaインスタンスで直前に行われた各種認証・登録処理の
 **$password** : パスワード   
 **$min_length** : 強いパスワードとみなす最小の文字数  
   
-**返り値** ： パスワードが指定した文字数以上かつ大文字・小文字・数字の全てを含むならTRUE、そうでないならFALSEを返す。
+**返り値** : パスワードが指定した文字数以上かつ大文字・小文字・数字の全てを含むならTRUE、そうでないならFALSEを返す。
 
 
 #### wakarana::new_wakarana_user($user_info)
@@ -224,38 +244,38 @@ wakarana_userインスタンスを生成する。
 #### wakarana::get_user($user_id)
 ユーザーIDで指定したユーザーのwakarana_userインスタンスを生成する。  
   
-**$user_id** ： ユーザーID  
+**$user_id** : ユーザーID  
   
-**返り値** ： ユーザーが存在する場合はwakarana_userクラスのインスタンス、存在しない場合はFALSEを返す。
+**返り値** : ユーザーが存在する場合はwakarana_userクラスのインスタンス、存在しない場合はFALSEを返す。
 
 
 #### wakarana::count_user()
 ユーザーの総数を数える。  
   
-**返り値** ： 登録されているユーザーの総数を返す。
+**返り値** : 登録されているユーザーの総数を返す。
 
 
 #### wakarana::get_all_users($start=0, $limit=100, $order_by=WAKARANA_ORDER_USER_CREATED, $asc=TRUE)
 全ユーザーの一覧を順に返す。  
   
-**$start** ： 何番目のユーザーから取得するか(1番目なら「0」)  
-**$limit** ： 何件まで取得するか  
+**$start** : 何番目のユーザーから取得するか(1番目なら「0」)  
+**$limit** : 何件まで取得するか  
 **$order_by** : 並び替え基準。WAKARANA_ORDER_USER_CREATEDまたはWAKARANA_ORDER_USER_IDまたはWAKARANA_ORDER_USER_NAMEのいずれか。  
 **$asc** : 昇順で取得する場合はTRUE、降順ならFALSE。  
   
-**返り値** ： 成功した場合は、wakarana_userインスタンスを配列で返す。失敗した場合はFALSEを返す。
+**返り値** : 成功した場合は、wakarana_userインスタンスを配列で返す。失敗した場合はFALSEを返す。
 
 
-#### wakarana::add_user($user_id, $password, $user_name="", $status=WAKARANA_STATUS_NORMAL)
+#### wakarana::create_user($user_id, $password, $user_name="", $status=WAKARANA_STATUS_NORMAL)
 新しいユーザーを追加する。追加したユーザーには自動的にベースロールが割り当てられる。  
 既に存在するユーザーIDを指定した場合はエラーとなる。  
   
-**$user_id** ： 追加するユーザーのID。半角英数字及びアンダーバーが使用可能。  
-**$password** ： 追加するユーザーのパスワード  
-**$user_name** ： 追加するユーザーのハンドルネーム  
-**$status** ： WAKARANA_STATUS_UNAPPROVEDを指定すると未承認ユーザー(ログイン不可)として作成することができる。  
+**$user_id** : 追加するユーザーのID。半角英数字及びアンダーバーが使用可能。  
+**$password** : 追加するユーザーのパスワード  
+**$user_name** : 追加するユーザーのハンドルネーム  
+**$status** : WAKARANA_STATUS_UNAPPROVEDを指定すると未承認ユーザー(ログイン不可)として作成することができる。  
   
-**返り値** ： 成功した場合は追加したユーザーのwakarana_userインスタンスを返す。失敗した場合はFALSEを返す。  
+**返り値** : 成功した場合は追加したユーザーのwakarana_userインスタンスを返す。失敗した場合はFALSEを返す。  
   
 **拒絶理由文字列** : "invalid_user_id"(ユーザーIDに使用できない文字が含まれる)、"user_already_exists"(ユーザーアカウントが既に存在している)、"weak_password"(弱いパスワードである)
 
@@ -270,25 +290,25 @@ wakarana_roleインスタンスを生成する。
 #### wakarana::get_role($role_id)
 ロールのwakarana_roleインスタンスを生成する。  
   
-**$role_id** ： ロールID  
+**$role_id** : ロールID  
   
-**返り値** ： ロールが存在する場合はロールのwakarana_roleクラスのインスタンス、ロールが存在しない場合はFALSEを返す。
+**返り値** : ロールが存在する場合はロールのwakarana_roleクラスのインスタンス、ロールが存在しない場合はFALSEを返す。
 
 
 #### wakarana::get_all_roles()
 存在するロールの一覧(ベースロールと特権管理者ロールを含む)を取得する。  
   
-**返り値** ： ロールのwakarana_roleインスタンスをロールIDのアルファベット順に格納した配列を返す。失敗した場合はFALSEを返す。
+**返り値** : ロールのwakarana_roleインスタンスをロールIDのアルファベット順に格納した配列を返す。失敗した場合はFALSEを返す。
 
 
-#### wakarana::add_role($role_id, $role_name, $role_description="")
+#### wakarana::create_role($role_id, $role_name, $role_description="")
 ロールを新規作成する。  
   
-**$role_id** ： ロールID。半角英数字及びアンダーバーが使用可能。アルファベット大文字は小文字に変換される。  
-**$role_name** ： ロールの表示名  
+**$role_id** : ロールID。半角英数字及びアンダーバーが使用可能。アルファベット大文字は小文字に変換される。  
+**$role_name** : ロールの表示名  
 **$role_description** : ロールについての説明文  
   
-**返り値** ： 成功した場合は作成したロールのwakarana_roleインスタンスを、失敗した場合はFALSEを返す。  
+**返り値** : 成功した場合は作成したロールのwakarana_roleインスタンスを、失敗した場合はFALSEを返す。  
   
 **拒絶理由文字列** : "invalid_role_id"(ロールIDに使用できない文字が含まれる)、"role_already_exists"(ロールが既に存在している)
 
@@ -299,7 +319,7 @@ wakarana_roleインスタンスを生成する。
   
 **$resource_id** : 検査する文字列  
   
-**返り値** ： リソースIDとして使用可能な文字列ならTRUEを、それ以外の場合はFALSEを返す。
+**返り値** : リソースIDとして使用可能な文字列ならTRUEを、それ以外の場合はFALSEを返す。
 
 
 #### ☆ wakarana::get_parent_resource_id($resource_id)
@@ -308,7 +328,7 @@ wakarana_roleインスタンスを生成する。
   
 **$resource_id** : リソースID  
   
-**返り値** ： 親権限のリソースIDが切り出せた場合はその文字列を返し、それ以外の場合はNULLを返す。
+**返り値** : 親権限のリソースIDが切り出せた場合はその文字列を返し、それ以外の場合はNULLを返す。
 
 
 #### wakarana::new_wakarana_permission($permission_info)
@@ -323,26 +343,26 @@ wakarana_permissionインスタンスを生成する。
   
 **$resource_id** : 権限対象リソースID  
   
-**返り値** ： 権限が存在する場合は権限のwakarana_permissionクラスのインスタンス、権限が存在しない場合はFALSEを返す。
+**返り値** : 権限が存在する場合は権限のwakarana_permissionクラスのインスタンス、権限が存在しない場合はFALSEを返す。
 
 
 #### wakarana::get_all_permissions()
 存在する権限の一覧を取得する。  
   
-**返り値** ： 権限のwakarana_permissionインスタンスを権限対象リソースIDのアルファベット順に格納した配列を返す。権限が存在しない場合は空配列を返す。失敗した場合はFALSEを返す。
+**返り値** : 権限のwakarana_permissionインスタンスを権限対象リソースIDのアルファベット順に格納した配列を返す。権限が存在しない場合は空配列を返す。失敗した場合はFALSEを返す。
 
 
-#### wakarana::add_permission($resource_id, $permission_name, $permission_description="")
+#### wakarana::create_permission($resource_id, $permission_name, $permission_description="")
 権限を新規作成する。権限は権限の表示名ではなく権限対象リソースのIDで識別される。  
 権限対象リソースIDに「/」が含まれる場合、作成される権限は「/」以下を取り除いたリソースIDの権限(親権限)の子権限となり、親権限に存在する動作を全て持った状態で作成される。  
 存在しない親権限に子権限を作成することはできない。  
 権限の作成時、初期動作「any」が自動作成される。  
   
-**$resource_id** ： 権限対象リソースID。半角英数字及びアンダーバー、「/」が使用可能(ただし、「/」はリソースIDの先頭や末尾に使用したり、複数文字連続させることはできない)。アルファベット大文字は小文字に変換される。  
-**$permission_name** ： 権限の表示名  
+**$resource_id** : 権限対象リソースID。半角英数字及びアンダーバー、「/」が使用可能(ただし、「/」はリソースIDの先頭や末尾に使用したり、複数文字連続させることはできない)。アルファベット大文字は小文字に変換される。  
+**$permission_name** : 権限の表示名  
 **$permission_description** : 権限についての説明文  
   
-**返り値** ： 成功した場合は作成した権限のwakarana_permissionインスタンスを、失敗した場合はFALSEを返す。  
+**返り値** : 成功した場合は作成した権限のwakarana_permissionインスタンスを、失敗した場合はFALSEを返す。  
   
 **拒絶理由文字列** : "invalid_resource_id"(リソースIDに使用できない文字が含まれる)、"resource_already_exists"(権限対象リソースが既に存在している)、"parent_resource_not_exists"(親となる権限対象リソースが存在しない)
 
@@ -357,25 +377,25 @@ wakarana_permitted_valueインスタンスを生成する。
 #### wakarana::get_permitted_value($permitted_value_id)
 権限値のwakarana_permitted_valueインスタンスを生成する。  
   
-**$permitted_value_id** ： 権限値ID  
+**$permitted_value_id** : 権限値ID  
   
-**返り値** ： 権限値が存在する場合は権限値のwakarana_permitted_valueクラスのインスタンスを、権限値が存在しない場合は空配列を返す。
+**返り値** : 権限値が存在する場合は権限値のwakarana_permitted_valueクラスのインスタンスを、権限値が存在しない場合は空配列を返す。
 
 
 #### wakarana::get_all_permitted_values()
 存在する権限値の一覧を取得する。  
   
-**返り値** ： 権限値のwakarana_permitted_valueインスタンスを権限値IDのアルファベット順に格納した配列を返す。権限が存在しない場合は空配列を返す。
+**返り値** : 権限値のwakarana_permitted_valueインスタンスを権限値IDのアルファベット順に格納した配列を返す。権限が存在しない場合は空配列を返す。
 
 
-#### wakarana::add_permitted_value($permitted_value_id, $permitted_value_name, $permitted_value_description="")
+#### wakarana::create_permitted_value($permitted_value_id, $permitted_value_name, $permitted_value_description="")
 権限値を新規作成する。  
   
-**$permitted_value_id** ： 権限値ID。半角英数字及びアンダーバーが使用可能。アルファベット大文字は小文字に変換される。  
-**$ppermitted_value_name** ： 権限値の表示名   
+**$permitted_value_id** : 権限値ID。半角英数字及びアンダーバーが使用可能。アルファベット大文字は小文字に変換される。  
+**$ppermitted_value_name** : 権限値の表示名   
 **$permitted_value_description** : 権限値についての説明文  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。  
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。  
   
 **拒絶理由文字列** : "invalid_permitted_value_id"(権限値IDに使用できない文字が含まれる)、"permitted_value_already_exists"(権限値が既に存在している)
 
@@ -384,71 +404,71 @@ wakarana_permitted_valueインスタンスを生成する。
 パスワードとして使用可能な文字列をランダムに生成する。  
 ☆staticメソッド。  
   
-**$length** ： 生成するパスワードの文字数。3以上の数値を指定した場合、大文字・小文字・数字の全てを含むパスワードを生成する。  
+**$length** : 生成するパスワードの文字数。3以上の数値を指定した場合、大文字・小文字・数字の全てを含むパスワードを生成する。  
   
-**返り値** ： 英数字と記号(-と.)からなるランダムな文字列を返す。
+**返り値** : 英数字と記号(-と.)からなるランダムな文字列を返す。
 
 
 #### ☆ wakarana::create_token()
 トークンとして使用可能な文字列をランダムに生成する。  
 ☆staticメソッド。  
   
-**返り値** ： 英数字と記号(-と_)からなるランダムな文字列を返す。
+**返り値** : 英数字と記号(-と_)からなるランダムな文字列を返す。
 
 
 #### wakarana::delete_all_tokens()
 データベースに存在する各種トークン(ログイントークン、ワンタイムトークン、メールアドレス確認トークン、パスワードリセット用トークン、2段階認証用一時トークン)を全て削除する。  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
 #### wakarana::get_client_ip_address()
 プロキシを除外してアクセス中のクライアント端末のIPアドレス文字列を取得し、それがIPアドレスとして正常な文字列であればそれを返す。  
   
-**返り値** ： クライアント端末のIPアドレスをサニタイズして返す。IPアドレスの取得に失敗した場合は「0.0.0.0」を返す。
+**返り値** : クライアント端末のIPアドレスをサニタイズして返す。IPアドレスの取得に失敗した場合は「0.0.0.0」を返す。
 
 
 #### ☆ wakarana::get_client_environment()
 アクセス中のクライアント端末の情報を連想配列で返す。  
 ☆staticメソッド。  
   
-**返り値** ： キー"operating_system"(OS名)と"browser_name"(ブラウザ名)が含まれる連想配列。
+**返り値** : キー"operating_system"(OS名)と"browser_name"(ブラウザ名)が含まれる連想配列。
 
 
 #### wakarana::get_client_auth_logs($ip_address)
 クライアントのIPアドレスからログイン試行履歴を新しい順に配列で取得する。  
   
-**$ip_address** ： サニタイズ済みのIPアドレス  
+**$ip_address** : サニタイズ済みのIPアドレス  
   
-**返り値** ： 成功した場合はそのIPアドレスの各試行履歴が格納された連想配列("user_id"(ユーザーID)、"succeeded"(正しいパスワードを入力したか否か)、"authenticate_datetime"(試行日時))を、配列に入れて返す。失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はそのIPアドレスの各試行履歴が格納された連想配列("user_id"(ユーザーID)、"succeeded"(正しいパスワードを入力したか否か)、"authenticate_datetime"(試行日時))を、配列に入れて返す。失敗した場合はFALSEを返す。
 
 
 #### wakarana::check_client_auth_interval($ip_address, $unsucceeded_only=FALSE)
 クライアントのIPアドレスが前回のログイン試行から次に試行できるようになるまでの期間を経過しているかを調べる。  
   
-**$ip_address** ： サニタイズ済みのIPアドレス  
+**$ip_address** : サニタイズ済みのIPアドレス  
 **$unsucceeded_only** : 失敗した試行のみを対象にする  
   
-**返り値** ： wakarana_config.iniで指定した期間が経過していればTRUE、そうでない場合はFALSEを返す。
+**返り値** : wakarana_config.iniで指定した期間が経過していればTRUE、そうでない場合はFALSEを返す。
 
 
 #### wakarana::delete_auth_logs($expire=-1)
 指定した期間より前のログイン試行履歴を全て削除する。  
   
-**$expire** ： 経過時間の秒数。-1を指定した場合はwakarana_config.iniで指定した履歴の保持秒数が代わりに使用される。  
+**$expire** : 経過時間の秒数。-1を指定した場合はwakarana_config.iniで指定した履歴の保持秒数が代わりに使用される。  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
 #### wakarana::authenticate($user_id, $password, $totp_pin=NULL)
 ユーザーIDとパスワード、TOTPコード(2要素認証を使用する場合)を照合するが、トークンの生成と送信は行わない。  
 内部的にログイン試行ログの参照と登録は実施する。  
   
-**$user_id** ： ユーザーID  
-**$password** ： パスワード  
-**$totp_pin** ： 6桁のTOTPコード。2要素認証を使用しない場合と2要素認証の入力画面を分ける場合は省略。  
+**$user_id** : ユーザーID  
+**$password** : パスワード  
+**$totp_pin** : 6桁のTOTPコード。2要素認証を使用しない場合と2要素認証の入力画面を分ける場合は省略。  
   
-**返り値** ： 認証された場合はユーザーのwakarana_userインスタンス、ユーザーアカウントが停止中の場合はその状態値(WAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_UNAPPROVED)、ユーザーIDが2段階認証の対象ユーザーでTOTPコードがNULLだった場合は仮トークン、それ以外の場合はFALSEを返す。  
+**返り値** : 認証された場合はユーザーのwakarana_userインスタンス、ユーザーアカウントが停止中の場合はその状態値(WAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_UNAPPROVED)、ユーザーIDが2段階認証の対象ユーザーでTOTPコードがNULLだった場合は仮トークン、それ以外の場合はFALSEを返す。  
   
 **拒絶理由文字列** : "parameters_not_matched"(ユーザーIDまたはパスワード、TOTPコードのいずれかが誤っている)、"unavailable_user"(ユーザーアカウントが停止中である)、"currently_locked_out"(ロックアウト中のためログインを試行できない)
 
@@ -458,11 +478,11 @@ wakarana_permitted_valueインスタンスを生成する。
   
 この関数はHTTPヘッダーの出力を伴うため、この関数より前にHTTPヘッダー以外の何らかの文字が出力されていた場合はエラーとなる。  
   
-**$user_id** ： ユーザーID  
-**$password** ： パスワード  
-**$totp_pin** ： 6桁のTOTPコード。2要素認証を使用しない場合と2要素認証の入力画面を分ける場合は省略。  
+**$user_id** : ユーザーID  
+**$password** : パスワード  
+**$totp_pin** : 6桁のTOTPコード。2要素認証を使用しない場合と2要素認証の入力画面を分ける場合は省略。  
   
-**返り値** ： ログインが完了した場合はwakarana_userインスタンス、ユーザーアカウントが停止中の場合はその状態値(WAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_UNAPPROVED)、ユーザーIDが2要素認証の対象ユーザーでTOTPコードがNULLだった場合は仮トークン、それ以外の場合はFALSEを返す。  
+**返り値** : ログインが完了した場合はwakarana_userインスタンス、ユーザーアカウントが停止中の場合はその状態値(WAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_UNAPPROVED)、ユーザーIDが2要素認証の対象ユーザーでTOTPコードがNULLだった場合は仮トークン、それ以外の場合はFALSEを返す。  
   
 **拒絶理由文字列** : "parameters_not_matched"(ユーザーIDまたはパスワード、TOTPコードのいずれかが誤っている)、"unavailable_user"(ユーザーアカウントが停止中である)、"currently_locked_out"(ロックアウト中のためログインを試行できない)
 
@@ -473,11 +493,11 @@ wakarana_permitted_valueインスタンスを生成する。
   
 wakarana_config.iniで同じメールアドレスを複数アカウントに使用できるよう設定している場合、この関数は使用できない。  
   
-**$email_address** ： メールアドレス  
-**$password** ： パスワード  
-**$totp_pin** ： 6桁のTOTPコード。2要素認証を使用しない場合と2要素認証の入力画面を分ける場合は省略。  
+**$email_address** : メールアドレス  
+**$password** : パスワード  
+**$totp_pin** : 6桁のTOTPコード。2要素認証を使用しない場合と2要素認証の入力画面を分ける場合は省略。  
   
-**返り値** ： 認証された場合はユーザーのwakarana_userインスタンス、ユーザーアカウントが停止中の場合はその状態値(WAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_UNAPPROVED)、ユーザーIDが2段階認証の対象ユーザーでTOTPコードがNULLだった場合は仮トークン、それ以外の場合はFALSEを返す。  
+**返り値** : 認証された場合はユーザーのwakarana_userインスタンス、ユーザーアカウントが停止中の場合はその状態値(WAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_UNAPPROVED)、ユーザーIDが2段階認証の対象ユーザーでTOTPコードがNULLだった場合は仮トークン、それ以外の場合はFALSEを返す。  
   
 **拒絶理由文字列** : "parameters_not_matched"(メールアドレスまたはパスワード、TOTPコードのいずれかが誤っている)、"unavailable_user"(ユーザーアカウントが停止中である)、"currently_locked_out"(ロックアウト中のためログインを試行できない)
 
@@ -488,11 +508,11 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
 この関数はHTTPヘッダーの出力を伴うため、この関数より前にHTTPヘッダー以外の何らかの文字が出力されていた場合はエラーとなる。  
 また、wakarana_config.iniで同じメールアドレスを複数アカウントに使用できるよう設定している場合、この関数は使用できない。  
   
-**$email_address** ： メールアドレス  
-**$password** ： パスワード  
-**$totp_pin** ： 6桁のTOTPコード。2要素認証を使用しない場合と2要素認証の入力画面を分ける場合は省略。  
+**$email_address** : メールアドレス  
+**$password** : パスワード  
+**$totp_pin** : 6桁のTOTPコード。2要素認証を使用しない場合と2要素認証の入力画面を分ける場合は省略。  
   
-**返り値** ： ログインが完了した場合はwakarana_userインスタンス、ユーザーアカウントが停止中の場合はその状態値(WAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_UNAPPROVED)、ユーザーIDが2要素認証の対象ユーザーでTOTPコードがNULLだった場合は仮トークン、それ以外の場合はFALSEを返す。  
+**返り値** : ログインが完了した場合はwakarana_userインスタンス、ユーザーアカウントが停止中の場合はその状態値(WAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_UNAPPROVED)、ユーザーIDが2要素認証の対象ユーザーでTOTPコードがNULLだった場合は仮トークン、それ以外の場合はFALSEを返す。  
   
 **拒絶理由文字列** : "parameters_not_matched"(メールアドレスまたはパスワード、TOTPコードのいずれかが誤っている)、"unavailable_user"(ユーザーアカウントが停止中である)、"currently_locked_out"(ロックアウト中のためログインを試行できない)
 
@@ -500,17 +520,17 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
 #### wakarana::delete_login_tokens($expire=-1)
 指定した経過時間より前に生成されたログイントークンを無効化する。  
   
-**$expire** ： 経過時間の秒数。-1を指定した場合はwakarana_config.iniで指定したログイントークンの有効秒数が代わりに使用される。  
+**$expire** : 経過時間の秒数。-1を指定した場合はwakarana_config.iniで指定したログイントークンの有効秒数が代わりに使用される。  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
 #### wakarana::search_users_with_email_address($email_address)
 メールアドレスからユーザーを逆引きする。  
   
-**$email_address** ： 調べるメールアドレス  
+**$email_address** : 調べるメールアドレス  
   
-**返り値** ： 指定したメールアドレスを登録しているユーザーがいれば、該当ユーザーらのwakarana_userインスタンスの配列、そうでない場合は空配列、エラーの場合は-1を返す。
+**返り値** : 指定したメールアドレスを登録しているユーザーがいれば、該当ユーザーらのwakarana_userインスタンスの配列、そうでない場合は空配列、エラーの場合は-1を返す。
 
 
 #### wakarana::check_email_address($email_address)
@@ -518,7 +538,7 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
   
 **$email_address** : メールアドレス  
   
-**返り値** ： メールアドレスの規格に沿った文字列であり、かつ、メールドメインブラックリストに含まれないドメインの場合はTRUE、それ以外の場合はFALSEを返す。  
+**返り値** : メールアドレスの規格に沿った文字列であり、かつ、メールドメインブラックリストに含まれないドメインの場合はTRUE、それ以外の場合はFALSEを返す。  
   
 **拒絶理由文字列** : "invalid_email_address"(メールアドレスとして正しくない文字列である)、"blacklisted_email_domain"(メールドメインがブラックリストに登録されている)
 
@@ -528,7 +548,7 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
   
 **$email_address** : メールアドレス  
   
-**返り値** ： アクセス者のIPアドレスと指定されたメールアドレスの両方が発行可能間隔以降にメールアドレス確認トークン発行を受けていなければTRUE、それ以外の場合はFALSEを返す。
+**返り値** : アクセス者のIPアドレスと指定されたメールアドレスの両方が発行可能間隔以降にメールアドレス確認トークン発行を受けていなければTRUE、それ以外の場合はFALSEを返す。
 
 
 #### wakarana::create_email_address_verification_code($email_address)
@@ -537,7 +557,7 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
   
 **$email_address** : コードの送信先メールアドレス  
   
-**返り値** ： 成功した場合は8桁のメールアドレス確認コード文字列を、失敗した場合はFALSEを返す。  
+**返り値** : 成功した場合は8桁のメールアドレス確認コード文字列を、失敗した場合はFALSEを返す。  
   
 **拒絶理由文字列** : "invalid_email_address"(メールアドレスとして正しくない文字列である)、"blacklisted_email_domain"(メールドメインがブラックリストに登録されている)、"email_address_already_exists"(既に登録されているメールアドレスである)、"currently_locked_out"(前回のメールアドレス確認コード発行時から規定の時間が経過していない)
 
@@ -548,7 +568,7 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
 **$email_address** : コードが紐付けられたメールアドレス  
 **$verification_code** : メールアドレス確認コード。大文字小文字を区別しない。  
   
-**返り値** ： 認証された場合はTRUEを返し、それ以外の場合はFALSEを返す。  
+**返り値** : 認証された場合はTRUEを返し、それ以外の場合はFALSEを返す。  
   
 **拒絶理由文字列** : "invalid_email_address"(メールアドレスとして正しくない文字列である)、"blacklisted_email_domain"(メールドメインがブラックリストに登録されている)、"email_address_already_exists"(既に登録されているメールアドレスである)、"parameters_not_matched"(メールアドレスまたは確認コードが誤っている)
 
@@ -559,15 +579,15 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
 **$email_address** : コードが紐付けられたメールアドレス  
 **$verification_code** : メールアドレス確認コード。大文字小文字を区別しない。  
   
-**返り値** ： 新規ユーザー登録用の有効な確認コードだった場合はYYYY-MM-DD hh:mm:ss形式の有効期限、それ以外の場合はFALSEを返す。
+**返り値** : 新規ユーザー登録用の有効な確認コードだった場合はYYYY-MM-DD hh:mm:ss形式の有効期限、それ以外の場合はFALSEを返す。
 
 
 #### wakarana::delete_email_address_verification_codes($expire=-1)
 指定した経過時間より前に生成されたメールアドレス確認コードを無効化する。  
   
-**$expire** ： 経過時間の秒数。-1を指定した場合はwakarana_config.iniで指定したメールアドレス確認コードの有効秒数が代わりに使用される。  
+**$expire** : 経過時間の秒数。-1を指定した場合はwakarana_config.iniで指定したメールアドレス確認コードの有効秒数が代わりに使用される。  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
 #### wakarana::check_invite_code($invite_code)
@@ -576,13 +596,13 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
 **$invite_code** : 招待コード文字列。大文字小文字を区別しない。  
 **$decrease_number** : TRUEを指定するか省略した場合、招待コードの残り回数が1つ減る。  
   
-**返り値** ： 有効な招待コードだった場合はTRUE、それ以外の場合はFALSEを返す。
+**返り値** : 有効な招待コードだった場合はTRUE、それ以外の場合はFALSEを返す。
 
 
 #### wakarana::get_invite_codes()
 有効な全ての招待コードを取得する。  
   
-**返り値** ： 成功した場合は、各招待コードの情報が格納された連想配列("invite_code"(招待コード本体)以外の項目はwakarana::get_invite_code_infoの返り値と同様)を発行日時の古い順に並べた配列(招待コードがない場合は空配列)を返す。失敗した場合はFALSEを返す。
+**返り値** : 成功した場合は、各招待コードの情報が格納された連想配列("invite_code"(招待コード本体)以外の項目はwakarana::get_invite_code_infoの返り値と同様)を発行日時の古い順に並べた配列(招待コードがない場合は空配列)を返す。失敗した場合はFALSEを返す。
 
 
 #### wakarana::get_invite_code_info($invite_code)
@@ -590,7 +610,7 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
   
 **$invite_code** : 招待コード文字列。大文字小文字を区別しない。  
   
-**返り値** ： 有効な招待コードだった場合は、ユーザー招待コードの情報を連想配列("user_id"(発行者のユーザーID)、"code_created"(YYYY-MM-DD hh:mm:ss形式の発行日時)、"code_expire"(YYYY-MM-DD hh:mm:ss形式の有効期限)、"remaining_number"(残り回数、無限の場合はNULL))で返す。それ以外の場合はFALSEを返す。
+**返り値** : 有効な招待コードだった場合は、ユーザー招待コードの情報を連想配列("user_id"(発行者のユーザーID)、"code_created"(YYYY-MM-DD hh:mm:ss形式の発行日時)、"code_expire"(YYYY-MM-DD hh:mm:ss形式の有効期限)、"remaining_number"(残り回数、無限の場合はNULL))で返す。それ以外の場合はFALSEを返す。
 
 
 #### wakarana::delete_invite_code($invite_code=NULL)
@@ -598,13 +618,13 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
   
 **$invite_code** : 招待コード文字列。NULLを指定した場合は全ての招待コードを削除する。  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
 #### wakarana::delete_expired_invite_codes()
 有効期限切れのユーザー招待コードをデータベースから削除する。  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
 #### wakarana::reset_password($token, $new_password)
@@ -613,7 +633,7 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
 **$token** : パスワードリセット用トークン  
 **$new_password** : 新しいパスワード  
   
-**返り値** ： 成功した場合はトークンに紐付けられたユーザーのwakarana_userクラスのインスタンスを返し、それ以外の場合はFALSEを返す。  
+**返り値** : 成功した場合はトークンに紐付けられたユーザーのwakarana_userクラスのインスタンスを返し、それ以外の場合はFALSEを返す。  
   
 **拒絶理由文字列** : "invalid_token"(有効なトークンではない)、"weak_password"(弱いパスワードである)
 
@@ -623,49 +643,49 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
   
 **$token** : パスワードリセット用トークン  
 
-**返り値** ： 有効な確認コードだった場合はYYYY-MM-DD hh:mm:ss形式の有効期限、それ以外の場合はFALSEを返す。
+**返り値** : 有効な確認コードだった場合はYYYY-MM-DD hh:mm:ss形式の有効期限、それ以外の場合はFALSEを返す。
 
 
 #### wakarana::delete_password_reset_tokens($expire=-1)
 指定した経過時間より前に生成されたパスワードリセット用トークンを無効化する。  
   
-**$expire** ： 経過時間の秒数。-1を指定した場合はwakarana_config.iniで指定したパスワードリセット用トークンの有効秒数が代わりに使用される。  
+**$expire** : 経過時間の秒数。-1を指定した場合はwakarana_config.iniで指定したパスワードリセット用トークンの有効秒数が代わりに使用される。  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
 #### wakarana::search_users_with_custom_field($custom_field_name, $custom_field_value)
 カスタムフィールドの値からユーザーを逆引きする。  
   
-**$custom_field_name** ： カスタムフィールド名  
-**$custom_field_value** ： カスタムフィールド値  
+**$custom_field_name** : カスタムフィールド名  
+**$custom_field_value** : カスタムフィールド値  
   
-**返り値** ： 指定した値と一致するカスタムフィールドの値を持つユーザーがいれば、該当ユーザーらのwakarana_userインスタンスの配列、そうでない場合は空配列、エラーの場合は-1を返す。
+**返り値** : 指定した値と一致するカスタムフィールドの値を持つユーザーがいれば、該当ユーザーらのwakarana_userインスタンスの配列、そうでない場合は空配列、エラーの場合は-1を返す。
 
 
 #### wakarana::delete_all_users_values($custom_field_name)
 全ユーザーを対象に、指定したカスタムフィールドの全データを削除する。  
   
-**$custom_field_name** ： カスタムフィールド名  
+**$custom_field_name** : カスタムフィールド名  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
 #### wakarana::delete_2sv_tokens($expire=-1)
 指定した経過時間より前に生成された2段階認証用一時トークンを無効化する。  
   
-**$expire** ： 経過時間の秒数。-1を指定した場合はwakarana_config.iniで指定した2段階認証用一時トークンの有効秒数が代わりに使用される。  
+**$expire** : 経過時間の秒数。-1を指定した場合はwakarana_config.iniで指定した2段階認証用一時トークンの有効秒数が代わりに使用される。  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
 #### wakarana::totp_authenticate($tmp_token, $totp_pin)
 ユーザーIDとパスワードが照合済みのユーザーに対してTOTPによる第2段階の認証を行う。  
   
-**tmp_token** ： wakarana::authenticateにより発行される仮トークン  
-**$totp_pin** ： 6桁のTOTPコード  
+**tmp_token** : wakarana::authenticateにより発行される仮トークン  
+**$totp_pin** : 6桁のTOTPコード  
   
-**返り値** ： 認証された場合はユーザーのwakarana_userインスタンス、そうでない場合はFALSEを返す。  
+**返り値** : 認証された場合はユーザーのwakarana_userインスタンス、そうでない場合はFALSEを返す。  
   
 **拒絶理由文字列** : "invalid_token"(有効な仮トークンではない)、"pin_not_matched"(TOTPコードが一致しない)、"unavailable_user"(ユーザーアカウントが停止中である)、"currently_locked_out"(ロックアウト中のためログインを試行できない)
 
@@ -675,10 +695,10 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
   
 この関数はHTTPヘッダーの出力を伴うため、この関数より前にHTTPヘッダー以外の何らかの文字が出力されていた場合はエラーとなる。  
   
-**tmp_token** ： wakarana::loginにより発行される仮トークン  
-**$totp_pin** ： 6桁のTOTPコード  
+**tmp_token** : wakarana::loginにより発行される仮トークン  
+**$totp_pin** : 6桁のTOTPコード  
   
-**返り値** ： ログインが完了した場合はユーザーのwakarana_userインスタンス、そうでない場合はFALSEを返す。  
+**返り値** : ログインが完了した場合はユーザーのwakarana_userインスタンス、そうでない場合はFALSEを返す。  
   
 **拒絶理由文字列** : "invalid_token"(有効な仮トークンではない)、"pin_not_matched"(TOTPコードが一致しない)、"unavailable_user"(ユーザーアカウントが停止中である)、"currently_locked_out"(ロックアウト中のためログインを試行できない)
 
@@ -686,18 +706,18 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
 #### wakarana::check($token=NULL, $update_last_access=TRUE)
 クライアント端末のcookieを参照し、正しくログインしているかどうかを照合する。  
   
-**$token** ： 文字列を指定した場合、クライアント端末のcookie情報に関係なくその文字列をログイントークンとみなして照合処理を行う。  
+**$token** : 文字列を指定した場合、クライアント端末のcookie情報に関係なくその文字列をログイントークンとみなして照合処理を行う。  
 **$update_last_access** : FALSEの場合、最終アクセス日時の更新を行わない。  
   
-**返り値** ： 正しいログイントークンでログインしており、かつ、停止中のアカウントでない場合はそのトークンに対応するユーザーのwakarana_userインスタンス、それ以外の場合はFALSEを返す。
+**返り値** : 正しいログイントークンでログインしており、かつ、停止中のアカウントでない場合はそのトークンに対応するユーザーのwakarana_userインスタンス、それ以外の場合はFALSEを返す。
 
 
 #### wakarana::delete_login_token($token)
 指定したログイントークンをデータベースから削除する。  
   
-**$token** ： ログイントークン  
+**$token** : ログイントークン  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
 #### wakarana::logout()
@@ -705,24 +725,24 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
   
 この関数はHTTPヘッダーの出力を伴うため、この関数より前にのHTMLやHTTPヘッダー以外の何らかの文字が出力されていた場合はエラーとなる。  
   
-**返り値** ： 成功した場合はTRUE、既にログアウトしている場合はNULL、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUE、既にログアウトしている場合はNULL、失敗した場合はFALSEを返す。
 
 
 #### wakarana::delete_one_time_tokens($expire=-1)
 指定した経過時間より前に生成されたワンタイムトークンを無効化する。  
   
-**$expire** ： 経過時間の秒数。-1を指定した場合はwakarana_config.iniで指定したトークンの有効秒数が代わりに使用される。  
+**$expire** : 経過時間の秒数。-1を指定した場合はwakarana_config.iniで指定したトークンの有効秒数が代わりに使用される。  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
 #### wakarana::totp_compare($totp_key, $totp_pin)
 TOTPの規格に基づいて現在時刻のタイムスタンプで生成鍵とワンタイムコードを照合する。  
   
-**$totp_key** ： TOTP生成鍵  
-**$totp_pin** ： 6桁のTOTPコード  
+**$totp_key** : TOTP生成鍵  
+**$totp_pin** : 6桁のTOTPコード  
   
-**返り値** ： 生成鍵に対して正しいTOTPコードだった場合はTRUEを、それ以外の場合はFALSEを返す。
+**返り値** : 生成鍵に対して正しいTOTPコードだった場合はTRUEを、それ以外の場合はFALSEを返す。
 
 
 #### ◆☆ wakarana::bin_to_int($bin, $start, $length)
@@ -734,7 +754,7 @@ TOTPの規格に基づいて現在時刻のタイムスタンプで生成鍵と�
 **$start** : 切り出し開始ビット  
 **$length** : 切り出すビット数  
   
-**返り値** ： 切り出したビット列を2進数として解釈した整数値を返す。
+**返り値** : 切り出したビット列を2進数として解釈した整数値を返す。
 
 
 #### ◆☆ wakarana::int_to_bin($int, $digits_start)
@@ -745,7 +765,7 @@ TOTPの規格に基づいて現在時刻のタイムスタンプで生成鍵と�
 **$int** : 整数値型データ  
 **$digits_start** : データを2進数に変換したときの下から何番目の位から切り出すか。  
   
-**返り値** ： 1バイトの文字列に格納されたバイナリを返す。
+**返り値** : 1バイトの文字列に格納されたバイナリを返す。
 
 
 #### ☆ wakarana::create_random_code($code_length=16)
@@ -754,7 +774,7 @@ TOTP生成鍵として使用できるランダムなBASE32文字列を作成す�
   
 **$code_length** : 作成する文字列の桁数。8の倍数でなければならない。  
   
-**返り値** ： 指定された桁数のランダムなBASE32文字列を返す。
+**返り値** : 指定された桁数のランダムなBASE32文字列を返す。
 
 
 #### ◆☆ wakarana::base32_decode($base32_str)
@@ -764,7 +784,7 @@ Base32エンコードされた文字列をバイナリにデコードする。
   
 **$base32_str** : Base32エンコードされた文字列  
   
-**返り値** ： バイナリデータを格納した文字列を返す。
+**返り値** : バイナリデータを格納した文字列を返す。
 
 
 #### ◆☆ wakarana::get_totp_pin($key_base32, $past_30s=0)
@@ -775,7 +795,7 @@ TOTP生成鍵と現在時刻からワンタイムコードを生成する。
 **$key_base32** : TOTP生成鍵  
 **$past_30s** : 負でない整数値。この値に30をかけた秒数過去のタイムスタンプを現在時刻とみなす。  
   
-**返り値** ： ワンタイムコードを返す。
+**返り値** : ワンタイムコードを返す。
 
 
 ### class wakarana_data_item
@@ -792,7 +812,7 @@ wakarana_userクラスとwakarana_roleクラス、wakarana_permissionクラス�
 #### wakarana_data_item::get_last_error_text()
 wakarana_data_item::print_errorにて直近に入力されたエラーメッセージを返す。  
   
-**返り値** ： エラーメッセージの文字列を返す。エラーがまだ発生していない場合はNULLを返す。
+**返り値** : エラーメッセージの文字列を返す。エラーがまだ発生していない場合はNULLを返す。
 
 
 ### class wakarana_user
@@ -816,94 +836,94 @@ wakarana_userインスタンスはこの関数以外の方法(unsetや変数の�
 #### wakarana_user::get_rejection_reason()
 wakarana_userインスタンスで直前に行われた各種認証・登録処理の結果が拒絶だった場合、その理由を取得する。  
   
-**返り値** ： 認証・登録が拒絶されていた場合はその理由を表す文字列を返し、まだ認証・登録処理が行われていない場合や認証・登録が承認されていた場合、内部エラーにより認証・登録処理が中断されていた場合はNULLを返す。拒絶理由を表す文字列の候補は直前に行われた認証・登録処理により異なる。
+**返り値** : 認証・登録が拒絶されていた場合はその理由を表す文字列を返し、まだ認証・登録処理が行われていない場合や認証・登録が承認されていた場合、内部エラーにより認証・登録処理が中断されていた場合はNULLを返す。拒絶理由を表す文字列の候補は直前に行われた認証・登録処理により異なる。
 
 
 #### wakarana_user::get_id()
 ユーザーのIDを取得する。  
   
-**返り値** ： ユーザーIDを返す。
+**返り値** : ユーザーIDを返す。
 
 
 #### wakarana_user::get_name()
 ユーザー名を取得する。  
   
-**返り値** ： ユーザー名が登録されていればユーザー名を、なければNULLを返す。
+**返り値** : ユーザー名が登録されていればユーザー名を、なければNULLを返す。
 
 
 #### wakarana_user::check_password($password)
 入力したパスワードとそのユーザーのパスワードが一致するかどうかを確認する。  
 この関数は2段階認証を無視するため、ログイン認証に使用するべきではない。  
   
-**$password** ： パスワード  
+**$password** : パスワード  
   
-**返り値** ： 正しいパスワードだった場合はTRUE、それ以外の場合はFALSEを返す。
+**返り値** : 正しいパスワードだった場合はTRUE、それ以外の場合はFALSEを返す。
 
 
 #### wakarana_user::get_primary_email_address()
 ユーザーのメインメールアドレスを取得する。  
   
-**返り値** ： メールアドレスが登録されていればメインメールアドレスを、なければNULLを返す。失敗した場合はFALSEを返す。
+**返り値** : メールアドレスが登録されていればメインメールアドレスを、なければNULLを返す。失敗した場合はFALSEを返す。
 
 
 #### wakarana_user::get_email_addresses()
 ユーザーのメールアドレス一覧を配列で取得する。  
   
-**返り値** ： メールアドレスが登録されていればメールアドレスがアルファベット順に格納された配列を、なければ空配列を返す。失敗した場合はFALSEを返す。
+**返り値** : メールアドレスが登録されていればメールアドレスがアルファベット順に格納された配列を、なければ空配列を返す。失敗した場合はFALSEを返す。
 
 
 #### wakarana_user::get_created()
 ユーザーの登録日時を取得する。  
   
-**返り値** ： YYYY-MM-DD hh:mm:ss形式の文字列。
+**返り値** : YYYY-MM-DD hh:mm:ss形式の文字列。
 
 
 #### wakarana_user::get_last_updated()
 ユーザー情報の更新日時を取得する。  
   
-**返り値** ： YYYY-MM-DD hh:mm:ss形式の文字列。
+**返り値** : YYYY-MM-DD hh:mm:ss形式の文字列。
 
 
 #### wakarana_user::get_last_access()
 ユーザーの最終アクセス日時を取得する。  
   
-**返り値** ： YYYY-MM-DD hh:mm:ss形式の文字列。
+**返り値** : YYYY-MM-DD hh:mm:ss形式の文字列。
 
 
 #### wakarana_user::get_status()
 ユーザーの状態(アカウントが有効か停止されているか、等)を取得する。  
   
-**返り値** ： WAKARANA_STATUS_NORMALまたはWAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_UNAPPROVED。
+**返り値** : WAKARANA_STATUS_NORMALまたはWAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_UNAPPROVED。
 
 
 #### wakarana_user::get_totp_enabled()
 ユーザーの2要素認証が有効になっているかを取得する。  
   
-**返り値** ： 2要素認証が有効ならばTRUE、そうでない場合はFALSEを返す。
+**返り値** : 2要素認証が有効ならばTRUE、そうでない場合はFALSEを返す。
 
 
 #### wakarana_user::get_value($custom_field_name)
 ユーザーの指定したカスタムフィールドの単一の値を取得する。  
   
-**$custom_field_name** ： カスタムフィールド名。2個以上の値の登録が可能なカスタムフィールドは指定できない。  
+**$custom_field_name** : カスタムフィールド名。2個以上の値の登録が可能なカスタムフィールドは指定できない。  
   
-**返り値** ： 成功した場合はカスタムフィールドの値、失敗した場合はFALSEを返す。値が存在しない場合はNULLとみなす。
+**返り値** : 成功した場合はカスタムフィールドの値、失敗した場合はFALSEを返す。値が存在しない場合はNULLとみなす。
 
 
 #### wakarana_user::get_values($custom_field_name)
 ユーザーの指定したカスタムフィールドの値を配列で取得する。  
   
-**$custom_field_name** ： カスタムフィールド名  
+**$custom_field_name** : カスタムフィールド名  
   
-**返り値** ： カスタムフィールドの値を配列で返す。値が存在しない場合は空配列を、失敗した場合はFALSEを返す。
+**返り値** : カスタムフィールドの値を配列で返す。値が存在しない場合は空配列を、失敗した場合はFALSEを返す。
 
 
 #### wakarana_user::set_password($password)
 ユーザーのパスワードを変更する。  
   
-**$password** ： パスワード  
+**$password** : パスワード  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。  
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。  
   
 **拒絶理由文字列** : "weak_password"(弱いパスワードである)
 
@@ -911,18 +931,18 @@ wakarana_userインスタンスで直前に行われた各種認証・登録処�
 #### wakarana_user::set_name($user_name)
 ユーザー名を変更する。  
   
-**$user_name** ： ユーザー名  
+**$user_name** : ユーザー名  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
 #### wakarana_user::add_email_address($email_address)
 ユーザーのメールアドレスを追加する。  
 ユーザーに対して最初に登録されたメールアドレスは自動的にメインメールアドレスとなる。  
   
-**$email_address** ： 新しいメールアドレス  
+**$email_address** : 新しいメールアドレス  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。  
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。  
   
 **拒絶理由文字列** : "invalid_email_address"(メールアドレスとして正しくない文字列である)、"blacklisted_email_domain"(メールドメインがブラックリストに登録されている)、"email_address_already_exists"(既に登録されているメールアドレスである)、"registration_limit_over"(メールアドレス登録数の上限に達している)
 
@@ -931,24 +951,24 @@ wakarana_userインスタンスで直前に行われた各種認証・登録処�
 登録済みのメールアドレスをユーザーのメインメールアドレスとして設定する。  
 新たなメインメールアドレスが設定されることにより、元のメインメールアドレスはメインメールアドレスではなくなる。  
   
-**$email_address** ： 登録済みのメールアドレス  
+**$email_address** : 登録済みのメールアドレス  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
 #### wakarana_user::remove_email_address($email_address)
 ユーザーのメールアドレスを削除する。  
 この関数ではプライマリメールアドレスは削除できない。  
   
-**$email_address** ： 削除するメールアドレス  
+**$email_address** : 削除するメールアドレス  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
 #### wakarana_user::remove_all_email_addresses()
 プライマリメールアドレスを含むユーザーのメールアドレスを全て削除する。  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
 #### wakarana_user::set_status($status)
@@ -957,153 +977,153 @@ wakarana_userインスタンスで直前に行われた各種認証・登録処�
   
 **$status** : WAKARANA_STATUS_NORMAL(有効)またはWAKARANA_STATUS_DISABLE(無効)またはWAKARANA_STATUS_UNAPPROVED(未承認)。  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
 #### wakarana_user::enable_2_factor_auth($totp_key=NULL)
 ユーザーのログイン時に2要素認証を要求するように設定する。  
   
-**$totp_key** ： TOTP生成鍵。省略したときは自動で生成される。  
+**$totp_key** : TOTP生成鍵。省略したときは自動で生成される。  
   
-**返り値** ： 成功した場合はTOTP生成鍵、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTOTP生成鍵、失敗した場合はFALSEを返す。
 
 
 #### wakarana_user::disable_2_factor_auth()
 ユーザーのログイン時に2要素認証を要求しないように設定する。  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
 #### wakarana_user::set_value($custom_field_name, $custom_field_value)
 ユーザーの指定したカスタムフィールドの単一の値を設定する。  
   
-**$custom_field_name** ： カスタムフィールド名。2個以上の値の登録が可能なカスタムフィールドは指定できない。  
-**$custom_field_value** ： 値として保存する文字列または数値    
+**$custom_field_name** : カスタムフィールド名。2個以上の値の登録が可能なカスタムフィールドは指定できない。  
+**$custom_field_value** : 値として保存する文字列または数値    
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
 #### wakarana_user::add_value($custom_field_name, $custom_field_value, $value_number=-1)
 ユーザーの指定したカスタムフィールドに値を追加する。  
 同一のユーザーに対して同じ値を複数追加することはできない。
   
-**$custom_field_name** ： カスタムフィールド名  
-**$custom_field_value** ： 値として保存する文字列または数値   
-**$value_number** ： 並び順番号。既に値が存在する並び順番号を指定した場合、それより後の値の並び順番号を後ろにずらして新しい値を挿入する。既存の項目数+1よりも大きい値は使用できない。  
+**$custom_field_name** : カスタムフィールド名  
+**$custom_field_value** : 値として保存する文字列または数値   
+**$value_number** : 並び順番号。既に値が存在する並び順番号を指定した場合、それより後の値の並び順番号を後ろにずらして新しい値を挿入する。既存の項目数+1よりも大きい値は使用できない。  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
 #### wakarana_user::update_value($custom_field_name, $value_number, $custom_field_value)
 ユーザーの指定したカスタムフィールドにおいて既に存在している値を上書きする。  
   
-**$custom_field_name** ： カスタムフィールド名  
-**$value_number** ： 上書きする値の並び順番号  
-**$custom_field_value** ： 値として保存する文字列または数値  
+**$custom_field_name** : カスタムフィールド名  
+**$value_number** : 上書きする値の並び順番号  
+**$custom_field_value** : 値として保存する文字列または数値  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
 #### wakarana_user::increment_value($custom_field_name, $increments=1)
 ユーザーの指定した数値カスタムフィールドに指定した値を加算する。値がない場合は「0」に加算を行う。  
 異なるユーザーが同一の値持つことを認めていないカスタムフィールドでは使用できない。  
   
-**$custom_field_name** ： カスタムフィールド名。2個以上の値の登録が可能なカスタムフィールドは指定できない。  
-**$increments** ： 加算する値  
+**$custom_field_name** : カスタムフィールド名。2個以上の値の登録が可能なカスタムフィールドは指定できない。  
+**$increments** : 加算する値  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
 #### wakarana_user::delete_value($custom_field_name, $value_number=NULL)
 ユーザーのカスタムフィールドから並び順番号を指定して値を削除する。  
 削除された値より後の値の並び順番号は1つ前にずれる。  
   
-**$custom_field_name** ： カスタムフィールド名  
-**$value_number** ： 削除対象の並び順番号(1から順に付番されている整数値)。NULLを指定した場合はユーザーのそのカスタムフィールド値を全て削除する。  
+**$custom_field_name** : カスタムフィールド名  
+**$value_number** : 削除対象の並び順番号(1から順に付番されている整数値)。NULLを指定した場合はユーザーのそのカスタムフィールド値を全て削除する。  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
 #### wakarana_user::remove_value($custom_field_name, $custom_field_value)
 ユーザーのカスタムフィールドから指定した値を削除する。  
 削除された値より後の値の並び順番号は1つ前にずれる。  
   
-**$custom_field_name** ： カスタムフィールド名  
-**$custom_field_value** ： 削除対象の値  
+**$custom_field_name** : カスタムフィールド名  
+**$custom_field_value** : 削除対象の値  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
 #### wakarana_user::delete_all_values()
 ユーザーの全てのカスタムフィールドの値を削除する。  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
 #### wakarana_user::get_roles()
 ユーザーに割り当てられたロールの一覧を取得する。  
   
-**返り値** ： ユーザーに割り当てられたベースロールを含む全ロールのwakarana_roleインスタンスをロール名のアルファベット順に格納した配列を返す。失敗した場合はFALSEを返す。
+**返り値** : ユーザーに割り当てられたベースロールを含む全ロールのwakarana_roleインスタンスをロール名のアルファベット順に格納した配列を返す。失敗した場合はFALSEを返す。
 
 
 #### wakarana_user::add_role($role_id)
 ユーザーにロールを付与する。既にそのユーザーに付与されているロールを指定した場合は何もしない。  
   
-**$role_id** ： ロールID  
+**$role_id** : ロールID  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
 #### wakarana_user::remove_role($role_id=NULL)
 ユーザーからロールを剥奪する。ただし、ベースロールは剥奪できない。  
   
-**$role_id** ： ロールID。NULLまたは省略した場合、全てのロールを剥奪する。  
+**$role_id** : ロールID。NULLまたは省略した場合、全てのロールを剥奪する。  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
 #### wakarana_user::check_permission($resource_id, $action="any")
 ユーザーに権限があるかを確認する。  
 権限対象リソースIDに「/」が含まれる場合、「/」以下を取り除いた権限対象リソースIDの権限を持っていれば、権限があるものとみなす。  
   
-**$resource_id** ： 権限対象リソースID  
-**$action** ： 動作識別名  
+**$resource_id** : 権限対象リソースID  
+**$action** : 動作識別名  
   
-**返り値** ： ユーザーが持つロールのいずれかに権限が割り当てられている場合はTRUE、それ以外の場合はFALSEを返す。
+**返り値** : ユーザーが持つロールのいずれかに権限が割り当てられている場合はTRUE、それ以外の場合はFALSEを返す。
 
 
 #### wakarana_user::get_permissions($get_descendant_permissions=TRUE)
 ユーザーに割り当てられた権限の一覧を取得する。  
   
-**$get_descendant_permissions** ： TRUEを指定した場合、割り当てられている親権限と同一動作の子孫権限も含めて取得する。  
+**$get_descendant_permissions** : TRUEを指定した場合、割り当てられている親権限と同一動作の子孫権限も含めて取得する。  
   
-**返り値** ： 権限対象リソースIDをキーとし、値として動作識別名の配列を持った連想配列を返す。権限が存在しない場合は空配列を返す。失敗した場合はFALSEを返す。
+**返り値** : 権限対象リソースIDをキーとし、値として動作識別名の配列を持った連想配列を返す。権限が存在しない場合は空配列を返す。失敗した場合はFALSEを返す。
 
 
 #### wakarana_user::get_permitted_value($permitted_value_id)
 ユーザーに割り当てられている最大の権限値を取得する。  
   
-**$permitted_value_id** ： 権限値ID  
+**$permitted_value_id** : 権限値ID  
   
-**返り値** ： ユーザーが持つ全ロールに割り当てられた権限値の中で最大のものを返す。どのロールにも権限値が割り当てられていない場合はNULLを、失敗した場合はFALSEを返す。
+**返り値** : ユーザーが持つ全ロールに割り当てられた権限値の中で最大のものを返す。どのロールにも権限値が割り当てられていない場合はNULLを、失敗した場合はFALSEを返す。
 
 
 #### wakarana_user::get_permitted_values()
 ユーザーに割り当てられた権限値の一覧を取得する。  
   
-**返り値** ： 権限値IDをキーとし、値としてユーザーが持つその権限値の最大値を格納した連想配列を返す。権限値が存在しない場合は空配列を返す。失敗した場合はFALSEを返す。
+**返り値** : 権限値IDをキーとし、値としてユーザーが持つその権限値の最大値を格納した連想配列を返す。権限値が存在しない場合は空配列を返す。失敗した場合はFALSEを返す。
 
 
 #### wakarana_user::delete_all_tokens()
 ユーザーの各種トークン(ログイントークン、ワンタイムトークン、メールアドレス確認コード、パスワードリセット用トークン、2段階認証用一時トークン)を全て削除する。  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
 #### wakarana_user::get_auth_logs()
 ユーザーのログイン試行履歴を新しい順に配列で取得する。  
   
-**返り値** ： 成功した場合はそのユーザーの各試行履歴が格納された連想配列("succeeded"(認証に成功したか否か)、"authenticate_datetime"(試行日時), "ip_address"(IPアドレス))を、配列に入れて返す。失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はそのユーザーの各試行履歴が格納された連想配列("succeeded"(認証に成功したか否か)、"authenticate_datetime"(試行日時), "ip_address"(IPアドレス))を、配列に入れて返す。失敗した場合はFALSEを返す。
 
 
 #### wakarana_user::check_auth_interval($unsucceeded_only=FALSE)
@@ -1111,7 +1131,7 @@ wakarana_userインスタンスで直前に行われた各種認証・登録処�
   
 **$unsucceeded_only** : 失敗した試行のみを対象にする  
   
-**返り値** ： wakarana_config.iniで指定した期間が経過していればTRUE、そうでない場合はFALSEを返す。
+**返り値** : wakarana_config.iniで指定した期間が経過していればTRUE、そうでない場合はFALSEを返す。
 
 
 #### wakarana_user::add_auth_log($succeeded)
@@ -1119,13 +1139,13 @@ wakarana_userインスタンスで直前に行われた各種認証・登録処�
   
 **$succeeded** : ログインが成功した場合はTRUE、失敗した場合はFALSEを指定する。  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
 #### wakarana_user::delete_auth_logs()
 ユーザーのログイン試行履歴を全て削除する。  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
 #### wakarana_user::update_last_access($token=NULL)
@@ -1135,20 +1155,20 @@ wakarana_userインスタンスで直前に行われた各種認証・登録処�
   
 **$token** : ログイントークン文字列。  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
 #### wakarana_user::get_login_tokens()
 ユーザーに発行されている全てのログイントークンの情報を最終アクセス日時の新しい順に2次元配列で取得する。  
   
-**返り値** ： 成功した場合は、そのユーザーに発行されている個々のログイントークンの情報が格納された連想配列("token"(トークン文字列の冒頭6文字)、"token_created"(トークンの生成日時)、"ip_address"(トークン生成時のクライアント端末のIPアドレス)、"operating_system"(トークン生成時のクライアント端末のOS名)、"browser_name"(トークン生成時のクライアント端末のブラウザ名)、"last_access"(そのトークンでの最終アクセス日時))を、配列に入れて返す。失敗した場合はFALSEを返す。  
+**返り値** : 成功した場合は、そのユーザーに発行されている個々のログイントークンの情報が格納された連想配列("token"(トークン文字列の冒頭6文字)、"token_created"(トークンの生成日時)、"ip_address"(トークン生成時のクライアント端末のIPアドレス)、"operating_system"(トークン生成時のクライアント端末のOS名)、"browser_name"(トークン生成時のクライアント端末のブラウザ名)、"last_access"(そのトークンでの最終アクセス日時))を、配列に入れて返す。失敗した場合はFALSEを返す。  
 
 
 #### wakarana_user::create_login_token()
 ログイントークンを生成とデータベース登録処理を行うが、クライアント端末への送信は行わない。  
 wakarana::loginとは別のトークン送信処理を実装する必要がある環境向け。  
   
-**返り値** ： 成功した場合は登録されたログイントークン、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合は登録されたログイントークン、失敗した場合はFALSEを返す。
 
 
 #### wakarana_user::set_login_token()
@@ -1156,45 +1176,46 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
   
 この関数はHTTPヘッダーの出力を伴うため、この関数より前にHTTPヘッダー以外の何らかの文字が出力されていた場合はエラーとなる。  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
 #### wakarana_user::delete_login_token($abbreviated_token)
 ユーザーの指定したログイントークンを削除する。  
   
-**$abbreviated_token** ： 削除対象のトークンの冒頭6文字  
+**$abbreviated_token** : 削除対象のトークンの冒頭6文字  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
 #### wakarana_user::delete_login_tokens()
 ユーザーのログイントークンを全て削除する。  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。  
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。  
 
 
 #### wakarana_user::authenticate($password, $totp_pin=NULL)
 ユーザーに対するパスワードとTOTPコード(2要素認証を使用する場合)の照合を行う。  
 トークンの生成と送信は行わないが、内部的にログイン試行ログの参照と登録は実施する。  
   
-**$password** ： パスワード  
-**$totp_pin** ： 6桁のTOTPコード。2要素認証を使用しない場合と2要素認証の入力画面を分ける場合は省略。  
+**$password** : パスワード  
+**$totp_pin** : 6桁のTOTPコード。2要素認証を使用しない場合と2要素認証の入力画面を分ける場合は省略。  
   
-**返り値** ： 認証された場合はTRUE、そうでない場合はFALSEを返す。  
+**返り値** : 認証された場合はTRUE、そうでない場合はFALSEを返す。  
   
 **拒絶理由文字列** : "parameters_not_matched"(パスワードまたはTOTPコードが誤っている)、"unavailable_user"(ユーザーアカウントが停止中である)、"currently_locked_out"(ロックアウト中のためログインを試行できない)
 
 
-#### wakarana_user::create_email_address_verification_code($email_address)
+#### wakarana_user::create_email_address_verification_code($email_address, $check_registration_limit=TRUE)
 メールアドレス確認コードを生成し、ユーザーに割り当てる。  
 前に同じユーザーに対して生成されたメールアドレス確認コードがデータベースに残っていた場合、古いコードは削除される。  
 この関数によりメールが送信されるわけではない。  
   
 **$email_address** : コードの送信先メールアドレス。  
+**$check_registration_limit** : TRUEを指定すると、ユーザーのメールアドレス登録数が上限に達している場合は確認コードを生成しない。  
   
-**返り値** ： 成功した場合は8桁のメールアドレス確認コードを返し、失敗した場合はFALSEを返す。  
+**返り値** : 成功した場合は8桁のメールアドレス確認コードを返し、失敗した場合はFALSEを返す。  
   
-**拒絶理由文字列** : "invalid_email_address"(メールアドレスとして正しくない文字列である)、"blacklisted_email_domain"(メールドメインがブラックリストに登録されている)、"email_address_already_exists"(既に登録されているメールアドレスである)、"registration_limit_over"(メールアドレス登録数の上限に達している)、"currently_locked_out"(ロックアウト中のためログインを試行できない)
+**拒絶理由文字列** : "invalid_email_address"(メールアドレスとして正しくない文字列である)、"blacklisted_email_domain"(メールドメインがブラックリストに登録されている)、"email_address_already_exists"(既に登録されているメールアドレスである)、"registration_limit_over"(メールアドレス登録数の上限に達している)、"currently_locked_out"(前回のメールアドレス確認コード発行時から規定の時間が経過していない)
 
 
 #### wakarana_user::email_address_verify($email_address, $verification_code, $verification_only=FALSE)
@@ -1204,7 +1225,7 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
 **$verification_code** : メールアドレス確認コード。大文字小文字を区別しない。  
 **$verification_only** : TRUEを指定した場合、認証のみを実行してメールアドレスの追加を行わない  
   
-**返り値** ： 認証された場合はTRUEを返し、それ以外の場合はFALSEを返す。  
+**返り値** : 認証された場合はTRUEを返し、それ以外の場合はFALSEを返す。  
   
 **拒絶理由文字列** : "invalid_email_address"(メールアドレスとして正しくない文字列である)、"blacklisted_email_domain"(メールドメインがブラックリストに登録されている)、"email_address_already_exists"(既に登録されているメールアドレスである)、"registration_limit_over"(メールアドレス登録数の上限に達している)、"parameters_not_matched"(メールアドレスまたは確認コードが誤っている)
 
@@ -1215,13 +1236,13 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
 **$email_address** : コードが紐付けられたメールアドレス  
 **$verification_code** : メールアドレス確認コード。大文字小文字を区別しない。  
   
-**返り値** ： ユーザーに割り当てられた有効な確認コードだった場合はYYYY-MM-DD hh:mm:ss形式の有効期限、それ以外の場合はFALSEを返す。
+**返り値** : ユーザーに割り当てられた有効な確認コードだった場合はYYYY-MM-DD hh:mm:ss形式の有効期限、それ以外の場合はFALSEを返す。
 
 
 #### wakarana_user::delete_email_address_verification_code()
 ユーザーに対して発行されているメールアドレス確認コードを削除する。  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
 #### wakarana_user::create_invite_code($code_expire=NULL, $remaining_number=NULL)
@@ -1230,77 +1251,77 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
 **$code_expire** : 有効期限。YYYY-MM-DD hh:mm:ss形式の文字列。NULLを指定した場合は無限とみなす。  
 **$remaining_number** : コードの使用可能回数。NULLを指定した場合は無限とみなす。  
   
-**返り値** ： 成功した場合は16桁の招待コード文字列、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合は16桁の招待コード文字列、失敗した場合はFALSEを返す。
 
 
 #### wakarana_user::get_invite_codes()
 ユーザーが発行した有効な全ての招待コードを取得する。  
   
-**返り値** ： 成功した場合は、各招待コードの情報が格納された連想配列("invite_code"(招待コード本体)以外の項目はwakarana::get_invite_code_infoの返り値と同様)を発行日時の古い順に並べた配列(招待コードがない場合は空配列)を返す。失敗した場合はFALSEを返す。
+**返り値** : 成功した場合は、各招待コードの情報が格納された連想配列("invite_code"(招待コード本体)以外の項目はwakarana::get_invite_code_infoの返り値と同様)を発行日時の古い順に並べた配列(招待コードがない場合は空配列)を返す。失敗した場合はFALSEを返す。
 
 
 #### wakarana_user::delete_invite_codes()
 ユーザーが発行した全ての招待コードを削除する。  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
 #### wakarana_user::create_password_reset_token()
 ユーザーに対してパスワードリセット用トークンを発行する。  
   
-**返り値** ： 成功した場合はパスワードリセット用トークン、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はパスワードリセット用トークン、失敗した場合はFALSEを返す。
 
 
 #### wakarana_user::delete_password_reset_token()
 ユーザーに対して発行されているパスワードリセット用トークンを削除する。  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。  
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。  
 
 
 #### wakarana_user::create_2sv_token()
 ユーザーに対して2段階認証用の一時トークンを発行する。  
   
-**返り値** ： 成功した場合は一時トークン、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合は一時トークン、失敗した場合はFALSEを返す。
 
 
 #### wakarana_user::delete_2sv_token()
 ユーザーに対して発行されている2段階認証用の一時トークンを削除する。  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。  
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。  
 
 
 #### wakarana_user::create_one_time_token()
 ユーザーが利用可能なワンタイムトークンを発行する。  
   
-**返り値** ： 成功した場合はワンタイムトークンを、エラーの場合はFALSEを返す。
+**返り値** : 成功した場合はワンタイムトークンを、エラーの場合はFALSEを返す。
 
 
 #### wakarana_user::check_one_time_token($token)
 ワンタイムトークンを照合する。照合が終わったワンタイムトークンは自動的にデータベースから削除される。  
   
-**$token** ： ワンタイムトークン  
+**$token** : ワンタイムトークン  
   
-**返り値** ： 正しいワンタイムトークンだった場合はTRUEを、それ以外の場合はFALSEを返す。
+**返り値** : 正しいワンタイムトークンだった場合はTRUEを、それ以外の場合はFALSEを返す。
 
 
 #### wakarana_user::delete_one_time_tokens()
 ユーザーのワンタイムトークンを全て削除する。  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
 #### wakarana_user::totp_check($totp_pin)
 ユーザーに割り当てられたTOTP生成鍵とワンタイムコードを照合する。  
   
-**$totp_pin** ： 6桁のTOTPコード  
+**$totp_pin** : 6桁のTOTPコード  
   
-**返り値** ： ユーザーに割り当てられた生成鍵に対して正しいTOTPコードだった場合はTRUEを、それ以外の場合はFALSEを返す。
+**返り値** : ユーザーに割り当てられた生成鍵に対して正しいTOTPコードだった場合はTRUEを、それ以外の場合はFALSEを返す。
 
 
 #### wakarana_user::delete_user()
 ユーザーアカウントをデータベースから完全に削除する。この関数を呼び出したwakarana_userインスタンスはそれ以降動作しなくなる。  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
 ### class wakarana_role
@@ -1316,52 +1337,52 @@ wakarana_data_itemの派生クラス。ロールの情報を読み書きする�
 #### wakarana_role::get_id()
 ロールのIDを取得する。  
   
-**返り値** ： ロールのIDを返す。
+**返り値** : ロールのIDを返す。
 
 
 #### wakarana_role::get_name()
 ロールの表示名を取得する。  
   
-**返り値** ： ロールの表示名を返す。
+**返り値** : ロールの表示名を返す。
 
 
 #### wakarana_role::get_description()
 ロールの説明文を取得する。  
   
-**返り値** ： ロールについての説明文を返す。
+**返り値** : ロールについての説明文を返す。
 
 
 #### wakarana_role::set_info($role_name=NULL, $role_description=NULL)
 ロールの情報を変更する。  
   
-**$role_name** ： ロールの表示名。変更しない場合はNULL。  
+**$role_name** : ロールの表示名。変更しない場合はNULL。  
 **$role_description** : ロールについての説明文。変更しない場合は省略。  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
 #### wakarana_role::get_users()
 ロールが割り当てられているユーザーの一覧を取得する。  
   
-**返り値** ： 成功した場合は、wakarana_userインスタンスをユーザーIDの順に配列で返す。失敗した場合はFALSEを返す。
+**返り値** : 成功した場合は、wakarana_userインスタンスをユーザーIDの順に配列で返す。失敗した場合はFALSEを返す。
 
 
 #### wakarana_role::get_permissions($get_descendant_permissions=TRUE)
 ロールに割り当てられた権限の一覧を取得する。  
   
-**$get_descendant_permissions** ： TRUEを指定した場合、割り当てられている親権限と同一動作の子孫権限も含めて取得する。  
+**$get_descendant_permissions** : TRUEを指定した場合、割り当てられている親権限と同一動作の子孫権限も含めて取得する。  
   
-**返り値** ： 権限対象リソースIDをキーとし、値として動作識別名の配列を持った連想配列を返す。権限が存在しない場合は空配列を返す。失敗した場合はFALSEを返す。
+**返り値** : 権限対象リソースIDをキーとし、値として動作識別名の配列を持った連想配列を返す。権限が存在しない場合は空配列を返す。失敗した場合はFALSEを返す。
 
 
 #### wakarana_role::check_permission($resource_id, $action="any")
 ロールに権限が割り当てられているかを確認する。  
 権限対象リソースIDに「/」が含まれる場合、「/」以下を取り除いた権限対象リソースIDの権限が存在すれば、権限が割り当てられているものとみなす。  
   
-**$resource_id** ： 権限対象リソースID  
-**$action** ： 動作識別名  
+**$resource_id** : 権限対象リソースID  
+**$action** : 動作識別名  
   
-**返り値** ： ロールに権限が割り当てられている場合はTRUE、それ以外の場合はFALSEを返す。
+**返り値** : ロールに権限が割り当てられている場合はTRUE、それ以外の場合はFALSEを返す。
 
 
 #### wakarana_role::add_permission($resource_id, $action="any")
@@ -1369,10 +1390,10 @@ wakarana_data_itemの派生クラス。ロールの情報を読み書きする�
 特権管理者ロールは自動的に全ての権限が付与されるため、この関数を使用する必要はない。  
 また、ロールに親権限を割り当てると、自動的に子孫権限も割り当てられる。  
   
-**$resource_id** ： 権限対象リソースID  
-**$action** ： 動作識別名  
+**$resource_id** : 権限対象リソースID  
+**$action** : 動作識別名  
   
-**返り値** ： 成功した場合はTRUE、既に割り当て済みの権限と動作の組み合わせだった場合や失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUE、既に割り当て済みの権限と動作の組み合わせだった場合や失敗した場合はFALSEを返す。
 
 
 #### wakarana_role::remove_permission($resource_id, $action="any")
@@ -1380,55 +1401,55 @@ wakarana_data_itemの派生クラス。ロールの情報を読み書きする�
 特権管理者ロールでは権限が剥奪できないため、この関数は使用できない。  
 子権限の動作を剥奪する場合、その親権限の同じ動作がロールに割り当てられていてはならない。  
   
-**$resource_id** ： 権限対象リソースID  
-**$action** ： 動作識別名。NULLを指定した場合は全ての動作を削除する。  
+**$resource_id** : 権限対象リソースID  
+**$action** : 動作識別名。NULLを指定した場合は全ての動作を削除する。  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
 #### wakarana_role::remove_all_permissions()
 ロールから全ての権限を剥奪する。  
 特権管理者ロールでは権限が剥奪できないため、この関数は使用できない。  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
 #### wakarana_role::get_permitted_values()
 ロールに割り当てられている権限値の一覧を取得する。  
   
-**返り値** ： 権限値IDをキー、権限値を値とする連想配列を返す。権限値が存在しない場合は空配列を返す。失敗した場合はFALSEを返す。
+**返り値** : 権限値IDをキー、権限値を値とする連想配列を返す。権限値が存在しない場合は空配列を返す。失敗した場合はFALSEを返す。
 
 
 #### wakarana_role::get_permitted_value($permitted_value_id)
 ロールに割り当てられている権限値を取得する。  
   
-**$permitted_value_id** ： 権限値ID  
+**$permitted_value_id** : 権限値ID  
   
-**返り値** ： 権限値が存在する場合は権限値を、存在しない場合はNULLを返す。失敗した場合はFALSEを返す。
+**返り値** : 権限値が存在する場合は権限値を、存在しない場合はNULLを返す。失敗した場合はFALSEを返す。
 
 
 #### wakarana_role::set_permitted_value($permitted_value_id, $permitted_value)
 ロールの権限値を設定する。  
   
-**$permitted_value_id** ： 権限値ID。半角英数字及びアンダーバーが使用可能。アルファベット大文字は小文字に変換される。  
+**$permitted_value_id** : 権限値ID。半角英数字及びアンダーバーが使用可能。アルファベット大文字は小文字に変換される。  
 **$permitted_value** : 権限値。TRUEは「1」、FALSEは「0」に変換される。  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
 #### wakarana_role::remove_permitted_value($permitted_value_id=NULL)
 ロールの権限値を削除する。  
   
-**$permitted_value_id** ： 権限値ID。NULLまたは省略した場合、全ての権限値を削除する。  
+**$permitted_value_id** : 権限値ID。NULLまたは省略した場合、全ての権限値を削除する。  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
 #### wakarana_role::delete_role()
 ロールを完全に削除する。  
 ベースロールと特権管理者ロールでは使用できない。  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
 ### class wakarana_permission
@@ -1444,35 +1465,35 @@ wakarana_data_itemの派生クラス。権限の情報を読み書きするた�
 #### wakarana_permission::get_resource_id()
 権限の対象リソースIDを取得する。  
   
-**返り値** ： 権限のリソースIDを返す。
+**返り値** : 権限のリソースIDを返す。
 
 
 #### wakarana_permission::get_name()
 権限の表示名を取得する。  
   
-**返り値** ： 権限の表示名を返す。
+**返り値** : 権限の表示名を返す。
 
 
 #### wakarana_permission::get_description()
 権限の説明文を取得する。  
   
-**返り値** ： 権限についての説明文を返す。
+**返り値** : 権限についての説明文を返す。
 
 
 #### wakarana_permission::set_info($permission_name=NULL, $permission_description=NULL)
 権限の情報を変更する。  
   
-**$permission_name** ： 権限の表示名。変更しない場合はNULL。  
+**$permission_name** : 権限の表示名。変更しない場合はNULL。  
 **$permission_description** : 権限についての説明文。変更しない場合は省略。  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
 #### wakarana_permission::get_actions()
 権限に存在する動作の一覧を取得する。  
 親権限から継承した動作も区別なく合わせて取得される。  
   
-**返り値** ： 動作識別名をアルファベット順に配列で返す。失敗した場合はFALSEを返す。
+**返り値** : 動作識別名をアルファベット順に配列で返す。失敗した場合はFALSEを返す。
 
 
 #### wakarana_permission::add_action($action)
@@ -1480,52 +1501,52 @@ wakarana_data_itemの派生クラス。権限の情報を読み書きするた�
 親権限に動作を追加すると、子権限にも同じ動作が自動的に追加される。  
 特権管理者ロールには追加した動作が自動的に割り当てられる。  
   
-**$action** ： 動作識別名。半角英数字及びアンダーバーが使用可能。アルファベット大文字は小文字に変換される。  
+**$action** : 動作識別名。半角英数字及びアンダーバーが使用可能。アルファベット大文字は小文字に変換される。  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
 #### wakarana_permission::delete_action($action=NULL)
 権限で使用可能な動作を削除する。削除された動作は全てのロールから剥奪される。  
 親権限に存在する動作、及び、初期動作「any」を削除することはできない。  
   
-**$action** ： 動作識別名。NULLまたは省略した場合は「any」以外の全ての動作が削除される。  
+**$action** : 動作識別名。NULLまたは省略した場合は「any」以外の全ての動作が削除される。  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
 #### wakarana_permission::get_parent_permission()
 権限の親権限を取得する。  
   
-**返り値** ： 親権限のwakarana_permissionインスタンスを返す。親権限が存在しなければNULLを返し、失敗した場合はFALSEを返す。
+**返り値** : 親権限のwakarana_permissionインスタンスを返す。親権限が存在しなければNULLを返し、失敗した場合はFALSEを返す。
 
 
 #### wakarana_permission::get_descendant_permissions()
 権限の子孫権限一覧を取得する。  
   
-**返り値** ： 子孫の権限のwakarana_permissionインスタンスを配列で返す。子孫権限が存在しなければ空配列を返し、失敗した場合はFALSEを返す。
+**返り値** : 子孫の権限のwakarana_permissionインスタンスを配列で返す。子孫権限が存在しなければ空配列を返し、失敗した場合はFALSEを返す。
 
 
 #### wakarana_permission::get_roles($action="any")
 権限が割り当てられているロールの一覧を取得する。  
   
-**$action** ： 動作識別名  
+**$action** : 動作識別名  
   
-**返り値** ： ロールのwakarana_roleインスタンスをロールIDの順に配列で返す。失敗した場合はFALSEを返す。
+**返り値** : ロールのwakarana_roleインスタンスをロールIDの順に配列で返す。失敗した場合はFALSEを返す。
 
 
 #### wakarana_permission::get_users($action="any")
 権限が割り当てられているユーザーの一覧を取得する。  
   
-**$action** ： 動作識別名  
+**$action** : 動作識別名  
   
-**返り値** ： ユーザーのwakarana_userインスタンスをユーザーIDの順に配列で返す。権限を持つユーザーが存在しなければ空配列を返し、失敗した場合はFALSEを返す。
+**返り値** : ユーザーのwakarana_userインスタンスをユーザーIDの順に配列で返す。権限を持つユーザーが存在しなければ空配列を返し、失敗した場合はFALSEを返す。
 
 
 #### wakarana_permission::delete_permission()
 権限を全てのロールから剥奪して完全に削除する。子孫権限が存在する場合、それらも同様に削除される。  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
 ### class wakarana_permitted_value
@@ -1541,52 +1562,52 @@ wakarana_data_itemの派生クラス。権限値の情報を読み書きする�
 #### wakarana_permitted_value::get_id()
 権限値のIDを取得する。  
   
-**返り値** ： 権限値のIDを返す。
+**返り値** : 権限値のIDを返す。
 
 
 #### wakarana_permitted_value::get_name()
 権限値の表示名を取得する。  
   
-**返り値** ： 権限値の表示名を返す。
+**返り値** : 権限値の表示名を返す。
 
 
 #### wakarana_permitted_value::get_description()
 権限値の説明文を取得する。  
   
-**返り値** ： 権限値についての説明文を返す。
+**返り値** : 権限値についての説明文を返す。
 
 
 #### wakarana_permitted_value::set_info($permitted_value_name=NULL, $permitted_value_description=NULL)
 権限値の情報を変更する。  
   
-**$permitted_value_name** ： 権限値の表示名。変更しない場合はNULL。  
+**$permitted_value_name** : 権限値の表示名。変更しない場合はNULL。  
 **$permitted_value_description** : 権限値についての説明文。変更しない場合は省略。  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
 #### wakarana_permitted_value::get_roles($min=NULL, $max=NULL)
 権限値が割り当てられているロールの一覧を取得する。  
   
-**$min** ： 取得対象にする権限値の下限。NULLの場合は下限を設けない。  
-**$max** ： 取得対象にする権限値の上限。NULLの場合は上限を設けない。  
+**$min** : 取得対象にする権限値の下限。NULLの場合は下限を設けない。  
+**$max** : 取得対象にする権限値の上限。NULLの場合は上限を設けない。  
   
-**返り値** ： ロールとその権限値を格納した連想配列("role"(ロールのwakarana_roleインスタンス)、"permitted_value"(権限値))を権限値の大きい順に並べた配列を返す。権限値を持つロールが存在しなければ空配列を返し、失敗した場合はFALSEを返す。
+**返り値** : ロールとその権限値を格納した連想配列("role"(ロールのwakarana_roleインスタンス)、"permitted_value"(権限値))を権限値の大きい順に並べた配列を返す。権限値を持つロールが存在しなければ空配列を返し、失敗した場合はFALSEを返す。
 
 
 #### wakarana_permitted_value::get_users($min=NULL, $max=NULL)
 権限値が割り当てられているユーザーの一覧を取得する。  
   
-**$min** ： 取得対象にする権限値の下限。NULLの場合は下限を設けない。  
-**$max** ： 取得対象にする権限値の上限。NULLの場合は上限を設けない。  
+**$min** : 取得対象にする権限値の下限。NULLの場合は下限を設けない。  
+**$max** : 取得対象にする権限値の上限。NULLの場合は上限を設けない。  
   
-**返り値** ： ユーザーとその権限値を格納した連想配列("user"(ユーザーのwakarana_userインスタンス)、"permitted_value"(権限値))を権限値の大きい順に並べた配列を返す。権限値を持つユーザーが存在しなければ空配列を返し、失敗した場合はFALSEを返す。
+**返り値** : ユーザーとその権限値を格納した連想配列("user"(ユーザーのwakarana_userインスタンス)、"permitted_value"(権限値))を権限値の大きい順に並べた配列を返す。権限値を持つユーザーが存在しなければ空配列を返し、失敗した場合はFALSEを返す。
 
 
 #### wakarana_permitted_value::delete_permitted_value()
 権限値を全てのロールから剥奪して完全に削除する。  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
 
@@ -1612,7 +1633,7 @@ wakarana_commonの派生クラス。Wakaranaが組み込まれたアプリケー
 現在の設定値でwakarana_config.iniを上書きする。  
 ◆クラス内呼び出し専用。  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
 #### wakarana_config::set_config_value($key, $value, $save_now=TRUE)
@@ -1622,20 +1643,20 @@ wakarana_config.iniの設定値を変更する。
 **$value** : 設定する値  
 **$save_now** : FALSEならwakarana_config.iniへの上書きは保留する。  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
 #### wakarana_config::reset_config()
 wakarana_config.iniの設定値を全て既定値に戻す。  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
 #### ◆ wakarana_config::save_custom_fields()
-現在の設定値でcustom_fields.jsonを上書きする。  
+現在の設定値でwakarana_custom_fields.jsonを上書きする。  
 ◆クラス内呼び出し専用。  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
 #### wakarana_config::add_custom_field($custom_field_name, $maximum_length=500, $records_per_user=1, $allow_nonunique_value=TRUE, $save_now=TRUE)
@@ -1646,9 +1667,9 @@ wakarana_config.iniの設定値を全て既定値に戻す。
 **$maximum_length** : 保存可能な最大文字数(500以下)  
 **$records_per_user** : ユーザーあたりの上限件数(100以下)  
 **$allow_nonunique_value** : 異なるユーザーが同一の値を持つことを認めるか  
-**$save_now** : FALSEならcustom_fields.jsonへの上書きは保留する  
+**$save_now** : FALSEならwakarana_custom_fields.jsonへの上書きは保留する  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
 #### wakarana_config::add_custom_numerical_field($custom_field_name, $records_per_user=1, $allow_nonunique_value=TRUE, $save_now=TRUE)
@@ -1658,9 +1679,9 @@ wakarana_config.iniの設定値を全て既定値に戻す。
 **$custom_field_name** : カスタムフィールド名。半角英数字及びアンダーバーが使用可能。  
 **$records_per_user** : ユーザーあたりの上限件数(100以下)  
 **$allow_nonunique_value** : 異なるユーザーが同一の値を持つことを認めるか  
-**$save_now** : FALSEならcustom_fields.jsonへの上書きは保留する  
+**$save_now** : FALSEならwakarana_custom_fields.jsonへの上書きは保留する  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
 #### wakarana_config::delete_custom_field($custom_field_name, $save_now=TRUE)
@@ -1668,9 +1689,9 @@ wakarana_config.iniの設定値を全て既定値に戻す。
 この関数により既にデータベースに保存されている当該カスタムフィールドのデータが削除されるわけではない。  
   
 **$custom_field_name** : カスタムフィールド名  
-**$save_now** : FALSEならcustom_fields.jsonへの上書きは保留する。  
+**$save_now** : FALSEならwakarana_custom_fields.jsonへの上書きは保留する。  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
 #### ◆ wakarana_config::save_email_domain_blacklist()
@@ -1678,12 +1699,13 @@ wakarana_config.iniの設定値を全て既定値に戻す。
 ◆クラス内呼び出し専用。
 
 
-#### wakarana_config::add_email_domain_to_blacklist($damain_name)
+#### wakarana_config::add_email_domain_to_blacklist($damain_name, $save_now=TRUE)
 ドメインをメールドメインブラックリストに追加する。  
   
 **$domain_name** : ブラックリストに追加するドメイン名  
+**$save_now** : FALSEならwakarana_email_domain_blacklist.confへの上書きは保留する。  
   
-**返り値** ： 成功した場合はTRUE、既にブラックリストに登録されているドメインだった場合や失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUE、既にブラックリストに登録されているドメインだった場合はNULLを返し、メールドメインに使用できない文字列だった場合や失敗した場合はFALSEを返す。
 
 
 #### wakarana_config::remove_email_domain_from_blacklist($damain_name)
@@ -1691,7 +1713,33 @@ wakarana_config.iniの設定値を全て既定値に戻す。
   
 **$domain_name** : ブラックリストから除外するドメイン名  
   
-**返り値** ： 成功した場合はTRUE、もとからブラックリストに登録されていないドメインだった場合や失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUE、もとからブラックリストに登録されていないドメインだった場合や失敗した場合はFALSEを返す。
+
+
+#### wakarana_config::merge_email_domain_blacklists($damain_names)
+複数のドメインをまとめてメールドメインブラックリストに追加する。  
+既にブラックリストに登録されているドメインや、ドメイン名として無効な文字列が含まれていた場合、それらは無視される。  
+  
+**$domain_names** : ドメイン名が1行に1つずつ記載された文字列  
+  
+**返り値** : 成功した場合はブラックリストに追加されたドメインの数を返し、失敗した場合はFALSEを返す。
+
+
+#### wakarana_config::clear_email_domain_blacklist($save_now=TRUE)
+メールドメインブラックリストの内容を全て削除する。  
+  
+**$save_now** : FALSEならwakarana_email_domain_blacklist.confへの上書きは保留する。  
+  
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
+#### wakarana_config::replace_email_domain_blacklist($damain_names)
+既存のメールドメインブラックリストを削除し、新しいブラックリストで置き換える。  
+新しいブラックリストの記載内容のうち、ドメイン名として無効な文字列は自動的に除外される。  
+  
+**$domain_names** : ドメイン名が1行に1つずつ記載された文字列  
+  
+**返り値** : 成功した場合は新しいブラックリストに登録されたドメインの数を返し、失敗した場合はFALSEを返す。
 
 
 #### wakarana_config::setup_db()
@@ -1699,4 +1747,4 @@ wakarana_config.iniの設定値を全て既定値に戻す。
 SQLiteを使用する設定の場合、データベースファイルの作成も行われる。  
 作成されたテーブルには初期情報(ベースロールと特権管理者ロールの基本情報)が格納される。  
   
-**返り値** ： 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。

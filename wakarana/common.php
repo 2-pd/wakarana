@@ -3,7 +3,7 @@
  *
  *  Wakarana
 */
-    define("WAKARANA_VERSION", "25.11-1");
+    define("WAKARANA_VERSION", "26.04-1");
 /*
  *_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  *
@@ -23,6 +23,8 @@ class wakarana_common {
     protected $db_obj;
     protected $custom_fields;
     protected $email_domain_blacklist;
+    
+    private $transaction_cnt;
     
     private $last_error_text = NULL;
     
@@ -51,6 +53,7 @@ class wakarana_common {
         }
         
         $this->email_domain_blacklist = NULL;
+        $this->transaction_cnt = 0;
     }
     
     
@@ -106,6 +109,63 @@ class wakarana_common {
             
             return FALSE;
         }
+    }
+    
+    
+    function begin_transaction () {
+        try {
+            if ($this->transaction_cnt === 0) {
+                $this->db_obj->exec("BEGIN");
+            } else {
+                $this->db_obj->exec("SAVEPOINT sp_".($this->transaction_cnt + 1));
+            }
+        } catch (PDOException $err) {
+            $this->print_error("トランザクションの開始に失敗しました。".$err->getMessage());
+            
+            return FALSE;
+        }
+        
+        $this->transaction_cnt++;
+        
+        return TRUE;
+    }
+    
+    
+    function commit_transaction () {
+        try {
+            if ($this->transaction_cnt === 1) {
+                $this->db_obj->exec("COMMIT");
+            } else {
+                $this->db_obj->exec("RELEASE SAVEPOINT sp_".$this->transaction_cnt);
+            }
+        } catch (PDOException $err) {
+            $this->print_error("トランザクションの完了に失敗しました。".$err->getMessage());
+            
+            return FALSE;
+        }
+        
+        $this->transaction_cnt--;
+        
+        return TRUE;
+    }
+    
+    
+    function rollback_transaction () {
+        try {
+            if ($this->transaction_cnt === 1) {
+                $this->db_obj->exec("ROLLBACK");
+            } else {
+                $this->db_obj->exec("ROLLBACK TO SAVEPOINT sp_".$this->transaction_cnt);
+            }
+        } catch (PDOException $err) {
+            $this->print_error("トランザクションの取り消しに失敗しました。".$err->getMessage());
+            
+            return FALSE;
+        }
+        
+        $this->transaction_cnt--;
+        
+        return TRUE;
     }
     
     

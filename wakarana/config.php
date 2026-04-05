@@ -242,7 +242,7 @@ class wakarana_config extends wakarana_common {
     protected function save_email_domain_blacklist () {
         $email_domain_blacklist = implode("\n", $this->email_domain_blacklist);
         
-        if(@file_put_contents($this->base_path."/wakarana_email_domain_blacklist.conf", $email_domain_blacklist) !== FALSE){
+        if (@file_put_contents($this->base_path."/wakarana_email_domain_blacklist.conf", $email_domain_blacklist) !== FALSE) {
             return TRUE;
         } else {
             $this->print_error("メールドメインブラックリストファイルへの書き込みに失敗しました。");
@@ -251,13 +251,17 @@ class wakarana_config extends wakarana_common {
     }
     
     
-    function add_email_domain_to_blacklist ($damain_name) {
+    function add_email_domain_to_blacklist ($damain_name, $save_now = TRUE) {
+        if (!preg_match("/\A[A-Za-z0-9\-]+(\.[A-Za-z0-9\-]+)+\z/u", $damain_name)) {
+            return FALSE;
+        }
+        
         if ($this->check_email_domain($damain_name)) {
             $this->email_domain_blacklist[] = mb_strtolower($damain_name);
             
-            return $this->save_email_domain_blacklist();
+            return $save_now ? $this->save_email_domain_blacklist() : TRUE;
         } else {
-            return FALSE;
+            return NULL;
         }
     }
     
@@ -270,6 +274,48 @@ class wakarana_config extends wakarana_common {
         } else {
             return FALSE;
         }
+    }
+    
+    
+    function merge_email_domain_blacklists ($damain_names) {
+        $lines = preg_split("/\R/u", $damain_names);
+        
+        $added_count = 0;
+        foreach ($lines as $line) {
+            $trimmed_line = trim($line);
+            if ($trimmed_line !== "") {
+                if (!empty($this->add_email_domain_to_blacklist($trimmed_line, FALSE))) {
+                    $added_count++;
+                }
+            }
+        }
+        
+        if ($added_count === 0) {
+            return 0;
+        }
+        
+        return $this->save_email_domain_blacklist() ? $added_count : FALSE;
+    }
+    
+    
+    function clear_email_domain_blacklist ($save_now = TRUE) {
+        $this->email_domain_blacklist = array();
+        
+        return $save_now ? $this->save_email_domain_blacklist() : TRUE;
+    }
+    
+    
+    function replace_email_domain_blacklist ($damain_names) {
+        $old_blacklist = $this->email_domain_blacklist;
+        $this->clear_email_domain_blacklist(FALSE);
+        
+        $added_count = $this->merge_email_domain_blacklists($damain_names);
+        
+        if ($added_count === FALSE) {
+            $this->email_domain_blacklist = $old_blacklist;
+        }
+        
+        return $added_count;
     }
     
     
