@@ -168,13 +168,13 @@ class wakarana extends wakarana_common {
         $date_time = date("Y-m-d H:i:s");
         
         try {
-            $stmt = $this->db_obj->query('SELECT COUNT(*) FROM "wakarana_users" WHERE "user_id" = \''.$user_id.'\'');
+            $stmt = $this->db_obj->query('SELECT 1 FROM "wakarana_users" WHERE "user_id" = \''.$user_id.'\' LIMIT 1');
         } catch (PDOException $err) {
             $this->print_error("ユーザー作成の可否を確認できませんでした。".$err->getMessage());
             return FALSE;
         }
         
-        if ($stmt->fetchColumn() !== 0) {
+        if (!empty($stmt->fetchColumn())) {
             $this->rejection_reason = "user_already_exists";
             return FALSE;
         }
@@ -276,13 +276,13 @@ class wakarana extends wakarana_common {
         $role_id = strtolower($role_id);
         
         try {
-            $stmt = $this->db_obj->query('SELECT COUNT(*) FROM "wakarana_roles" WHERE "role_id" = \''.$role_id.'\'');
+            $stmt = $this->db_obj->query('SELECT 1 FROM "wakarana_roles" WHERE "role_id" = \''.$role_id.'\' LIMIT 1');
         } catch (PDOException $err) {
             $this->print_error("ロール作成の可否を確認できませんでした。".$err->getMessage());
             return FALSE;
         }
         
-        if ($stmt->fetchColumn() !== 0) {
+        if (!empty($stmt->fetchColumn())) {
             $this->rejection_reason = "role_already_exists";
             return FALSE;
         }
@@ -395,13 +395,13 @@ class wakarana extends wakarana_common {
         }
         
         try {
-            $stmt = $this->db_obj->query('SELECT COUNT(*) FROM "wakarana_permissions" WHERE "resource_id" = \''.$resource_id.'\'');
+            $stmt = $this->db_obj->query('SELECT 1 FROM "wakarana_permissions" WHERE "resource_id" = \''.$resource_id.'\' LIMIT 1');
         } catch (PDOException $err) {
             $this->print_error("権限作成の可否を確認できませんでした。".$err->getMessage());
             return FALSE;
         }
         
-        if ($stmt->fetchColumn() !== 0) {
+        if (!empty($stmt->fetchColumn())) {
             $this->rejection_reason = "resource_already_exists";
             return FALSE;
         }
@@ -516,13 +516,13 @@ class wakarana extends wakarana_common {
         $permitted_value_id = strtolower($permitted_value_id);
         
         try {
-            $stmt = $this->db_obj->query('SELECT COUNT(*) FROM "wakarana_permitted_values" WHERE "permitted_value_id" = \''.$permitted_value_id.'\'');
+            $stmt = $this->db_obj->query('SELECT 1 FROM "wakarana_permitted_values" WHERE "permitted_value_id" = \''.$permitted_value_id.'\' LIMIT 1');
         } catch (PDOException $err) {
             $this->print_error("権限値作成の可否を確認できませんでした。".$err->getMessage());
             return FALSE;
         }
         
-        if ($stmt->fetchColumn() !== 0) {
+        if (!empty($stmt->fetchColumn())) {
             $this->rejection_reason = "permitted_value_already_exists";
             return FALSE;
         }
@@ -656,12 +656,12 @@ class wakarana extends wakarana_common {
         }
         
         try {
-            $stmt = $this->db_obj->query('SELECT COUNT("ip_address") FROM "wakarana_authenticate_logs" WHERE "ip_address" = \''.$ip_address.'\' AND "authenticate_datetime" >= \''.date("Y-m-d H:i:s", time() - $this->config["minimum_authenticate_interval"]).'\''.$succeeded_q);
+            $stmt = $this->db_obj->query('SELECT 1 FROM "wakarana_authenticate_logs" WHERE "ip_address" = \''.$ip_address.'\' AND "authenticate_datetime" >= \''.date("Y-m-d H:i:s", time() - $this->config["minimum_authenticate_interval"]).'\''.$succeeded_q." LIMIT 1");
             
-            if ($stmt->fetchColumn() >= 1) {
-                return FALSE;
-            } else {
+            if (empty($stmt->fetchColumn())) {
                 return TRUE;
+            } else {
+                return FALSE;
             }
         } catch (PDOException $err) {
             $this->print_error("認証試行間隔の確認に失敗しました。".$err->getMessage());
@@ -897,7 +897,7 @@ class wakarana extends wakarana_common {
         $verification_code = strtoupper($verification_code);
         
         try {
-            $stmt = $this->db_obj->prepare('SELECT COUNT(*) FROM "wakarana_email_address_verification_codes" WHERE "email_address" = :email_address AND "verification_code" = :verification_code AND "user_id" IS NULL');
+            $stmt = $this->db_obj->prepare('SELECT 1 FROM "wakarana_email_address_verification_codes" WHERE "email_address" = :email_address AND "verification_code" = :verification_code AND "user_id" IS NULL LIMIT 1');
             
             $stmt->bindValue(":email_address", $email_address, PDO::PARAM_STR);
             $stmt->bindValue(":verification_code", $verification_code, PDO::PARAM_STR);
@@ -908,7 +908,7 @@ class wakarana extends wakarana_common {
             return FALSE;
         }
         
-        if ($stmt->fetchColumn() >= 1) {
+        if (!empty($stmt->fetchColumn())) {
             try {
                 $stmt = $this->db_obj->prepare('DELETE FROM "wakarana_email_address_verification_codes" WHERE "email_address" = :email_address AND "verification_code" = :verification_code');
                 
@@ -978,7 +978,7 @@ class wakarana extends wakarana_common {
         $invite_code = strtoupper($invite_code);
         
         try {
-            $stmt = $this->db_obj->prepare('SELECT COUNT(*) FROM "wakarana_invite_codes" WHERE "invite_code" = :invite_code');
+            $stmt = $this->db_obj->prepare('SELECT 1 FROM "wakarana_invite_codes" WHERE "invite_code" = :invite_code LIMIT 1');
             
             $stmt->bindValue(":invite_code", $invite_code, PDO::PARAM_STR);
             
@@ -988,7 +988,7 @@ class wakarana extends wakarana_common {
             return FALSE;
         }
         
-        if ($stmt->fetchColumn() === 1) {
+        if (!empty($stmt->fetchColumn())) {
             $this->delete_invite_code($invite_code);
             
             return TRUE;
@@ -2249,13 +2249,13 @@ class wakarana_user extends wakarana_data_item {
         }
         
         try {
-            $stmt = $this->wakarana->db_obj->query('SELECT COUNT(*) FROM "wakarana_user_permission_caches" WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "resource_id" = \''.strtolower($resource_id).'\' AND "action" = \''.strtolower($action).'\'');
+            $stmt = $this->wakarana->db_obj->query('SELECT 1 FROM "wakarana_user_permission_caches" WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "resource_id" = \''.strtolower($resource_id).'\' AND "action" = \''.strtolower($action).'\' LIMIT 1');
         } catch (PDOException $err) {
             $this->print_error("ユーザーの権限確認に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
-        if ($stmt->fetchColumn() === 1) {
+        if (!empty($stmt->fetchColumn())) {
             return TRUE;
         } else {
             return FALSE;
@@ -2373,12 +2373,12 @@ class wakarana_user extends wakarana_data_item {
         }
         
         try {
-            $stmt = $this->wakarana->db_obj->query('SELECT COUNT("user_id") FROM "wakarana_authenticate_logs" WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "authenticate_datetime" >= \''.date("Y-m-d H:i:s", time() - $this->wakarana->config["minimum_authenticate_interval"]).'\''.$succeeded_q);
+            $stmt = $this->wakarana->db_obj->query('SELECT 1 FROM "wakarana_authenticate_logs" WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "authenticate_datetime" >= \''.date("Y-m-d H:i:s", time() - $this->wakarana->config["minimum_authenticate_interval"]).'\''.$succeeded_q." LIMIT 1");
             
-            if ($stmt->fetchColumn() >= 1) {
-                return FALSE;
-            } else {
+            if (empty($stmt->fetchColumn())) {
                 return TRUE;
+            } else {
+                return FALSE;
             }
         } catch (PDOException $err) {
             $this->print_error("認証試行間隔の確認に失敗しました。".$err->getMessage());
@@ -2651,7 +2651,7 @@ class wakarana_user extends wakarana_data_item {
         $verification_code = strtoupper($verification_code);
         
         try {
-            $stmt = $this->wakarana->db_obj->prepare('SELECT COUNT(*) FROM "wakarana_email_address_verification_codes" WHERE "email_address" = :email_address AND "verification_code" = :verification_code AND "user_id" = \''.$this->user_info["user_id"].'\'');
+            $stmt = $this->wakarana->db_obj->prepare('SELECT 1 FROM "wakarana_email_address_verification_codes" WHERE "email_address" = :email_address AND "verification_code" = :verification_code AND "user_id" = \''.$this->user_info["user_id"].'\' LIMIT 1');
             
             $stmt->bindValue(":email_address", $email_address, PDO::PARAM_STR);
             $stmt->bindValue(":verification_code", $verification_code, PDO::PARAM_STR);
@@ -2662,7 +2662,7 @@ class wakarana_user extends wakarana_data_item {
             return FALSE;
         }
         
-        if ($stmt->fetchColumn() === 1) {
+        if (!empty($stmt->fetchColumn())) {
             try {
                 $stmt = $this->wakarana->db_obj->prepare('DELETE FROM "wakarana_email_address_verification_codes" WHERE "email_address" = :email_address AND "verification_code" = :verification_code AND "user_id" = \''.$this->user_info["user_id"].'\'');
                 
@@ -2880,7 +2880,7 @@ class wakarana_user extends wakarana_data_item {
         $this->wakarana->delete_one_time_tokens();
         
         try {
-            $stmt = $this->wakarana->db_obj->prepare('SELECT COUNT(*) FROM "wakarana_one_time_tokens" WHERE "token" = :token AND "user_id" = \''.$this->user_info["user_id"].'\'');
+            $stmt = $this->wakarana->db_obj->prepare('SELECT 1 FROM "wakarana_one_time_tokens" WHERE "token" = :token AND "user_id" = \''.$this->user_info["user_id"].'\' LIMIT 1');
             
             $stmt->bindValue(":token", $token, PDO::PARAM_STR);
             
@@ -2890,7 +2890,7 @@ class wakarana_user extends wakarana_data_item {
             return FALSE;
         }
         
-        if ($stmt->fetchColumn() === 1) {
+        if (!empty($stmt->fetchColumn())) {
             try {
                 $stmt = $this->wakarana->db_obj->prepare('DELETE FROM "wakarana_one_time_tokens" WHERE "token" = :token');
                 
@@ -3094,13 +3094,13 @@ class wakarana_role extends wakarana_data_item {
         $action = strtolower($action);
         
         try {
-            $stmt = $this->wakarana->db_obj->query('SELECT COUNT(*) FROM "wakarana_role_permissions" WHERE "role_id" = \''.$this->role_info["role_id"].'\' AND "resource_id" = \''.$resource_id.'\' AND "action" = \''.$action.'\'');
+            $stmt = $this->wakarana->db_obj->query('SELECT 1 FROM "wakarana_role_permissions" WHERE "role_id" = \''.$this->role_info["role_id"].'\' AND "resource_id" = \''.$resource_id.'\' AND "action" = \''.$action.'\' LIMIT 1');
         } catch (PDOException $err) {
             $this->print_error("ロールの権限確認に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
-        if ($stmt->fetchColumn() === 1) {
+        if (!empty($stmt->fetchColumn())) {
             return TRUE;
         } else {
             return FALSE;
