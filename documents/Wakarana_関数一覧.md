@@ -1653,7 +1653,7 @@ wakarana_config.iniの設定値を全て既定値に戻す。
 
 
 #### ◆ wakarana_config::save_custom_fields()
-現在の設定値でcustom_fields.jsonを上書きする。  
+現在の設定値でwakarana_custom_fields.jsonを上書きする。  
 ◆クラス内呼び出し専用。  
   
 **返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
@@ -1667,7 +1667,7 @@ wakarana_config.iniの設定値を全て既定値に戻す。
 **$maximum_length** : 保存可能な最大文字数(500以下)  
 **$records_per_user** : ユーザーあたりの上限件数(100以下)  
 **$allow_nonunique_value** : 異なるユーザーが同一の値を持つことを認めるか  
-**$save_now** : FALSEならcustom_fields.jsonへの上書きは保留する  
+**$save_now** : FALSEならwakarana_custom_fields.jsonへの上書きは保留する  
   
 **返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
@@ -1679,7 +1679,7 @@ wakarana_config.iniの設定値を全て既定値に戻す。
 **$custom_field_name** : カスタムフィールド名。半角英数字及びアンダーバーが使用可能。  
 **$records_per_user** : ユーザーあたりの上限件数(100以下)  
 **$allow_nonunique_value** : 異なるユーザーが同一の値を持つことを認めるか  
-**$save_now** : FALSEならcustom_fields.jsonへの上書きは保留する  
+**$save_now** : FALSEならwakarana_custom_fields.jsonへの上書きは保留する  
   
 **返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
@@ -1689,7 +1689,7 @@ wakarana_config.iniの設定値を全て既定値に戻す。
 この関数により既にデータベースに保存されている当該カスタムフィールドのデータが削除されるわけではない。  
   
 **$custom_field_name** : カスタムフィールド名  
-**$save_now** : FALSEならcustom_fields.jsonへの上書きは保留する。  
+**$save_now** : FALSEならwakarana_custom_fields.jsonへの上書きは保留する。  
   
 **返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
@@ -1699,12 +1699,13 @@ wakarana_config.iniの設定値を全て既定値に戻す。
 ◆クラス内呼び出し専用。
 
 
-#### wakarana_config::add_email_domain_to_blacklist($damain_name)
+#### wakarana_config::add_email_domain_to_blacklist($damain_name, $save_now=TRUE)
 ドメインをメールドメインブラックリストに追加する。  
   
 **$domain_name** : ブラックリストに追加するドメイン名  
+**$save_now** : FALSEならwakarana_email_domain_blacklist.confへの上書きは保留する。  
   
-**返り値** : 成功した場合はTRUE、既にブラックリストに登録されているドメインだった場合や失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUE、既にブラックリストに登録されているドメインだった場合はNULLを返し、メールドメインに使用できない文字列だった場合や失敗した場合はFALSEを返す。
 
 
 #### wakarana_config::remove_email_domain_from_blacklist($damain_name)
@@ -1713,6 +1714,32 @@ wakarana_config.iniの設定値を全て既定値に戻す。
 **$domain_name** : ブラックリストから除外するドメイン名  
   
 **返り値** : 成功した場合はTRUE、もとからブラックリストに登録されていないドメインだった場合や失敗した場合はFALSEを返す。
+
+
+#### wakarana_config::merge_email_domain_blacklists($damain_names)
+複数のドメインをまとめてメールドメインブラックリストに追加する。  
+既にブラックリストに登録されているドメインや、ドメイン名として無効な文字列が含まれていた場合、それらは無視される。  
+  
+**$domain_names** : ドメイン名が1行に1つずつ記載された文字列  
+  
+**返り値** : 成功した場合はブラックリストに追加されたドメインの数を返し、失敗した場合はFALSEを返す。
+
+
+#### wakarana_config::clear_email_domain_blacklist($save_now=TRUE)
+メールドメインブラックリストの内容を全て削除する。  
+  
+**$save_now** : FALSEならwakarana_email_domain_blacklist.confへの上書きは保留する。  
+  
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
+#### wakarana_config::replace_email_domain_blacklist($damain_names)
+既存のメールドメインブラックリストを削除し、新しいブラックリストで置き換える。  
+新しいブラックリストの記載内容のうち、ドメイン名として無効な文字列は自動的に除外される。  
+  
+**$domain_names** : ドメイン名が1行に1つずつ記載された文字列  
+  
+**返り値** : 成功した場合は新しいブラックリストに登録されたドメインの数を返し、失敗した場合はFALSEを返す。
 
 
 #### wakarana_config::setup_db()
