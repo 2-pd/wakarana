@@ -266,7 +266,7 @@ wakarana_userインスタンスを生成する。
 **返り値** : 成功した場合は、wakarana_userインスタンスを配列で返す。失敗した場合はFALSEを返す。
 
 
-#### wakarana::add_user($user_id, $password, $user_name="", $status=WAKARANA_STATUS_NORMAL)
+#### wakarana::create_user($user_id, $password, $user_name="", $status=WAKARANA_STATUS_NORMAL)
 新しいユーザーを追加する。追加したユーザーには自動的にベースロールが割り当てられる。  
 既に存在するユーザーIDを指定した場合はエラーとなる。  
   
@@ -301,7 +301,7 @@ wakarana_roleインスタンスを生成する。
 **返り値** : ロールのwakarana_roleインスタンスをロールIDのアルファベット順に格納した配列を返す。失敗した場合はFALSEを返す。
 
 
-#### wakarana::add_role($role_id, $role_name, $role_description="")
+#### wakarana::create_role($role_id, $role_name, $role_description="")
 ロールを新規作成する。  
   
 **$role_id** : ロールID。半角英数字及びアンダーバーが使用可能。アルファベット大文字は小文字に変換される。  
@@ -352,7 +352,7 @@ wakarana_permissionインスタンスを生成する。
 **返り値** : 権限のwakarana_permissionインスタンスを権限対象リソースIDのアルファベット順に格納した配列を返す。権限が存在しない場合は空配列を返す。失敗した場合はFALSEを返す。
 
 
-#### wakarana::add_permission($resource_id, $permission_name, $permission_description="")
+#### wakarana::create_permission($resource_id, $permission_name, $permission_description="")
 権限を新規作成する。権限は権限の表示名ではなく権限対象リソースのIDで識別される。  
 権限対象リソースIDに「/」が含まれる場合、作成される権限は「/」以下を取り除いたリソースIDの権限(親権限)の子権限となり、親権限に存在する動作を全て持った状態で作成される。  
 存在しない親権限に子権限を作成することはできない。  
@@ -388,7 +388,7 @@ wakarana_permitted_valueインスタンスを生成する。
 **返り値** : 権限値のwakarana_permitted_valueインスタンスを権限値IDのアルファベット順に格納した配列を返す。権限が存在しない場合は空配列を返す。
 
 
-#### wakarana::add_permitted_value($permitted_value_id, $permitted_value_name, $permitted_value_description="")
+#### wakarana::create_permitted_value($permitted_value_id, $permitted_value_name, $permitted_value_description="")
 権限値を新規作成する。  
   
 **$permitted_value_id** : 権限値ID。半角英数字及びアンダーバーが使用可能。アルファベット大文字は小文字に変換される。  
