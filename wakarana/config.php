@@ -242,7 +242,7 @@ class wakarana_config extends wakarana_common {
     protected function save_email_domain_blacklist () {
         $email_domain_blacklist = implode("\n", $this->email_domain_blacklist);
         
-        if(@file_put_contents($this->base_path."/wakarana_email_domain_blacklist.conf", $email_domain_blacklist) !== FALSE){
+        if (@file_put_contents($this->base_path."/wakarana_email_domain_blacklist.conf", $email_domain_blacklist) !== FALSE) {
             return TRUE;
         } else {
             $this->print_error("メールドメインブラックリストファイルへの書き込みに失敗しました。");
@@ -252,6 +252,10 @@ class wakarana_config extends wakarana_common {
     
     
     function add_email_domain_to_blacklist ($damain_name, $save_now = TRUE) {
+        if (!preg_match("/\A[A-Za-z0-9\-]+(\.[A-Za-z0-9\-]+)+\z/u", $damain_name)) {
+            return FALSE;
+        }
+        
         if ($this->check_email_domain($damain_name)) {
             $this->email_domain_blacklist[] = mb_strtolower($damain_name);
             
