@@ -265,7 +265,7 @@ class wakarana extends wakarana_common {
     }
     
     
-    function add_role ($role_id, $role_name, $role_description = "") {
+    function create_role ($role_id, $role_name, $role_description = "") {
         $this->rejection_reason = NULL;
         
         if (!self::check_id_string($role_id)) {
@@ -1491,6 +1491,11 @@ class wakarana extends wakarana_common {
     
     function add_user ($user_id, $password, $user_name = "", $status = WAKARANA_STATUS_NORMAL) { //2027年5月以降のバージョンで削除
         return $this->create_user($user_id, $password, $user_name, $status);
+    }
+    
+    
+    function add_role ($role_id, $role_name, $role_description = "") { //2027年5月以降のバージョンで削除
+        return $this->create_role($role_id, $role_name, $role_description);
     }
 }
 
