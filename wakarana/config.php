@@ -298,6 +298,13 @@ class wakarana_config extends wakarana_common {
     }
     
     
+    function clear_email_domain_blacklist ($save_now = TRUE) {
+        $this->email_domain_blacklist = array();
+        
+        return $save_now ? $this->save_email_domain_blacklist() : TRUE;
+    }
+    
+    
     function setup_db () {
         $this->connect_db();
         

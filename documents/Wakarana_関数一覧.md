@@ -1725,6 +1725,14 @@ wakarana_config.iniの設定値を全て既定値に戻す。
 **返り値** : 成功した場合はブラックリストに追加されたドメインの数を返し、失敗した場合はFALSEを返す。
 
 
+#### wakarana_config::clear_email_domain_blacklist($save_now=TRUE)
+メールドメインブラックリストの内容を全て削除する。  
+  
+**$save_now** : FALSEならwakarana_email_domain_blacklist.confへの上書きは保留する。  
+  
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
 #### wakarana_config::replace_email_domain_blacklist($damain_names)
 既存のメールドメインブラックリストを削除し、新しいブラックリストで置き換える。  
   
