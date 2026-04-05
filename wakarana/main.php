@@ -151,7 +151,7 @@ class wakarana extends wakarana_common {
     }
     
     
-    function add_user ($user_id, $password, $user_name = "", $status = WAKARANA_STATUS_NORMAL) {
+    function create_user ($user_id, $password, $user_name = "", $status = WAKARANA_STATUS_NORMAL) {
         $this->rejection_reason = NULL;
         
         if (!self::check_id_string($user_id)) {
@@ -265,7 +265,7 @@ class wakarana extends wakarana_common {
     }
     
     
-    function add_role ($role_id, $role_name, $role_description = "") {
+    function create_role ($role_id, $role_name, $role_description = "") {
         $this->rejection_reason = NULL;
         
         if (!self::check_id_string($role_id)) {
@@ -375,7 +375,7 @@ class wakarana extends wakarana_common {
     }
     
     
-    function add_permission ($resource_id, $permission_name, $permission_description = "") {
+    function create_permission ($resource_id, $permission_name, $permission_description = "") {
         $this->rejection_reason = NULL;
         
         if (!self::check_resource_id_string($resource_id)) {
@@ -505,7 +505,7 @@ class wakarana extends wakarana_common {
     }
     
     
-    function add_permitted_value ($permitted_value_id, $permitted_value_name, $permitted_value_description = "") {
+    function create_permitted_value ($permitted_value_id, $permitted_value_name, $permitted_value_description = "") {
         $this->rejection_reason = NULL;
         
         if (!self::check_id_string($permitted_value_id)) {
@@ -1486,6 +1486,25 @@ class wakarana extends wakarana_common {
         $bin_code = unpack("N", $mac, self::bin_to_int($mac, 156, 4));
         
         return str_pad((strval($bin_code[1] & 0x7FFFFFFF) % 1000000), 6, "0", STR_PAD_LEFT);
+    }
+    
+    
+    function add_user ($user_id, $password, $user_name = "", $status = WAKARANA_STATUS_NORMAL) { //2027年5月以降のバージョンで削除
+        return $this->create_user($user_id, $password, $user_name, $status);
+    }
+    
+    
+    function add_role ($role_id, $role_name, $role_description = "") { //2027年5月以降のバージョンで削除
+        return $this->create_role($role_id, $role_name, $role_description);
+    }
+    
+    
+    function add_permission ($resource_id, $permission_name, $permission_description = "") { //2027年5月以降のバージョンで削除
+        return $this->create_permission($resource_id, $permission_name, $permission_description);
+    }
+    
+    function add_permitted_value ($permitted_value_id, $permitted_value_name, $permitted_value_description = "") { //2027年5月以降のバージョンで削除
+        return $this->create_permitted_value($permitted_value_id, $permitted_value_name, $permitted_value_description);
     }
 }
 
