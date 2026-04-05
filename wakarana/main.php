@@ -375,7 +375,7 @@ class wakarana extends wakarana_common {
     }
     
     
-    function add_permission ($resource_id, $permission_name, $permission_description = "") {
+    function create_permission ($resource_id, $permission_name, $permission_description = "") {
         $this->rejection_reason = NULL;
         
         if (!self::check_resource_id_string($resource_id)) {
@@ -1496,6 +1496,11 @@ class wakarana extends wakarana_common {
     
     function add_role ($role_id, $role_name, $role_description = "") { //2027年5月以降のバージョンで削除
         return $this->create_role($role_id, $role_name, $role_description);
+    }
+    
+    
+    function add_permission ($resource_id, $permission_name, $permission_description = "") { //2027年5月以降のバージョンで削除
+        return $this->create_permission($resource_id, $permission_name, $permission_description);
     }
 }
 
