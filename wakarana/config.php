@@ -305,6 +305,20 @@ class wakarana_config extends wakarana_common {
     }
     
     
+    function replace_email_domain_blacklist ($damain_names) {
+        $old_blacklist = $this->email_domain_blacklist;
+        $this->clear_email_domain_blacklist(FALSE);
+        
+        $added_count = $this->merge_email_domain_blacklists($damain_names);
+        
+        if ($added_count === FALSE) {
+            $this->email_domain_blacklist = $old_blacklist;
+        }
+        
+        return $added_count;
+    }
+    
+    
     function setup_db () {
         $this->connect_db();
         
