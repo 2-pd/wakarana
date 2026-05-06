@@ -1422,15 +1422,15 @@ class wakarana extends wakarana_common {
     }
     
     
-    function delete_login_token ($token) {
+    function delete_session_token ($session_id_or_token) {
         try {
-            $stmt = $this->db_obj->prepare('DELETE FROM "wakarana_login_tokens" WHERE "token" = :token');
+            $stmt = $this->db_obj->prepare('DELETE FROM "wakarana_sessions" WHERE "'.(strlen($session_id_or_token) === 16 ? "session_id" : "token").'" = :session_id_or_token');
             
-            $stmt->bindValue(":token", $token, PDO::PARAM_STR);
+            $stmt->bindValue(":session_id_or_token", $session_id_or_token, PDO::PARAM_STR);
             
             $stmt->execute();
         } catch (PDOException $err) {
-            $this->print_error("ログイントークンの削除に失敗しました。".$err->getMessage());
+            $this->print_error("セッショントークンの削除に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -1446,7 +1446,7 @@ class wakarana extends wakarana_common {
         }
         
         if (setcookie($this->config["login_token_cookie_name"], "", time() - 1800, "/", $this->config["cookie_domain"])) {
-            return $this->delete_login_token($token);
+            return $this->delete_session_token($token);
         } else {
             $this->print_error("ログイントークンの削除に失敗しました。");
             return FALSE;

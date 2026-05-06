@@ -760,10 +760,10 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
 **返り値** : セッションIDまたはセッショントークンが存在する場合は、セッション情報が格納された連想配列("session_id"(セッションID)、"token_created"(セッショントークンの生成日時)、"ip_address"(最終アクセス時のクライアント端末のIPアドレス)、"operating_system"(ログイン時のクライアント端末のOS名)、"browser_name"(ログイン時のクライアント端末のブラウザ名)、"last_access"(当該セッショントークンでの最終アクセス日時))を返す。それ以外の場合はFALSEを返す。
 
 
-#### wakarana::delete_session_token($token)
+#### wakarana::delete_session_token($session_id_or_token)
 指定したセッショントークンを削除し、セッションを終了する。  
   
-**$token** : セッショントークン  
+**$session_id_or_token** : 16文字のセッションIDまたは43文字のセッショントークン  
   
 **返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
