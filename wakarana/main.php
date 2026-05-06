@@ -1422,6 +1422,30 @@ class wakarana extends wakarana_common {
     }
     
     
+    function get_session_info ($session_id_or_token = NULL) {
+        if (empty($session_id_or_token)) {
+            if (isset($_COOKIE[$this->config["session_token_cookie_name"]])) {
+                $session_id_or_token = $_COOKIE[$this->config["session_token_cookie_name"]];
+            } else {
+                return FALSE;
+            }
+        }
+        
+        try {
+            $stmt = $this->db_obj->prepare('SELECT "session_id", "user_id", "token_created", "ip_address", "operating_system", "browser_name", "last_access" FROM "wakarana_sessions" WHERE "'.(strlen($session_id_or_token) === 16 ? "session_id" : "token").'" = :session_id_or_token');
+            
+            $stmt->bindValue(":session_id_or_token", $session_id_or_token, PDO::PARAM_STR);
+            
+            $stmt->execute();
+        } catch (PDOException $err) {
+            $this->print_error("セッション情報の取得に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+    
+    
     function delete_session_token ($session_id_or_token) {
         try {
             $stmt = $this->db_obj->prepare('DELETE FROM "wakarana_sessions" WHERE "'.(strlen($session_id_or_token) === 16 ? "session_id" : "token").'" = :session_id_or_token');

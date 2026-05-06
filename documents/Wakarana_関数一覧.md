@@ -757,7 +757,7 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
   
 **$session_id_or_token** : 16文字のセッションIDまたは43文字のセッショントークン。NULLを指定した場合はクライアント端末のcookieにセットされているセッショントークンを参照する。  
   
-**返り値** : セッションIDまたはセッショントークンが存在する場合は、セッション情報が格納された連想配列("session_id"(セッションID)、"token_created"(セッショントークンの生成日時)、"ip_address"(最終アクセス時のクライアント端末のIPアドレス)、"operating_system"(ログイン時のクライアント端末のOS名)、"browser_name"(ログイン時のクライアント端末のブラウザ名)、"last_access"(当該セッショントークンでの最終アクセス日時))を返す。それ以外の場合はFALSEを返す。
+**返り値** : セッションIDまたはセッショントークンが存在する場合は、セッション情報が格納された連想配列("session_id"(セッションID)、"user_id"(ユーザーID)、"token_created"(セッショントークンの生成日時)、"ip_address"(最終アクセス時のクライアント端末のIPアドレス)、"operating_system"(ログイン時のクライアント端末のOS名)、"browser_name"(ログイン時のクライアント端末のブラウザ名)、"last_access"(当該セッショントークンでの最終アクセス日時))を返す。それ以外の場合はFALSEを返す。
 
 
 #### wakarana::delete_session_token($session_id_or_token)
@@ -1176,7 +1176,7 @@ wakarana_userインスタンスで直前に行われた各種認証・登録処�
 #### wakarana_user::get_sessions()
 ユーザーの全セッションの情報を最終アクセス日時の新しい順に2次元配列で取得する。  
   
-**返り値** : 成功した場合は、そのユーザーの個々のセッション情報が格納された連想配列("session_id"(セッションID)、"token_created"(セッショントークンの生成日時)、"ip_address"(最終アクセス時のクライアント端末のIPアドレス)、"operating_system"(ログイン時のクライアント端末のOS名)、"browser_name"(ログイン時のクライアント端末のブラウザ名)、"last_access"(当該セッショントークンでの最終アクセス日時))を、配列に入れて返す。失敗した場合はFALSEを返す。
+**返り値** : 成功した場合は、ユーザーの個々のセッション情報が格納された連想配列("session_id"(セッションID)、"token_created"(セッショントークンの生成日時)、"ip_address"(最終アクセス時のクライアント端末のIPアドレス)、"operating_system"(ログイン時のクライアント端末のOS名)、"browser_name"(ログイン時のクライアント端末のブラウザ名)、"last_access"(当該セッショントークンでの最終アクセス日時))を、配列に入れて返す。失敗した場合はFALSEを返す。
 
 
 #### wakarana_user::create_session_token()
