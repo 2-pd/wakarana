@@ -1390,21 +1390,21 @@ class wakarana extends wakarana_common {
     
     function check ($token = NULL, $update_last_access = TRUE) {
         if (empty($token)) {
-            if (isset($_COOKIE[$this->config["login_token_cookie_name"]])) {
-                $token = $_COOKIE[$this->config["login_token_cookie_name"]];
+            if (isset($_COOKIE[$this->config["session_token_cookie_name"]])) {
+                $token = $_COOKIE[$this->config["session_token_cookie_name"]];
             } else {
                 return FALSE;
             }
         }
         
         try {
-            $stmt = $this->db_obj->prepare('SELECT "user_id" FROM "wakarana_login_tokens" WHERE "token" = :token AND "token_created" > \''.date("Y-m-d H:i:s", time() - $this->config["login_token_expire"]).'\'');
+            $stmt = $this->db_obj->prepare('SELECT "user_id" FROM "wakarana_sessions" WHERE "token" = :token AND "token_created" > \''.date("Y-m-d H:i:s", time() - $this->config["session_expire"]).'\'');
             
             $stmt->bindValue(":token", $token, PDO::PARAM_STR);
             
             $stmt->execute();
         } catch (PDOException $err) {
-            $this->print_error("ログイントークンの確認に失敗しました。".$err->getMessage());
+            $this->print_error("セッショントークンの確認に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -1463,13 +1463,13 @@ class wakarana extends wakarana_common {
     
     
     function logout () {
-        if (isset($_COOKIE[$this->config["login_token_cookie_name"]])) {
-            $token = $_COOKIE[$this->config["login_token_cookie_name"]];
+        if (isset($_COOKIE[$this->config["session_token_cookie_name"]])) {
+            $token = $_COOKIE[$this->config["session_token_cookie_name"]];
         } else {
             return NULL;
         }
         
-        if (setcookie($this->config["login_token_cookie_name"], "", time() - 1800, "/", $this->config["cookie_domain"])) {
+        if (setcookie($this->config["session_token_cookie_name"], "", time() - 1800, "/", $this->config["cookie_domain"])) {
             return $this->delete_session_token($token);
         } else {
             $this->print_error("ログイントークンの削除に失敗しました。");
