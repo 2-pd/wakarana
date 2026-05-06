@@ -743,11 +743,12 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
 **拒絶理由文字列** : "invalid_token"(有効な仮トークンではない)、"pin_not_matched"(TOTPコードが一致しない)、"unavailable_user"(ユーザーアカウントが停止中である)、"currently_locked_out"(ロックアウト中のためログインを試行できない)
 
 
-#### wakarana::check($token=NULL, $update_last_access=TRUE)
+#### wakarana::check($token=NULL, $update_last_access=TRUE, $ip_address=NULL)
 クライアント端末のcookieを参照し、正しくログインしているかどうかを照合する。  
   
 **$token** : 文字列を指定した場合、クライアント端末のcookie情報に関係なくその文字列をセッショントークンとみなして照合処理を行う。  
 **$update_last_access** : FALSEの場合、最終アクセス日時の更新を行わない。  
+**$ip_address** : IPアドレス。NULLの場合はクライアント端末のIPアドレスを参照する。  
   
 **返り値** : 有効なセッショントークンでログインしている場合はそのトークンに対応するユーザーのwakarana_userインスタンス、それ以外の場合はFALSEを返す。
 

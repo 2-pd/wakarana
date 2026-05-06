@@ -1388,7 +1388,7 @@ class wakarana extends wakarana_common {
     }
     
     
-    function check ($token = NULL, $update_last_access = TRUE) {
+    function check ($token = NULL, $update_last_access = TRUE, $ip_address = NULL) {
         if (empty($token)) {
             if (isset($_COOKIE[$this->config["session_token_cookie_name"]])) {
                 $token = $_COOKIE[$this->config["session_token_cookie_name"]];
@@ -1397,8 +1397,12 @@ class wakarana extends wakarana_common {
             }
         }
         
+        if (is_null($ip_address)) {
+            $ip_address = $this->get_client_ip_address();
+        }
+        
         try {
-            $stmt = $this->db_obj->prepare('SELECT "user_id", "session_id" FROM "wakarana_sessions" WHERE "token" = :token AND "token_created" > \''.date("Y-m-d H:i:s", time() - $this->config["session_expire"]).'\'');
+            $stmt = $this->db_obj->prepare('SELECT "user_id", "session_id", "ip_address" FROM "wakarana_sessions" WHERE "token" = :token AND "token_created" > \''.date("Y-m-d H:i:s", time() - $this->config["session_expire"]).'\'');
             
             $stmt->bindValue(":token", $token, PDO::PARAM_STR);
             
@@ -1410,11 +1414,21 @@ class wakarana extends wakarana_common {
         
         $session_info = $stmt->fetch(PDO::FETCH_ASSOC);
         
+        if (empty($session_info)) {
+            return FALSE;
+        }
+        
+        if ($this->config["delete_session_on_ip_address_change"] && $ip_address !== $session_info["ip_address"]) {
+            $this->delete_session_token($session_info["session_id"]);
+            
+            return FALSE;
+        }
+        
         $user = $this->get_user($session_info["user_id"]);
         
         if ($user !== FALSE) {
             if ($update_last_access) {
-                $user->update_last_access($session_info["session_id"]);
+                $user->update_last_access($session_info["session_id"], $ip_address);
             }
             
             return $user;
