@@ -791,7 +791,7 @@ class wakarana extends wakarana_common {
         $user = $this->authenticate($user_id, $password, $totp_pin);
         
         if (is_object($user)) {
-            $user->set_login_token();
+            $user->set_session_token();
         }
         
         return $user;
@@ -828,7 +828,7 @@ class wakarana extends wakarana_common {
         $user = $this->authenticate_with_email_address($email_address, $password, $totp_pin);
         
         if (is_object($user)) {
-            $user->set_login_token();
+            $user->set_session_token();
         }
         
         return $user;
@@ -1381,7 +1381,7 @@ class wakarana extends wakarana_common {
         $user = $this->totp_authenticate($tmp_token, $totp_pin);
         
         if (is_object($user)) {
-            $user->set_login_token();
+            $user->set_session_token();
         }
         
         return $user;
@@ -2543,13 +2543,13 @@ class wakarana_user extends wakarana_data_item {
     }
     
     
-    function set_login_token () {
+    function set_session_token () {
         $token = $this->create_session_token();
         
-        if (!empty($token) && setcookie($this->wakarana->config["login_token_cookie_name"], $token, time() + $this->wakarana->config["login_token_expire"], "/", $this->wakarana->config["cookie_domain"], FALSE, TRUE)) {
+        if (!empty($token) && setcookie($this->wakarana->config["session_token_cookie_name"], $token, time() + $this->wakarana->config["session_expire"], "/", $this->wakarana->config["cookie_domain"], FALSE, TRUE)) {
             return TRUE;
         } else {
-            $this->print_error("ログイントークンの送信に失敗しました。");
+            $this->print_error("セッショントークンの送信に失敗しました。");
             return FALSE;
         }
     }
