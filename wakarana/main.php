@@ -2506,15 +2506,15 @@ class wakarana_user extends wakarana_data_item {
     }
     
     
-    function get_login_tokens () {
+    function get_sessions () {
         try {
-            $stmt = $this->wakarana->db_obj->query('SELECT SUBSTR("token", 1, 6) AS "token", "token_created", "ip_address", "operating_system", "browser_name", "last_access" FROM "wakarana_login_tokens" WHERE "user_id" = \''.$this->user_info["user_id"].'\' ORDER BY "last_access" DESC');
-            
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $stmt = $this->wakarana->db_obj->query('SELECT "session_id", "token_created", "ip_address", "operating_system", "browser_name", "last_access" FROM "wakarana_sessions" WHERE "user_id" = \''.$this->user_info["user_id"].'\' ORDER BY "last_access" DESC');
         } catch (PDOException $err) {
-            $this->print_error("ログイントークン情報の取得に失敗しました。".$err->getMessage());
+            $this->print_error("セッション情報の取得に失敗しました。".$err->getMessage());
             return FALSE;
         }
+        
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
     
     
