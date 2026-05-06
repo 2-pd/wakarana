@@ -2555,11 +2555,11 @@ class wakarana_user extends wakarana_data_item {
     }
     
     
-    function delete_login_token ($abbreviated_token) {
+    function delete_session_token ($session_id) {
         try {
-            $stmt = $this->wakarana->db_obj->prepare('DELETE FROM "wakarana_login_tokens" WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "token" LIKE :token');
+            $stmt = $this->wakarana->db_obj->prepare('DELETE FROM "wakarana_sessions" WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "session_id" = :session_id');
             
-            $stmt->bindValue(":token", $abbreviated_token."%", PDO::PARAM_STR);
+            $stmt->bindValue(":session_id", $session_id, PDO::PARAM_STR);
             
             $stmt->execute();
         } catch (PDOException $err) {
