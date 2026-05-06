@@ -36,6 +36,21 @@ class wakarana extends wakarana_common {
     }
     
     
+    static function generate_unique_id () {
+        $ts_bytes = substr(pack("J", intval(microtime(TRUE) * 1000)), 2);
+        $rand_bytes = random_bytes(4);
+        
+        $unique_id_bin = $ts_bytes.$rand_bytes;
+        
+        $unique_id = "";
+        for ($cnt = 0; $cnt < 16; $cnt++) {
+            $unique_id .= WAKARANA_BASE32_TABLE[self::bin_to_int($unique_id_bin, $cnt * 5, 5)];
+        }
+        
+        return $unique_id;
+    }
+    
+    
     static function hash_password ($user_id, $password) {
         return hash("sha512", $password.hash("sha512", $user_id));
     }
