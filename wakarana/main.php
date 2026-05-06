@@ -1398,7 +1398,7 @@ class wakarana extends wakarana_common {
         }
         
         try {
-            $stmt = $this->db_obj->prepare('SELECT "user_id" FROM "wakarana_sessions" WHERE "token" = :token AND "token_created" > \''.date("Y-m-d H:i:s", time() - $this->config["session_expire"]).'\'');
+            $stmt = $this->db_obj->prepare('SELECT "user_id", "session_id" FROM "wakarana_sessions" WHERE "token" = :token AND "token_created" > \''.date("Y-m-d H:i:s", time() - $this->config["session_expire"]).'\'');
             
             $stmt->bindValue(":token", $token, PDO::PARAM_STR);
             
@@ -1408,11 +1408,13 @@ class wakarana extends wakarana_common {
             return FALSE;
         }
         
-        $user = $this->get_user($stmt->fetchColumn());
+        $session_info = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        $user = $this->get_user($session_info["user_id"]);
         
         if ($user !== FALSE) {
             if ($update_last_access) {
-                $user->update_last_access($token);
+                $user->update_last_access($session_info["session_id"]);
             }
             
             return $user;
@@ -1472,7 +1474,7 @@ class wakarana extends wakarana_common {
         if (setcookie($this->config["session_token_cookie_name"], "", time() - 1800, "/", $this->config["cookie_domain"])) {
             return $this->delete_session_token($token);
         } else {
-            $this->print_error("ログイントークンの削除に失敗しました。");
+            $this->print_error("セッショントークンの削除に失敗しました。");
             return FALSE;
         }
     }
@@ -2477,27 +2479,33 @@ class wakarana_user extends wakarana_data_item {
     }
     
     
-    function update_last_access ($token = NULL) {
+    function update_last_access ($session_id = NULL, $ip_address = NULL) {
         $last_access = date("Y-m-d H:i:s");
         
         try {
             $this->wakarana->db_obj->exec('UPDATE "wakarana_users" SET "last_access" = \''.$last_access.'\'  WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
         } catch (PDOException $err) {
-            $this->print_error("ユーザーの最終アクセス日時の更新に失敗しました。".$err->getMessage());
+            $this->print_error("ユーザーの最終アクセス情報更新に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
         $this->user_info["last_access"] = $last_access;
         
-        if (!empty($token)) {
+        if (!empty($session_id)) {
             try {
-                $stmt = $this->wakarana->db_obj->prepare('UPDATE "wakarana_login_tokens" SET "last_access"=\''.$last_access.'\'  WHERE "token" = :token');
+                if (empty($ip_address)) {
+                    $stmt = $this->wakarana->db_obj->prepare('UPDATE "wakarana_sessions" SET "last_access" = \''.$last_access.'\' WHERE "session_id" = :session_id');
+                } else {
+                    $stmt = $this->wakarana->db_obj->prepare('UPDATE "wakarana_sessions" SET "last_access" = \''.$last_access.'\', "ip_address" = :ip_address WHERE "session_id" = :session_id');
+                    
+                    $stmt->bindValue(":ip_address", $ip_address, PDO::PARAM_STR);
+                }
                 
-                $stmt->bindValue(":token", $token, PDO::PARAM_STR);
+                $stmt->bindValue(":session_id", $session_id, PDO::PARAM_STR);
                 
                 $stmt->execute();
             } catch (PDOException $err) {
-                $this->print_error("ログイントークンの最終アクセス日時の更新に失敗しました。".$err->getMessage());
+                $this->print_error("セッショントークンの最終アクセス情報更新に失敗しました。".$err->getMessage());
                 return FALSE;
             }
         }
@@ -2587,7 +2595,7 @@ class wakarana_user extends wakarana_data_item {
             
             $stmt->execute();
         } catch (PDOException $err) {
-            $this->print_error("指定されたログイントークンの削除に失敗しました。".$err->getMessage());
+            $this->print_error("指定されたセッショントークンの削除に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -2599,7 +2607,7 @@ class wakarana_user extends wakarana_data_item {
         try {
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_sessions" WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
         } catch (PDOException $err) {
-            $this->print_error("ユーザーのログイントークンの削除に失敗しました。".$err->getMessage());
+            $this->print_error("ユーザーのセッショントークンの削除に失敗しました。".$err->getMessage());
             return FALSE;
         }
         

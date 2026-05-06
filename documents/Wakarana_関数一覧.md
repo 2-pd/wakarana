@@ -1163,12 +1163,13 @@ wakarana_userインスタンスで直前に行われた各種認証・登録処�
 **返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
-#### wakarana_user::update_last_access($session_id=NULL)
+#### wakarana_user::update_last_access($session_id=NULL, ip_address=NULL)
 現在の時刻をユーザーの最終アクセス日時として記録する。  
-セッションIDを指定した場合、そのセッションの最終アクセス日時も更新する。  
+セッションIDを指定した場合、そのセッションの最終アクセス日時も更新し、さらに、IPアドレスが指定されていた場合はその値でセッションのIPアドレスを更新する。  
 なお、セッショントークン発行処理とログアウト処理ではこの関数が自動的に実行される。
   
 **$session_id** : セッションID  
+**$ip_address** : クライアント端末のIPアドレス  
   
 **返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
