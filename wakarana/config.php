@@ -408,21 +408,21 @@ class wakarana_config extends wakarana_common {
         
         try {
             if ($this->config["use_sqlite"]) {
-                $this->db_obj->exec("CREATE TABLE IF NOT EXISTS `wakarana_login_tokens`(`token` TEXT NOT NULL PRIMARY KEY, `user_id` TEXT COLLATE NOCASE NOT NULL, `token_created` TEXT NOT NULL, `ip_address` TEXT NOT NULL, `operating_system` TEXT, `browser_name` TEXT, `last_access` TEXT NOT NULL)");
+                $this->db_obj->exec("CREATE TABLE IF NOT EXISTS `wakarana_sessions`(`session_id` TEXT NOT NULL PRIMARY KEY, `token` TEXT NOT NULL, `user_id` TEXT COLLATE NOCASE NOT NULL, `token_created` TEXT NOT NULL, `ip_address` TEXT NOT NULL, `operating_system` TEXT, `browser_name` TEXT, `last_access` TEXT NOT NULL)");
             } else {
-                $this->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_login_tokens"("token" varchar(43) NOT NULL PRIMARY KEY, "user_id" varchar(60) NOT NULL, "token_created" timestamp NOT NULL, "ip_address" varchar(39) NOT NULL, "operating_system" varchar(30), "browser_name" varchar(30), "last_access" timestamp NOT NULL)');
+                $this->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_sessions"("session_id" varchar(16) NOT NULL PRIMARY KEY, "token" varchar(43) NOT NULL, "user_id" varchar(60) NOT NULL, "token_created" timestamp NOT NULL, "ip_address" varchar(39) NOT NULL, "operating_system" varchar(30), "browser_name" varchar(30), "last_access" timestamp NOT NULL)');
             }
         } catch (PDOException $err) {
-            $this->print_error("テーブル wakarana_login_tokens の作成処理に失敗しました。".$err->getMessage());
+            $this->print_error("テーブル wakarana_sessions の作成処理に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
         try {
-            $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_l1" ON "wakarana_login_tokens"("user_id", "token_created")');
-            $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_l2" ON "wakarana_login_tokens"("token_created")');
-            $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_l3" ON "wakarana_login_tokens"("user_id", "token")');
+            $this->db_obj->exec('CREATE UNIQUE INDEX IF NOT EXISTS "wakarana_idx_s1" ON "wakarana_sessions"("token")');
+            $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_s2" ON "wakarana_sessions"("token_created")');
+            $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_s3" ON "wakarana_sessions"("user_id", "token_created")');
         } catch (PDOException $err) {
-            $this->print_error("テーブル wakarana_login_tokens のインデックス作成処理に失敗しました。".$err->getMessage());
+            $this->print_error("テーブル wakarana_sessions のインデックス作成処理に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
