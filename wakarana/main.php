@@ -1856,7 +1856,7 @@ class wakarana_user extends wakarana_data_item {
         $this->wakarana->begin_transaction();
         
         if ($status !== WAKARANA_STATUS_NORMAL) {
-            $this->delete_login_tokens();
+            $this->delete_session_tokens();
         }
         
         try {
@@ -2375,7 +2375,7 @@ class wakarana_user extends wakarana_data_item {
     function delete_all_tokens () {
         $this->wakarana->begin_transaction();
         
-        if ($this->delete_login_tokens() && $this->delete_one_time_tokens() && $this->delete_email_address_verification_code() && $this->delete_invite_codes() && $this->delete_password_reset_token() && $this->delete_2sv_token()) {
+        if ($this->delete_session_tokens() && $this->delete_one_time_tokens() && $this->delete_email_address_verification_code() && $this->delete_invite_codes() && $this->delete_password_reset_token() && $this->delete_2sv_token()) {
             $this->wakarana->commit_transaction();
             
             return TRUE;
@@ -2571,9 +2571,9 @@ class wakarana_user extends wakarana_data_item {
     }
     
     
-    function delete_login_tokens () {
+    function delete_session_tokens () {
         try {
-            $this->wakarana->db_obj->exec('DELETE FROM "wakarana_login_tokens" WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
+            $this->wakarana->db_obj->exec('DELETE FROM "wakarana_sessions" WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
         } catch (PDOException $err) {
             $this->print_error("ユーザーのログイントークンの削除に失敗しました。".$err->getMessage());
             return FALSE;
