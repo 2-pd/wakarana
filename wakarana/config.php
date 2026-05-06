@@ -22,11 +22,12 @@ define("WAKARANA_CONFIG_ORIGINAL",
             "verification_email_expire" => 1800,
             "verification_email_sendable_interval" => 10,
             
-            "login_token_cookie_name" => "wakarana_login_token",
+            "session_token_cookie_name" => "wakarana_session_token",
             "cookie_domain" => "",
+            "delete_session_on_ip_address_change" => FALSE,
             
-            "login_tokens_per_user" => 4,
-            "login_token_expire" => 2592000,
+            "sessions_per_user" => 4,
+            "session_expire" => 2592000,
             "one_time_tokens_per_user" => 8,
             "one_time_token_expire" => 43200,
             
@@ -71,52 +72,53 @@ class wakarana_config extends wakarana_common {
             return FALSE;
         }
         
-        fwrite($file_h,"display_errors = ".($this->config["display_errors"] ? "true" : "false")."\n");
-        fwrite($file_h,"\n");
+        fwrite($file_h, "display_errors = ".($this->config["display_errors"] ? "true" : "false")."\n");
+        fwrite($file_h, "\n");
         
-        fwrite($file_h,"use_sqlite = ".($this->config["use_sqlite"] ? "true" : "false")."\n");
-        fwrite($file_h,"sqlite_db_file = \"".$this->config["sqlite_db_file"]."\"\n");
-        fwrite($file_h,"\n");
+        fwrite($file_h, "use_sqlite = ".($this->config["use_sqlite"] ? "true" : "false")."\n");
+        fwrite($file_h, "sqlite_db_file = \"".$this->config["sqlite_db_file"]."\"\n");
+        fwrite($file_h, "\n");
         
-        fwrite($file_h,"pg_host = \"".$this->config["pg_host"]."\"\n");
-        fwrite($file_h,"pg_user = \"".$this->config["pg_user"]."\"\n");
-        fwrite($file_h,"pg_pass = \"".$this->config["pg_pass"]."\"\n");
-        fwrite($file_h,"pg_db = \"".$this->config["pg_db"]."\"\n");
-        fwrite($file_h,"pg_port = ".$this->config["pg_port"]."\n");
-        fwrite($file_h,"\n");
+        fwrite($file_h, "pg_host = \"".$this->config["pg_host"]."\"\n");
+        fwrite($file_h, "pg_user = \"".$this->config["pg_user"]."\"\n");
+        fwrite($file_h, "pg_pass = \"".$this->config["pg_pass"]."\"\n");
+        fwrite($file_h, "pg_db = \"".$this->config["pg_db"]."\"\n");
+        fwrite($file_h, "pg_port = ".$this->config["pg_port"]."\n");
+        fwrite($file_h, "\n");
         
-        fwrite($file_h,"allow_weak_password = ".($this->config["allow_weak_password"] ? "true" : "false")."\n");
-        fwrite($file_h,"\n");
+        fwrite($file_h, "allow_weak_password = ".($this->config["allow_weak_password"] ? "true" : "false")."\n");
+        fwrite($file_h, "\n");
         
-        fwrite($file_h,"allow_nonunique_email_address = ".($this->config["allow_nonunique_email_address"] ? "true" : "false")."\n");
-        fwrite($file_h,"email_addresses_per_user = ".$this->config["email_addresses_per_user"]."\n");
-        fwrite($file_h,"verification_email_expire = ".$this->config["verification_email_expire"]."\n");
-        fwrite($file_h,"verification_email_sendable_interval = ".$this->config["verification_email_sendable_interval"]."\n");
-        fwrite($file_h,"\n");
+        fwrite($file_h, "allow_nonunique_email_address = ".($this->config["allow_nonunique_email_address"] ? "true" : "false")."\n");
+        fwrite($file_h, "email_addresses_per_user = ".$this->config["email_addresses_per_user"]."\n");
+        fwrite($file_h, "verification_email_expire = ".$this->config["verification_email_expire"]."\n");
+        fwrite($file_h, "verification_email_sendable_interval = ".$this->config["verification_email_sendable_interval"]."\n");
+        fwrite($file_h, "\n");
         
-        fwrite($file_h,"login_token_cookie_name = \"".$this->config["login_token_cookie_name"]."\"\n");
-        fwrite($file_h,"cookie_domain = \"".$this->config["cookie_domain"]."\"\n");
-        fwrite($file_h,"\n");
+        fwrite($file_h, "session_token_cookie_name = \"".$this->config["session_token_cookie_name"]."\"\n");
+        fwrite($file_h, "cookie_domain = \"".$this->config["cookie_domain"]."\"\n");
+        fwrite($file_h, "delete_session_on_ip_address_change = ".($this->config["delete_session_on_ip_address_change"] ? "true" : "false")."\n");
+        fwrite($file_h, "\n");
         
-        fwrite($file_h,"login_tokens_per_user = ".$this->config["login_tokens_per_user"]."\n");
-        fwrite($file_h,"login_token_expire = ".$this->config["login_token_expire"]."\n");
-        fwrite($file_h,"one_time_tokens_per_user = ".$this->config["one_time_tokens_per_user"]."\n");
-        fwrite($file_h,"one_time_token_expire = ".$this->config["one_time_token_expire"]."\n");
-        fwrite($file_h,"\n");
+        fwrite($file_h, "sessions_per_user = ".$this->config["sessions_per_user"]."\n");
+        fwrite($file_h, "session_expire = ".$this->config["session_expire"]."\n");
+        fwrite($file_h, "one_time_tokens_per_user = ".$this->config["one_time_tokens_per_user"]."\n");
+        fwrite($file_h, "one_time_token_expire = ".$this->config["one_time_token_expire"]."\n");
+        fwrite($file_h, "\n");
         
-        fwrite($file_h,"minimum_authenticate_interval = ".$this->config["minimum_authenticate_interval"]."\n");
-        fwrite($file_h,"authenticate_logs_per_user = ".$this->config["authenticate_logs_per_user"]."\n");
-        fwrite($file_h,"authenticate_log_retention_time = ".$this->config["authenticate_log_retention_time"]."\n");
-        fwrite($file_h,"\n");
+        fwrite($file_h, "minimum_authenticate_interval = ".$this->config["minimum_authenticate_interval"]."\n");
+        fwrite($file_h, "authenticate_logs_per_user = ".$this->config["authenticate_logs_per_user"]."\n");
+        fwrite($file_h, "authenticate_log_retention_time = ".$this->config["authenticate_log_retention_time"]."\n");
+        fwrite($file_h, "\n");
         
-        fwrite($file_h,"password_reset_token_expire = ".$this->config["password_reset_token_expire"]."\n");
-        fwrite($file_h,"\n");
+        fwrite($file_h, "password_reset_token_expire = ".$this->config["password_reset_token_expire"]."\n");
+        fwrite($file_h, "\n");
         
-        fwrite($file_h,"totp_pin_expire = ".$this->config["totp_pin_expire"]."\n");
-        fwrite($file_h,"two_step_verification_token_expire = ".$this->config["two_step_verification_token_expire"]."\n");
-        fwrite($file_h,"\n");
+        fwrite($file_h, "totp_pin_expire = ".$this->config["totp_pin_expire"]."\n");
+        fwrite($file_h, "two_step_verification_token_expire = ".$this->config["two_step_verification_token_expire"]."\n");
+        fwrite($file_h, "\n");
         
-        fwrite($file_h,"proxy_count = ".$this->config["proxy_count"]."\n");
+        fwrite($file_h, "proxy_count = ".$this->config["proxy_count"]."\n");
         
         fclose($file_h);
         
