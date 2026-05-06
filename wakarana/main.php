@@ -649,7 +649,7 @@ class wakarana extends wakarana_common {
     function delete_all_tokens () {
         $this->begin_transaction();
         
-        if ($this->delete_login_tokens(0) && $this->delete_one_time_tokens(0) && $this->delete_email_address_verification_codes(0) && $this->delete_invite_code() && $this->delete_password_reset_tokens(0) && $this->delete_2sv_tokens(0)) {
+        if ($this->delete_session_tokens(0) && $this->delete_one_time_tokens(0) && $this->delete_email_address_verification_codes(0) && $this->delete_invite_code() && $this->delete_password_reset_tokens(0) && $this->delete_2sv_tokens(0)) {
             $this->commit_transaction();
             
             return TRUE;
@@ -835,15 +835,15 @@ class wakarana extends wakarana_common {
     }
     
     
-    function delete_login_tokens ($expire = -1) {
+    function delete_session_tokens ($expire = -1) {
         if ($expire === -1) {
-            $expire = $this->config["login_token_expire"];
+            $expire = $this->config["session_expire"];
         }
         
         try {
-            $this->db_obj->exec('DELETE FROM "wakarana_login_tokens" WHERE "token_created" <= \''.date("Y-m-d H:i:s", time() - $expire).'\'');
+            $this->db_obj->exec('DELETE FROM "wakarana_sessions" WHERE "token_created" <= \''.date("Y-m-d H:i:s", time() - $expire).'\'');
         } catch (PDOException $err) {
-            $this->print_error("ログイントークンの削除に失敗しました。".$err->getMessage());
+            $this->print_error("セッショントークンの削除に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -2495,7 +2495,7 @@ class wakarana_user extends wakarana_data_item {
     
     
     function create_login_token () {
-        $this->wakarana->delete_login_tokens();
+        $this->wakarana->delete_session_tokens();
         
         $token = wakarana::create_token();
         
