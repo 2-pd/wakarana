@@ -2494,11 +2494,11 @@ class wakarana_user extends wakarana_data_item {
     }
     
     
-    function create_login_token () {
+    function create_session_token () {
         $this->wakarana->delete_session_tokens();
         
+        $session_id = wakarana::generate_unique_id();
         $token = wakarana::create_token();
-        
         $token_created = date("Y-m-d H:i:s");
         
         $client_env = wakarana::get_client_environment();
@@ -2506,9 +2506,9 @@ class wakarana_user extends wakarana_data_item {
         $this->wakarana->begin_transaction();
         
         try {
-            $this->wakarana->db_obj->exec('DELETE FROM "wakarana_login_tokens" WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "token" NOT IN (SELECT "token" FROM "wakarana_login_tokens" WHERE "user_id" = \''.$this->user_info["user_id"].'\' ORDER BY "token_created" DESC LIMIT '.($this->wakarana->config["login_tokens_per_user"] - 1).')');
+            $this->wakarana->db_obj->exec('DELETE FROM "wakarana_sessions" WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "token" NOT IN (SELECT "token" FROM "wakarana_sessions" WHERE "user_id" = \''.$this->user_info["user_id"].'\' ORDER BY "token_created" DESC LIMIT '.($this->wakarana->config["sessions_per_user"] - 1).')');
             
-            $stmt = $this->wakarana->db_obj->prepare('INSERT INTO "wakarana_login_tokens"("token", "user_id", "token_created", "ip_address", "operating_system", "browser_name", "last_access") VALUES (\''.$token.'\', \''.$this->user_info["user_id"].'\', \''.$token_created.'\', \''.$this->wakarana->get_client_ip_address().'\', :operating_system, :browser_name, \''.$token_created.'\')');
+            $stmt = $this->wakarana->db_obj->prepare('INSERT INTO "wakarana_sessions"("session_id", "token", "user_id", "token_created", "ip_address", "operating_system", "browser_name", "last_access") VALUES (\''.$session_id.'\', \''.$token.'\', \''.$this->user_info["user_id"].'\', \''.$token_created.'\', \''.$this->wakarana->get_client_ip_address().'\', :operating_system, :browser_name, \''.$token_created.'\')');
             
             if (!empty($client_env["operating_system"])) {
                 $stmt->bindValue(":operating_system", $client_env["operating_system"], PDO::PARAM_STR);
@@ -2524,7 +2524,7 @@ class wakarana_user extends wakarana_data_item {
             
             $stmt->execute();
         } catch (PDOException $err) {
-            $this->print_error("ログイントークンの保存に失敗しました。".$err->getMessage());
+            $this->print_error("セッショントークンの保存に失敗しました。".$err->getMessage());
             
             $this->wakarana->rollback_transaction();
             
@@ -2544,7 +2544,7 @@ class wakarana_user extends wakarana_data_item {
     
     
     function set_login_token () {
-        $token = $this->create_login_token();
+        $token = $this->create_session_token();
         
         if (!empty($token) && setcookie($this->wakarana->config["login_token_cookie_name"], $token, time() + $this->wakarana->config["login_token_expire"], "/", $this->wakarana->config["cookie_domain"], FALSE, TRUE)) {
             return TRUE;
