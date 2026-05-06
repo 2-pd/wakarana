@@ -36,6 +36,71 @@ class wakarana extends wakarana_common {
     }
     
     
+    protected static function bin_to_int ($bin, $start, $length) {
+        if ($length > PHP_INT_SIZE * 8 - 1) {
+            return FALSE;
+        }
+        
+        if (PHP_INT_SIZE >= 8) {
+            $format = "J";
+        } else {
+            $format = "N";
+        }
+        
+        $end = $start + $length;
+        
+        $byte_start = floor($start / 8);
+        
+        $bin_int = unpack($format, str_pad(substr($bin, $byte_start, ceil($end / 8) - $byte_start), PHP_INT_SIZE, "\0", STR_PAD_LEFT));
+        
+        if ($end % 8 !== 0) {
+            return $bin_int[1] >> (8 - $end % 8) & (2**$length - 1);
+        } else {
+            return $bin_int[1] & (2**$length - 1);
+        }
+    }
+    
+    
+    protected static function int_to_bin ($int, $digits_start) {
+        if ($digits_start < 8) {
+            $int = $int << (8 - $digits_start);
+        } elseif ($digits_start > 8) {
+            $int = $int >> ($digits_start - 8);
+        }
+        
+        return chr($int & 0xFF);
+    }
+    
+    
+    protected static function base32_decode ($base32_str) {
+        $length = strlen($base32_str);
+        
+        $bin = "";
+        $bin_buf = 0;
+        $buf_head = 0;
+        for ($cnt = 0; $cnt < $length; $cnt++) {
+            $index = array_search(substr($base32_str, $cnt, 1), WAKARANA_BASE32_TABLE);
+            if ($index === FALSE) {
+                break;
+            }
+            
+            $bin_buf = $bin_buf << 5 | $index;
+            $buf_head += 5;
+            
+            if ($buf_head >= 8) {
+                $bin .= self::int_to_bin($bin_buf, $buf_head);
+                $buf_head -= 8;
+            }
+        }
+        
+        if ($buf_head >= 1) {
+            $bin .= self::int_to_bin($bin_buf, $buf_head);
+        }
+        
+        return $bin;
+    }
+    
+    
     static function generate_unique_id () {
         $ts_bytes = substr(pack("J", intval(microtime(TRUE) * 1000)), 2);
         $rand_bytes = random_bytes(4);
@@ -1418,42 +1483,6 @@ class wakarana extends wakarana_common {
     }
     
     
-    protected static function bin_to_int ($bin, $start, $length) {
-        if ($length > PHP_INT_SIZE * 8 - 1) {
-            return FALSE;
-        }
-        
-        if (PHP_INT_SIZE >= 8) {
-            $format = "J";
-        } else {
-            $format = "N";
-        }
-        
-        $end = $start + $length;
-        
-        $byte_start = floor($start / 8);
-        
-        $bin_int = unpack($format, str_pad(substr($bin, $byte_start, ceil($end / 8) - $byte_start), PHP_INT_SIZE, "\0", STR_PAD_LEFT));
-        
-        if ($end % 8 !== 0) {
-            return $bin_int[1] >> (8 - $end % 8) & (2**$length - 1);
-        } else {
-            return $bin_int[1] & (2**$length - 1);
-        }
-    }
-    
-    
-    protected static function int_to_bin ($int, $digits_start) {
-        if ($digits_start < 8) {
-            $int = $int << (8 - $digits_start);
-        } elseif ($digits_start > 8) {
-            $int = $int >> ($digits_start - 8);
-        }
-        
-        return chr($int & 0xFF);
-    }
-    
-    
     static function create_random_code ($code_length = 16) {
         $key_bin = random_bytes($code_length * 5 / 8);
         
@@ -1463,35 +1492,6 @@ class wakarana extends wakarana_common {
         }
         
         return $random_code;
-    }
-    
-    
-    protected static function base32_decode ($base32_str) {
-        $length = strlen($base32_str);
-        
-        $bin = "";
-        $bin_buf = 0;
-        $buf_head = 0;
-        for ($cnt = 0; $cnt < $length; $cnt++) {
-            $index = array_search(substr($base32_str, $cnt, 1), WAKARANA_BASE32_TABLE);
-            if ($index === FALSE) {
-                break;
-            }
-            
-            $bin_buf = $bin_buf << 5 | $index;
-            $buf_head += 5;
-            
-            if ($buf_head >= 8) {
-                $bin .= self::int_to_bin($bin_buf, $buf_head);
-                $buf_head -= 8;
-            }
-        }
-        
-        if ($buf_head >= 1) {
-            $bin .= self::int_to_bin($bin_buf, $buf_head);
-        }
-        
-        return $bin;
     }
     
     
