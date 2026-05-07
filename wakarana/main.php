@@ -692,21 +692,29 @@ class wakarana extends wakarana_common {
     }
     
     
-    static function get_client_environment () {
+    static function get_client_environment ($ua = NULL) {
         $os_names = array("Android", "iPhone", "iPad", "Windows", "Macintosh", "CrOS", "Linux", "BSD", "Nintendo", "PlayStation", "Xbox");
         $browser_names = array("Firefox", "Edg", "OPR", "Sleipnir", "Chrome", "Safari", "Trident");
         
         $environment = array("operating_system" => NULL, "browser_name" => NULL);
         
+        if (empty($ua)) {
+            if (!isset($_SERVER["HTTP_USER_AGENT"])) {
+                return $environment;
+            }
+            
+            $ua = $_SERVER["HTTP_USER_AGENT"];
+        }
+        
         foreach ($os_names as $os_name) {
-            if (strpos($_SERVER["HTTP_USER_AGENT"], $os_name) !== FALSE) {
+            if (str_contains($ua, $os_name) !== FALSE) {
                 $environment["operating_system"] = $os_name;
                 break;
             }
         }
         
         foreach ($browser_names as $browser_name) {
-            if (strpos($_SERVER["HTTP_USER_AGENT"], $browser_name) !== FALSE) {
+            if (str_contains($ua, $browser_name) !== FALSE) {
                 $environment["browser_name"] = $browser_name;
                 break;
             }
@@ -2550,7 +2558,7 @@ class wakarana_user extends wakarana_data_item {
     }
     
     
-    function create_session_token ($ip_address = NULL) {
+    function create_session_token ($ip_address = NULL, $ua = NULL) {
         $this->wakarana->delete_session_tokens();
         
         $session_id = wakarana::generate_unique_id();
@@ -2561,7 +2569,7 @@ class wakarana_user extends wakarana_data_item {
             $ip_address = $this->wakarana->get_client_ip_address();
         }
         
-        $client_env = wakarana::get_client_environment();
+        $client_env = wakarana::get_client_environment($ua);
         
         $this->wakarana->begin_transaction();
         

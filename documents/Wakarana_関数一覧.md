@@ -468,9 +468,11 @@ wakarana_permitted_valueインスタンスを生成する。
 **返り値** : クライアント端末のIPアドレスをサニタイズして返す。IPアドレスの取得に失敗した場合は「0.0.0.0」を返す。
 
 
-#### ☆ wakarana::get_client_environment()
+#### ☆ wakarana::get_client_environment($ua=NULL)
 アクセス中のクライアント端末の情報を連想配列で返す。  
 ☆staticメソッド。  
+  
+**$ua** : ユーザーエージェント文字列。NULLの場合はクライアント端末のユーザーエージェントを参照する。  
   
 **返り値** : キー"operating_system"(OS名)と"browser_name"(ブラウザ名)が含まれる連想配列。
 
@@ -1180,11 +1182,12 @@ wakarana_userインスタンスで直前に行われた各種認証・登録処�
 **返り値** : 成功した場合は、ユーザーの個々のセッション情報が格納された連想配列("session_id"(セッションID)、"token_created"(セッショントークンの生成日時)、"ip_address"(最終アクセス時のクライアント端末のIPアドレス)、"operating_system"(ログイン時のクライアント端末のOS名)、"browser_name"(ログイン時のクライアント端末のブラウザ名)、"last_access"(当該セッショントークンでの最終アクセス日時))を、最終アクセス日時の新しい順に配列に入れて返す。失敗した場合はFALSEを返す。
 
 
-#### wakarana_user::create_session_token($ip_address=NULL)
+#### wakarana_user::create_session_token($ip_address=NULL, $ua=NULL)
 セッショントークンの生成とデータベース登録処理を行うが、クライアント端末への送信は行わない。  
 wakarana::loginとは別のトークン送信処理を実装する必要がある環境向け。  
   
 **$ip_address** : IPアドレス。NULLの場合はクライアント端末のIPアドレスを参照する。  
+**$ua** : ユーザーエージェント文字列。NULLの場合はクライアント端末のユーザーエージェントを参照する。  
   
 **返り値** : 成功した場合は登録されたセッショントークン、失敗した場合はFALSEを返す。
 
