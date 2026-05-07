@@ -214,12 +214,52 @@ wakaranaインスタンスで直前に行われた各種認証・登録処理の
 **返り値** : 認証・登録が拒絶されていた場合はその理由を表す文字列を返し、まだ認証・登録処理が行われていない場合や認証・登録が承認されていた場合、内部エラーにより認証・登録処理が中断されていた場合はNULLを返す。拒絶理由を表す文字列の候補は直前に行われた認証・登録処理により異なる。
 
 
+#### ◆☆ wakarana::bin_to_int($bin, $start, $length)
+バイナリデータをビット単位で切り出し、整数に変換する。  
+◆クラス内呼び出し専用。  
+☆staticメソッド。  
+  
+**$bin** : バイナリデータを格納した文字列  
+**$start** : 切り出し開始ビット  
+**$length** : 切り出すビット数  
+  
+**返り値** : 切り出したビット列を2進数として解釈した整数値を返す。
+
+
+#### ◆☆ wakarana::int_to_bin($int, $digits_start)
+整数値型のデータから2進数で8桁分のビットを切り出して1バイトのバイナリに変換する。  
+◆クラス内呼び出し専用。  
+☆staticメソッド。  
+  
+**$int** : 整数値型データ  
+**$digits_start** : データを2進数に変換したときの下から何番目の位から切り出すか。  
+  
+**返り値** : 1バイトの文字列に格納されたバイナリを返す。
+
+
+#### ◆☆ wakarana::base32_decode($base32_str)
+Base32方式でエンコードされた文字列をバイナリにデコードする。  
+◆クラス内呼び出し専用。  
+☆staticメソッド。  
+  
+**$base32_str** : Base32エンコードされた文字列  
+  
+**返り値** : バイナリデータを格納した文字列を返す。
+
+
+#### ☆ wakarana::generate_unique_id()
+各種IDとして使用できる16文字の一意な文字列を生成する。  
+☆staticメソッド。  
+  
+**返り値** : 現在時刻と乱数から生成された16文字の文字列を返す。
+
+
 #### ☆ wakarana::hash_password($user_id, $password)
 パスワードのハッシュ値を生成する。  
 ☆staticメソッド。  
   
 **$user_id** : ユーザーID  
-**$password** : パスワード   
+**$password** : パスワード  
   
 **返り値** : ハッシュ化されたパスワードを返す。
 
@@ -228,7 +268,7 @@ wakaranaインスタンスで直前に行われた各種認証・登録処理の
 パスワードの強度を確認する。  
 ☆staticメソッド。  
   
-**$password** : パスワード   
+**$password** : パスワード  
 **$min_length** : 強いパスワードとみなす最小の文字数  
   
 **返り値** : パスワードが指定した文字数以上かつ大文字・小文字・数字の全てを含むならTRUE、そうでないならFALSEを返す。
@@ -417,7 +457,7 @@ wakarana_permitted_valueインスタンスを生成する。
 
 
 #### wakarana::delete_all_tokens()
-データベースに存在する各種トークン(ログイントークン、ワンタイムトークン、メールアドレス確認トークン、パスワードリセット用トークン、2段階認証用一時トークン)を全て削除する。  
+データベースに存在する各種トークン(セッショントークン、ワンタイムトークン、メールアドレス確認トークン、パスワードリセット用トークン、2段階認証用一時トークン)を全て削除する。  
   
 **返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
@@ -460,67 +500,65 @@ wakarana_permitted_valueインスタンスを生成する。
 **返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
-#### wakarana::authenticate($user_id, $password, $totp_pin=NULL)
-ユーザーIDとパスワード、TOTPコード(2要素認証を使用する場合)を照合するが、トークンの生成と送信は行わない。  
+#### wakarana::authenticate($user_id, $password, $ip_address=NULL)
+ユーザーIDとパスワードを照合するが、トークンの生成と送信は行わない。  
 内部的にログイン試行ログの参照と登録は実施する。  
   
 **$user_id** : ユーザーID  
 **$password** : パスワード  
-**$totp_pin** : 6桁のTOTPコード。2要素認証を使用しない場合と2要素認証の入力画面を分ける場合は省略。  
+**$ip_address** : IPアドレス。NULLの場合はクライアント端末のIPアドレスを参照する。  
   
-**返り値** : 認証された場合はユーザーのwakarana_userインスタンス、ユーザーアカウントが停止中の場合はその状態値(WAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_UNAPPROVED)、ユーザーIDが2段階認証の対象ユーザーでTOTPコードがNULLだった場合は仮トークン、それ以外の場合はFALSEを返す。  
+**返り値** : 認証された場合はユーザーのwakarana_userインスタンス、ユーザーアカウントが停止中の場合はその状態値(WAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_UNAPPROVED)、ユーザーIDが2段階認証の対象ユーザーのものだった場合は仮トークン、それ以外の場合はFALSEを返す。  
   
-**拒絶理由文字列** : "parameters_not_matched"(ユーザーIDまたはパスワード、TOTPコードのいずれかが誤っている)、"unavailable_user"(ユーザーアカウントが停止中である)、"currently_locked_out"(ロックアウト中のためログインを試行できない)
+**拒絶理由文字列** : "parameters_not_matched"(ユーザーIDまたはパスワードが誤っている)、"unavailable_user"(ユーザーアカウントが停止中である)、"currently_locked_out"(ロックアウト中のためログインを試行できない)
 
 
-#### wakarana::login($user_id, $password, $totp_pin=NULL)
-ユーザーIDとパスワード、TOTPコード(2要素認証を使用する場合)を照合し、正しければログイントークンを生成してクライアント端末に送信する。  
+#### wakarana::login($user_id, $password)
+ユーザーIDとパスワードを照合し、正しければセッショントークンを生成してクライアント端末に送信する。  
   
 この関数はHTTPヘッダーの出力を伴うため、この関数より前にHTTPヘッダー以外の何らかの文字が出力されていた場合はエラーとなる。  
   
 **$user_id** : ユーザーID  
 **$password** : パスワード  
-**$totp_pin** : 6桁のTOTPコード。2要素認証を使用しない場合と2要素認証の入力画面を分ける場合は省略。  
   
-**返り値** : ログインが完了した場合はwakarana_userインスタンス、ユーザーアカウントが停止中の場合はその状態値(WAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_UNAPPROVED)、ユーザーIDが2要素認証の対象ユーザーでTOTPコードがNULLだった場合は仮トークン、それ以外の場合はFALSEを返す。  
+**返り値** : ログインが完了した場合はwakarana_userインスタンス、ユーザーアカウントが停止中の場合はその状態値(WAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_UNAPPROVED)、ユーザーIDが2要素認証の対象ユーザーのものだった場合は仮トークン、それ以外の場合はFALSEを返す。  
   
 **拒絶理由文字列** : "parameters_not_matched"(ユーザーIDまたはパスワード、TOTPコードのいずれかが誤っている)、"unavailable_user"(ユーザーアカウントが停止中である)、"currently_locked_out"(ロックアウト中のためログインを試行できない)
 
 
-#### wakarana::authenticate_with_email_address($email_address, $password, $totp_pin=NULL)
-ユーザーIDの代わりにメールアドレスを使用し、パスワードとTOTPコード(2要素認証を使用する場合)を照合する。トークンの生成と送信は行わない。  
+#### wakarana::authenticate_with_email_address($email_address, $password, $ip_address=NULL)
+ユーザーIDの代わりにメールアドレスを使用し、パスワードを照合する。トークンの生成と送信は行わない。  
 内部的にログイン試行ログの参照と登録は実施する。  
   
 wakarana_config.iniで同じメールアドレスを複数アカウントに使用できるよう設定している場合、この関数は使用できない。  
   
 **$email_address** : メールアドレス  
 **$password** : パスワード  
-**$totp_pin** : 6桁のTOTPコード。2要素認証を使用しない場合と2要素認証の入力画面を分ける場合は省略。  
+**$ip_address** : IPアドレス。NULLの場合はクライアント端末のIPアドレスを参照する。  
   
-**返り値** : 認証された場合はユーザーのwakarana_userインスタンス、ユーザーアカウントが停止中の場合はその状態値(WAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_UNAPPROVED)、ユーザーIDが2段階認証の対象ユーザーでTOTPコードがNULLだった場合は仮トークン、それ以外の場合はFALSEを返す。  
+**返り値** : 認証された場合はユーザーのwakarana_userインスタンス、ユーザーアカウントが停止中の場合はその状態値(WAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_UNAPPROVED)、メールアドレスが2要素認証の対象ユーザーのものだった場合は仮トークン、それ以外の場合はFALSEを返す。  
   
-**拒絶理由文字列** : "parameters_not_matched"(メールアドレスまたはパスワード、TOTPコードのいずれかが誤っている)、"unavailable_user"(ユーザーアカウントが停止中である)、"currently_locked_out"(ロックアウト中のためログインを試行できない)
+**拒絶理由文字列** : "parameters_not_matched"(メールアドレスまたはパスワードが誤っている)、"unavailable_user"(ユーザーアカウントが停止中である)、"currently_locked_out"(ロックアウト中のためログインを試行できない)
 
 
-#### wakarana::login_with_email_address($email_address, $password, $totp_pin=NULL)
-ユーザーIDの代わりにメールアドレスを使用し、パスワードとTOTPコード(2要素認証を使用する場合)を照合、正しければログイントークンを生成してクライアント端末に送信する。  
+#### wakarana::login_with_email_address($email_address, $password)
+ユーザーIDの代わりにメールアドレスを使用し、パスワードとTOTPコード(2要素認証を使用する場合)を照合、正しければセッショントークンを生成してクライアント端末に送信する。  
   
 この関数はHTTPヘッダーの出力を伴うため、この関数より前にHTTPヘッダー以外の何らかの文字が出力されていた場合はエラーとなる。  
 また、wakarana_config.iniで同じメールアドレスを複数アカウントに使用できるよう設定している場合、この関数は使用できない。  
   
 **$email_address** : メールアドレス  
 **$password** : パスワード  
-**$totp_pin** : 6桁のTOTPコード。2要素認証を使用しない場合と2要素認証の入力画面を分ける場合は省略。  
   
-**返り値** : ログインが完了した場合はwakarana_userインスタンス、ユーザーアカウントが停止中の場合はその状態値(WAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_UNAPPROVED)、ユーザーIDが2要素認証の対象ユーザーでTOTPコードがNULLだった場合は仮トークン、それ以外の場合はFALSEを返す。  
+**返り値** : ログインが完了した場合はwakarana_userインスタンス、ユーザーアカウントが停止中の場合はその状態値(WAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_UNAPPROVED)、メールアドレスが2要素認証の対象ユーザーのものだった場合は仮トークン、それ以外の場合はFALSEを返す。  
   
-**拒絶理由文字列** : "parameters_not_matched"(メールアドレスまたはパスワード、TOTPコードのいずれかが誤っている)、"unavailable_user"(ユーザーアカウントが停止中である)、"currently_locked_out"(ロックアウト中のためログインを試行できない)
+**拒絶理由文字列** : "parameters_not_matched"(メールアドレスまたはパスワードが誤っている)、"unavailable_user"(ユーザーアカウントが停止中である)、"currently_locked_out"(ロックアウト中のためログインを試行できない)
 
 
-#### wakarana::delete_login_tokens($expire=-1)
-指定した経過時間より前に生成されたログイントークンを無効化する。  
+#### wakarana::delete_session_tokens($expire=-1)
+指定した経過時間より前に生成されたセッショントークンを無効化する。  
   
-**$expire** : 経過時間の秒数。-1を指定した場合はwakarana_config.iniで指定したログイントークンの有効秒数が代わりに使用される。  
+**$expire** : 経過時間の秒数。-1を指定した場合はwakarana_config.iniで指定したセッショントークンの有効秒数が代わりに使用される。  
   
 **返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
@@ -679,11 +717,12 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
 **返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
-#### wakarana::totp_authenticate($tmp_token, $totp_pin)
+#### wakarana::totp_authenticate($tmp_token, $totp_pin, $ip_address=NULL)
 ユーザーIDとパスワードが照合済みのユーザーに対してTOTPによる第2段階の認証を行う。  
   
 **tmp_token** : wakarana::authenticateにより発行される仮トークン  
 **$totp_pin** : 6桁のTOTPコード  
+**$ip_address** : IPアドレス。NULLの場合はクライアント端末のIPアドレスを参照する。  
   
 **返り値** : 認証された場合はユーザーのwakarana_userインスタンス、そうでない場合はFALSEを返す。  
   
@@ -691,7 +730,7 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
 
 
 #### wakarana::totp_login($tmp_token, $totp_pin)
-ユーザーIDとパスワードが照合済みのユーザーに対してTOTPによる第2段階の認証を行い、正しければログイントークンを生成してクライアント端末に送信する。  
+ユーザーIDとパスワードが照合済みのユーザーに対してTOTPによる第2段階の認証を行い、正しければセッショントークンを生成してクライアント端末に送信する。  
   
 この関数はHTTPヘッダーの出力を伴うため、この関数より前にHTTPヘッダー以外の何らかの文字が出力されていた場合はエラーとなる。  
   
@@ -703,25 +742,34 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
 **拒絶理由文字列** : "invalid_token"(有効な仮トークンではない)、"pin_not_matched"(TOTPコードが一致しない)、"unavailable_user"(ユーザーアカウントが停止中である)、"currently_locked_out"(ロックアウト中のためログインを試行できない)
 
 
-#### wakarana::check($token=NULL, $update_last_access=TRUE)
+#### wakarana::check($token=NULL, $update_last_access=TRUE, $ip_address=NULL)
 クライアント端末のcookieを参照し、正しくログインしているかどうかを照合する。  
   
-**$token** : 文字列を指定した場合、クライアント端末のcookie情報に関係なくその文字列をログイントークンとみなして照合処理を行う。  
+**$token** : 文字列を指定した場合、クライアント端末のcookie情報に関係なくその文字列をセッショントークンとみなして照合処理を行う。  
 **$update_last_access** : FALSEの場合、最終アクセス日時の更新を行わない。  
+**$ip_address** : IPアドレス。NULLの場合はクライアント端末のIPアドレスを参照する。  
   
-**返り値** : 正しいログイントークンでログインしており、かつ、停止中のアカウントでない場合はそのトークンに対応するユーザーのwakarana_userインスタンス、それ以外の場合はFALSEを返す。
+**返り値** : 有効なセッショントークンでログインしている場合はそのトークンに対応するユーザーのwakarana_userインスタンス、それ以外の場合はFALSEを返す。
 
 
-#### wakarana::delete_login_token($token)
-指定したログイントークンをデータベースから削除する。  
+#### wakarana::get_session_info($session_id_or_token=NULL)
+指定したセッションIDまたはセッショントークンに対応するセッションの情報を取得する。  
   
-**$token** : ログイントークン  
+**$session_id_or_token** : 16文字のセッションIDまたは43文字のセッショントークン。NULLを指定した場合はクライアント端末のcookieにセットされているセッショントークンを参照する。  
+  
+**返り値** : セッションIDまたはセッショントークンが存在する場合は、セッション情報が格納された連想配列("session_id"(セッションID)、"user_id"(ユーザーID)、"token_created"(セッショントークンの生成日時)、"ip_address"(最終アクセス時のクライアント端末のIPアドレス)、"operating_system"(ログイン時のクライアント端末のOS名)、"browser_name"(ログイン時のクライアント端末のブラウザ名)、"last_access"(当該セッショントークンでの最終アクセス日時))を返す。それ以外の場合はFALSEを返す。
+
+
+#### wakarana::delete_session_token($session_id_or_token)
+指定したセッショントークンを削除し、セッションを終了する。  
+  
+**$session_id_or_token** : 16文字のセッションIDまたは43文字のセッショントークン  
   
 **返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
 #### wakarana::logout()
-接続中のクライアント端末が持つログイントークンをクライアント端末とデータベースの双方から削除し、ログアウト状態にする。  
+接続中のクライアント端末が持つセッショントークンをクライアント端末とデータベースの双方から削除し、ログアウト状態にする。  
   
 この関数はHTTPヘッダーの出力を伴うため、この関数より前にのHTMLやHTTPヘッダー以外の何らかの文字が出力されていた場合はエラーとなる。  
   
@@ -745,29 +793,6 @@ TOTPの規格に基づいて現在時刻のタイムスタンプで生成鍵と�
 **返り値** : 生成鍵に対して正しいTOTPコードだった場合はTRUEを、それ以外の場合はFALSEを返す。
 
 
-#### ◆☆ wakarana::bin_to_int($bin, $start, $length)
-バイナリデータをビット単位で切り出し、整数に変換する。  
-◆クラス内呼び出し専用。  
-☆staticメソッド。  
-  
-**$bin** : バイナリデータを格納した文字列  
-**$start** : 切り出し開始ビット  
-**$length** : 切り出すビット数  
-  
-**返り値** : 切り出したビット列を2進数として解釈した整数値を返す。
-
-
-#### ◆☆ wakarana::int_to_bin($int, $digits_start)
-整数値型のデータから2進数で8桁分のビットを切り出して1バイトのバイナリに変換する。  
-◆クラス内呼び出し専用。  
-☆staticメソッド。  
-  
-**$int** : 整数値型データ  
-**$digits_start** : データを2進数に変換したときの下から何番目の位から切り出すか。  
-  
-**返り値** : 1バイトの文字列に格納されたバイナリを返す。
-
-
 #### ☆ wakarana::create_random_code($code_length=16)
 TOTP生成鍵として使用できるランダムなBASE32文字列を作成する。  
 ☆staticメソッド。  
@@ -775,16 +800,6 @@ TOTP生成鍵として使用できるランダムなBASE32文字列を作成す�
 **$code_length** : 作成する文字列の桁数。8の倍数でなければならない。  
   
 **返り値** : 指定された桁数のランダムなBASE32文字列を返す。
-
-
-#### ◆☆ wakarana::base32_decode($base32_str)
-Base32エンコードされた文字列をバイナリにデコードする。  
-◆クラス内呼び出し専用。  
-☆staticメソッド。  
-  
-**$base32_str** : Base32エンコードされた文字列  
-  
-**返り値** : バイナリデータを格納した文字列を返す。
 
 
 #### ◆☆ wakarana::get_totp_pin($key_base32, $past_30s=0)
@@ -1115,7 +1130,7 @@ wakarana_userインスタンスで直前に行われた各種認証・登録処�
 
 
 #### wakarana_user::delete_all_tokens()
-ユーザーの各種トークン(ログイントークン、ワンタイムトークン、メールアドレス確認コード、パスワードリセット用トークン、2段階認証用一時トークン)を全て削除する。  
+ユーザーの各種トークン(セッショントークン、ワンタイムトークン、メールアドレス確認コード、パスワードリセット用トークン、2段階認証用一時トークン)を全て削除する。  
   
 **返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
@@ -1148,61 +1163,64 @@ wakarana_userインスタンスで直前に行われた各種認証・登録処�
 **返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
-#### wakarana_user::update_last_access($token=NULL)
+#### wakarana_user::update_last_access($session_id=NULL, ip_address=NULL)
 現在の時刻をユーザーの最終アクセス日時として記録する。  
-ログイントークンを指定した場合、そのトークンの最終アクセス日時も更新する。  
-なお、ログイントークン発行処理とログアウト処理ではこの関数が自動的に実行される。
+セッションIDを指定した場合、そのセッションの最終アクセス日時も更新し、さらに、IPアドレスが指定されていた場合はその値でセッションのIPアドレスを更新する。  
+なお、セッショントークン発行処理とログアウト処理ではこの関数が自動的に実行される。
   
-**$token** : ログイントークン文字列。  
+**$session_id** : セッションID  
+**$ip_address** : クライアント端末のIPアドレス  
   
 **返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
-#### wakarana_user::get_login_tokens()
-ユーザーに発行されている全てのログイントークンの情報を最終アクセス日時の新しい順に2次元配列で取得する。  
+#### wakarana_user::get_sessions()
+ユーザーの全セッションの情報を2次元配列で取得する。  
   
-**返り値** : 成功した場合は、そのユーザーに発行されている個々のログイントークンの情報が格納された連想配列("token"(トークン文字列の冒頭6文字)、"token_created"(トークンの生成日時)、"ip_address"(トークン生成時のクライアント端末のIPアドレス)、"operating_system"(トークン生成時のクライアント端末のOS名)、"browser_name"(トークン生成時のクライアント端末のブラウザ名)、"last_access"(そのトークンでの最終アクセス日時))を、配列に入れて返す。失敗した場合はFALSEを返す。  
+**返り値** : 成功した場合は、ユーザーの個々のセッション情報が格納された連想配列("session_id"(セッションID)、"token_created"(セッショントークンの生成日時)、"ip_address"(最終アクセス時のクライアント端末のIPアドレス)、"operating_system"(ログイン時のクライアント端末のOS名)、"browser_name"(ログイン時のクライアント端末のブラウザ名)、"last_access"(当該セッショントークンでの最終アクセス日時))を、最終アクセス日時の新しい順に配列に入れて返す。失敗した場合はFALSEを返す。
 
 
-#### wakarana_user::create_login_token()
-ログイントークンを生成とデータベース登録処理を行うが、クライアント端末への送信は行わない。  
+#### wakarana_user::create_session_token($ip_address=NULL)
+セッショントークンの生成とデータベース登録処理を行うが、クライアント端末への送信は行わない。  
 wakarana::loginとは別のトークン送信処理を実装する必要がある環境向け。  
   
-**返り値** : 成功した場合は登録されたログイントークン、失敗した場合はFALSEを返す。
+**$ip_address** : IPアドレス。NULLの場合はクライアント端末のIPアドレスを参照する。  
+  
+**返り値** : 成功した場合は登録されたセッショントークン、失敗した場合はFALSEを返す。
 
 
-#### wakarana_user::set_login_token()
-ユーザーにトークンを割り当て、クライアント端末に送信する。  
+#### wakarana_user::set_session_token()
+ユーザーにセッショントークンを割り当て、クライアント端末に送信する。  
   
 この関数はHTTPヘッダーの出力を伴うため、この関数より前にHTTPヘッダー以外の何らかの文字が出力されていた場合はエラーとなる。  
   
 **返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
-#### wakarana_user::delete_login_token($abbreviated_token)
-ユーザーの指定したログイントークンを削除する。  
+#### wakarana_user::delete_session_token($session_id)
+ユーザーが持つ指定したセッショントークンを削除し、セッションを終了する。  
   
-**$abbreviated_token** : 削除対象のトークンの冒頭6文字  
+**$session_id** : 終了対象のセッションID  
   
 **返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
-#### wakarana_user::delete_login_tokens()
-ユーザーのログイントークンを全て削除する。  
+#### wakarana_user::delete_session_tokens()
+ユーザーのセッショントークンを全て削除する。  
   
-**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。  
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
-#### wakarana_user::authenticate($password, $totp_pin=NULL)
-ユーザーに対するパスワードとTOTPコード(2要素認証を使用する場合)の照合を行う。  
-トークンの生成と送信は行わないが、内部的にログイン試行ログの参照と登録は実施する。  
+#### wakarana_user::authenticate($password, $ip_address=NULL)
+ユーザーに対するパスワードの照合を行う。  
+セッショントークンの生成と送信は行わないが、内部的にログイン試行ログの参照と登録は実施する。  
   
 **$password** : パスワード  
-**$totp_pin** : 6桁のTOTPコード。2要素認証を使用しない場合と2要素認証の入力画面を分ける場合は省略。  
+**$ip_address** : IPアドレス。NULLの場合はクライアント端末のIPアドレスを参照する。  
   
 **返り値** : 認証された場合はTRUE、そうでない場合はFALSEを返す。  
   
-**拒絶理由文字列** : "parameters_not_matched"(パスワードまたはTOTPコードが誤っている)、"unavailable_user"(ユーザーアカウントが停止中である)、"currently_locked_out"(ロックアウト中のためログインを試行できない)
+**拒絶理由文字列** : "parameters_not_matched"(パスワードが誤っている)、"unavailable_user"(ユーザーアカウントが停止中である)、"currently_locked_out"(ロックアウト中のためログインを試行できない)
 
 
 #### wakarana_user::create_email_address_verification_code($email_address, $check_registration_limit=TRUE)

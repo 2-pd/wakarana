@@ -56,18 +56,19 @@ _/_/_/_/ データベース _/_/_/_/
   INDEX `wakarana_idx_cn2` `custom_field_name`, `custom_field_value`
 
 
-テーブル `wakarana_login_tokens`
-  `token` varchar(43) [TEXT] (NOT NULL PRIMARY KEY) ログイン用トークン(/dev/urandom由来の32バイト乱数バイナリをBase64エンコード(+と/の代わりに-と_)したもの)
+テーブル `wakarana_sessions`
+  `session_id` varchar(16) [TEXT] (NOT NULL PRIMARY KEY) セッションID
+  `token` varchar(43) [TEXT] (NOT NULL) セッショントークン(/dev/urandom由来の32バイト乱数バイナリをBase64エンコード(+と/の代わりに-と_)したもの)
   `user_id` varchar(60) [TEXT COLLATE NOCASE] (NOT NULL) ユーザーID
-  `token_created` timestamp [TEXT] (NOT NULL) そのトークンの生成日時
+  `token_created` timestamp [TEXT] (NOT NULL) セッショントークンの生成日時
   `ip_address` varchar(39) [TEXT] (NOT NULL) 利用者のIPアドレス
-  `operating_system` varchar(30) [TEXT] そのトークンを割り当てられた端末のOS名(「GNU/Linux」、「Android」等)
-  `browser_name` varchar(30) [TEXT] そのトークンを割り当てられた端末のブラウザ名(「Chrome」、「Firefox」等)
-  `last_access` timestamp [TEXT] (NOT NULL) そのトークンでの最終アクセス日時
+  `operating_system` varchar(30) [TEXT] セッショントークンを割り当てられた端末のOS名(「GNU/Linux」、「Android」等)
+  `browser_name` varchar(30) [TEXT] セッショントークンを割り当てられた端末のブラウザ名(「Chrome」、「Firefox」等)
+  `last_access` timestamp [TEXT] (NOT NULL) セッションの最終アクセス日時
   
-  INDEX `wakarana_idx_l1` `user_id`, `token_created`
-  INDEX `wakarana_idx_l2` `token_created`
-  INDEX `wakarana_idx_l3` `user_id`, `token`
+  UNIQUE INDEX `wakarana_idx_s1` `token`
+  INDEX `wakarana_idx_s2` `token_created`
+  INDEX `wakarana_idx_s3` `user_id`, `token_created`
   
  ※`last_access`については、処理の高速化の観点から、あえてインデックスを指定しない。
 

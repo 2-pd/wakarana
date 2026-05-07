@@ -36,6 +36,86 @@ class wakarana extends wakarana_common {
     }
     
     
+    protected static function bin_to_int ($bin, $start, $length) {
+        if ($length > PHP_INT_SIZE * 8 - 1) {
+            return FALSE;
+        }
+        
+        if (PHP_INT_SIZE >= 8) {
+            $format = "J";
+        } else {
+            $format = "N";
+        }
+        
+        $end = $start + $length;
+        
+        $byte_start = floor($start / 8);
+        
+        $bin_int = unpack($format, str_pad(substr($bin, $byte_start, ceil($end / 8) - $byte_start), PHP_INT_SIZE, "\0", STR_PAD_LEFT));
+        
+        if ($end % 8 !== 0) {
+            return $bin_int[1] >> (8 - $end % 8) & (2**$length - 1);
+        } else {
+            return $bin_int[1] & (2**$length - 1);
+        }
+    }
+    
+    
+    protected static function int_to_bin ($int, $digits_start) {
+        if ($digits_start < 8) {
+            $int = $int << (8 - $digits_start);
+        } elseif ($digits_start > 8) {
+            $int = $int >> ($digits_start - 8);
+        }
+        
+        return chr($int & 0xFF);
+    }
+    
+    
+    protected static function base32_decode ($base32_str) {
+        $length = strlen($base32_str);
+        
+        $bin = "";
+        $bin_buf = 0;
+        $buf_head = 0;
+        for ($cnt = 0; $cnt < $length; $cnt++) {
+            $index = array_search(substr($base32_str, $cnt, 1), WAKARANA_BASE32_TABLE);
+            if ($index === FALSE) {
+                break;
+            }
+            
+            $bin_buf = $bin_buf << 5 | $index;
+            $buf_head += 5;
+            
+            if ($buf_head >= 8) {
+                $bin .= self::int_to_bin($bin_buf, $buf_head);
+                $buf_head -= 8;
+            }
+        }
+        
+        if ($buf_head >= 1) {
+            $bin .= self::int_to_bin($bin_buf, $buf_head);
+        }
+        
+        return $bin;
+    }
+    
+    
+    static function generate_unique_id () {
+        $ts_bytes = substr(pack("J", intval(microtime(TRUE) * 1000)), 2);
+        $rand_bytes = random_bytes(4);
+        
+        $unique_id_bin = $ts_bytes.$rand_bytes;
+        
+        $unique_id = "";
+        for ($cnt = 0; $cnt < 16; $cnt++) {
+            $unique_id .= WAKARANA_BASE32_TABLE[self::bin_to_int($unique_id_bin, $cnt * 5, 5)];
+        }
+        
+        return $unique_id;
+    }
+    
+    
     static function hash_password ($user_id, $password) {
         return hash("sha512", $password.hash("sha512", $user_id));
     }
@@ -569,7 +649,7 @@ class wakarana extends wakarana_common {
     function delete_all_tokens () {
         $this->begin_transaction();
         
-        if ($this->delete_login_tokens(0) && $this->delete_one_time_tokens(0) && $this->delete_email_address_verification_codes(0) && $this->delete_invite_code() && $this->delete_password_reset_tokens(0) && $this->delete_2sv_tokens(0)) {
+        if ($this->delete_session_tokens(0) && $this->delete_one_time_tokens(0) && $this->delete_email_address_verification_codes(0) && $this->delete_invite_code() && $this->delete_password_reset_tokens(0) && $this->delete_2sv_tokens(0)) {
             $this->commit_transaction();
             
             return TRUE;
@@ -686,7 +766,7 @@ class wakarana extends wakarana_common {
     }
     
     
-    function authenticate ($user_id, $password, $totp_pin = NULL) {
+    function authenticate ($user_id, $password, $ip_address = NULL) {
         $this->rejection_reason = NULL;
         
         $user = $this->get_user($user_id);
@@ -696,7 +776,7 @@ class wakarana extends wakarana_common {
             return FALSE;
         }
         
-        $result = $user->authenticate($password, $totp_pin);
+        $result = $user->authenticate($password, $ip_address);
         
         if ($result === TRUE) {
             return $user;
@@ -707,18 +787,18 @@ class wakarana extends wakarana_common {
     }
     
     
-    function login ($user_id, $password, $totp_pin = NULL) {
-        $user = $this->authenticate($user_id, $password, $totp_pin);
+    function login ($user_id, $password) {
+        $user = $this->authenticate($user_id, $password);
         
         if (is_object($user)) {
-            $user->set_login_token();
+            $user->set_session_token();
         }
         
         return $user;
     }
     
     
-    function authenticate_with_email_address ($email_address, $password, $totp_pin = NULL) {
+    function authenticate_with_email_address ($email_address, $password, $ip_address = NULL) {
         $this->rejection_reason = NULL;
         
         if ($this->config["allow_nonunique_email_address"]) {
@@ -733,7 +813,7 @@ class wakarana extends wakarana_common {
             return FALSE;
         }
         
-        $result = $users[0]->authenticate($password, $totp_pin);
+        $result = $users[0]->authenticate($password, $ip_address);
         
         if ($result === TRUE) {
             return $users[0];
@@ -744,26 +824,26 @@ class wakarana extends wakarana_common {
     }
     
     
-    function login_with_email_address ($email_address, $password, $totp_pin = NULL) {
-        $user = $this->authenticate_with_email_address($email_address, $password, $totp_pin);
+    function login_with_email_address ($email_address, $password) {
+        $user = $this->authenticate_with_email_address($email_address, $password);
         
         if (is_object($user)) {
-            $user->set_login_token();
+            $user->set_session_token();
         }
         
         return $user;
     }
     
     
-    function delete_login_tokens ($expire = -1) {
+    function delete_session_tokens ($expire = -1) {
         if ($expire === -1) {
-            $expire = $this->config["login_token_expire"];
+            $expire = $this->config["session_expire"];
         }
         
         try {
-            $this->db_obj->exec('DELETE FROM "wakarana_login_tokens" WHERE "token_created" <= \''.date("Y-m-d H:i:s", time() - $expire).'\'');
+            $this->db_obj->exec('DELETE FROM "wakarana_sessions" WHERE "token_created" <= \''.date("Y-m-d H:i:s", time() - $expire).'\'');
         } catch (PDOException $err) {
-            $this->print_error("ログイントークンの削除に失敗しました。".$err->getMessage());
+            $this->print_error("セッショントークンの削除に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -1244,7 +1324,7 @@ class wakarana extends wakarana_common {
     }
     
     
-    function totp_authenticate ($tmp_token, $totp_pin) {
+    function totp_authenticate ($tmp_token, $totp_pin, $ip_address = NULL) {
         $this->rejection_reason = NULL;
         
         $this->delete_2sv_tokens();
@@ -1274,7 +1354,11 @@ class wakarana extends wakarana_common {
             return FALSE;
         }
         
-        if ($this->check_client_auth_interval($this->get_client_ip_address(), TRUE) && $user->check_auth_interval(TRUE)) {
+        if (is_null($ip_address)) {
+            $ip_address = $this->get_client_ip_address();
+        }
+        
+        if ($this->check_client_auth_interval($ip_address, TRUE) && $user->check_auth_interval(TRUE)) {
             if ($user->totp_check($totp_pin)) {
                 $user->delete_2sv_token();
                 
@@ -1301,38 +1385,54 @@ class wakarana extends wakarana_common {
         $user = $this->totp_authenticate($tmp_token, $totp_pin);
         
         if (is_object($user)) {
-            $user->set_login_token();
+            $user->set_session_token();
         }
         
         return $user;
     }
     
     
-    function check ($token = NULL, $update_last_access = TRUE) {
+    function check ($token = NULL, $update_last_access = TRUE, $ip_address = NULL) {
         if (empty($token)) {
-            if (isset($_COOKIE[$this->config["login_token_cookie_name"]])) {
-                $token = $_COOKIE[$this->config["login_token_cookie_name"]];
+            if (isset($_COOKIE[$this->config["session_token_cookie_name"]])) {
+                $token = $_COOKIE[$this->config["session_token_cookie_name"]];
             } else {
                 return FALSE;
             }
         }
         
+        if (is_null($ip_address)) {
+            $ip_address = $this->get_client_ip_address();
+        }
+        
         try {
-            $stmt = $this->db_obj->prepare('SELECT "user_id" FROM "wakarana_login_tokens" WHERE "token" = :token AND "token_created" > \''.date("Y-m-d H:i:s", time() - $this->config["login_token_expire"]).'\'');
+            $stmt = $this->db_obj->prepare('SELECT "user_id", "session_id", "ip_address" FROM "wakarana_sessions" WHERE "token" = :token AND "token_created" > \''.date("Y-m-d H:i:s", time() - $this->config["session_expire"]).'\'');
             
             $stmt->bindValue(":token", $token, PDO::PARAM_STR);
             
             $stmt->execute();
         } catch (PDOException $err) {
-            $this->print_error("ログイントークンの確認に失敗しました。".$err->getMessage());
+            $this->print_error("セッショントークンの確認に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
-        $user = $this->get_user($stmt->fetchColumn());
+        $session_info = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (empty($session_info)) {
+            return FALSE;
+        }
+        
+        if ($this->config["delete_session_on_ip_address_change"] && $ip_address !== $session_info["ip_address"]) {
+            $this->delete_session_token($session_info["session_id"]);
+            
+            return FALSE;
+        }
+        
+        $user = $this->get_user($session_info["user_id"]);
         
         if ($user !== FALSE) {
             if ($update_last_access) {
-                $user->update_last_access($token);
+                $user->update_last_access($session_info["session_id"], $ip_address);
             }
             
             return $user;
@@ -1342,15 +1442,39 @@ class wakarana extends wakarana_common {
     }
     
     
-    function delete_login_token ($token) {
+    function get_session_info ($session_id_or_token = NULL) {
+        if (empty($session_id_or_token)) {
+            if (isset($_COOKIE[$this->config["session_token_cookie_name"]])) {
+                $session_id_or_token = $_COOKIE[$this->config["session_token_cookie_name"]];
+            } else {
+                return FALSE;
+            }
+        }
+        
         try {
-            $stmt = $this->db_obj->prepare('DELETE FROM "wakarana_login_tokens" WHERE "token" = :token');
+            $stmt = $this->db_obj->prepare('SELECT "session_id", "user_id", "token_created", "ip_address", "operating_system", "browser_name", "last_access" FROM "wakarana_sessions" WHERE "'.(strlen($session_id_or_token) === 16 ? "session_id" : "token").'" = :session_id_or_token');
             
-            $stmt->bindValue(":token", $token, PDO::PARAM_STR);
+            $stmt->bindValue(":session_id_or_token", $session_id_or_token, PDO::PARAM_STR);
             
             $stmt->execute();
         } catch (PDOException $err) {
-            $this->print_error("ログイントークンの削除に失敗しました。".$err->getMessage());
+            $this->print_error("セッション情報の取得に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+    
+    
+    function delete_session_token ($session_id_or_token) {
+        try {
+            $stmt = $this->db_obj->prepare('DELETE FROM "wakarana_sessions" WHERE "'.(strlen($session_id_or_token) === 16 ? "session_id" : "token").'" = :session_id_or_token');
+            
+            $stmt->bindValue(":session_id_or_token", $session_id_or_token, PDO::PARAM_STR);
+            
+            $stmt->execute();
+        } catch (PDOException $err) {
+            $this->print_error("セッショントークンの削除に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -1359,16 +1483,16 @@ class wakarana extends wakarana_common {
     
     
     function logout () {
-        if (isset($_COOKIE[$this->config["login_token_cookie_name"]])) {
-            $token = $_COOKIE[$this->config["login_token_cookie_name"]];
+        if (isset($_COOKIE[$this->config["session_token_cookie_name"]])) {
+            $token = $_COOKIE[$this->config["session_token_cookie_name"]];
         } else {
             return NULL;
         }
         
-        if (setcookie($this->config["login_token_cookie_name"], "", time() - 1800, "/", $this->config["cookie_domain"])) {
-            return $this->delete_login_token($token);
+        if (setcookie($this->config["session_token_cookie_name"], "", time() - 1800, "/", $this->config["cookie_domain"])) {
+            return $this->delete_session_token($token);
         } else {
-            $this->print_error("ログイントークンの削除に失敗しました。");
+            $this->print_error("セッショントークンの削除に失敗しました。");
             return FALSE;
         }
     }
@@ -1403,42 +1527,6 @@ class wakarana extends wakarana_common {
     }
     
     
-    protected static function bin_to_int ($bin, $start, $length) {
-        if ($length > PHP_INT_SIZE * 8 - 1) {
-            return FALSE;
-        }
-        
-        if (PHP_INT_SIZE >= 8) {
-            $format = "J";
-        } else {
-            $format = "N";
-        }
-        
-        $end = $start + $length;
-        
-        $byte_start = floor($start / 8);
-        
-        $bin_int = unpack($format, str_pad(substr($bin, $byte_start, ceil($end / 8) - $byte_start), PHP_INT_SIZE, "\0", STR_PAD_LEFT));
-        
-        if ($end % 8 !== 0) {
-            return $bin_int[1] >> (8 - $end % 8) & (2**$length - 1);
-        } else {
-            return $bin_int[1] & (2**$length - 1);
-        }
-    }
-    
-    
-    protected static function int_to_bin ($int, $digits_start) {
-        if ($digits_start < 8) {
-            $int = $int << (8 - $digits_start);
-        } elseif ($digits_start > 8) {
-            $int = $int >> ($digits_start - 8);
-        }
-        
-        return chr($int & 0xFF);
-    }
-    
-    
     static function create_random_code ($code_length = 16) {
         $key_bin = random_bytes($code_length * 5 / 8);
         
@@ -1448,35 +1536,6 @@ class wakarana extends wakarana_common {
         }
         
         return $random_code;
-    }
-    
-    
-    protected static function base32_decode ($base32_str) {
-        $length = strlen($base32_str);
-        
-        $bin = "";
-        $bin_buf = 0;
-        $buf_head = 0;
-        for ($cnt = 0; $cnt < $length; $cnt++) {
-            $index = array_search(substr($base32_str, $cnt, 1), WAKARANA_BASE32_TABLE);
-            if ($index === FALSE) {
-                break;
-            }
-            
-            $bin_buf = $bin_buf << 5 | $index;
-            $buf_head += 5;
-            
-            if ($buf_head >= 8) {
-                $bin .= self::int_to_bin($bin_buf, $buf_head);
-                $buf_head -= 8;
-            }
-        }
-        
-        if ($buf_head >= 1) {
-            $bin .= self::int_to_bin($bin_buf, $buf_head);
-        }
-        
-        return $bin;
     }
     
     
@@ -1493,11 +1552,9 @@ class wakarana extends wakarana_common {
         return $this->create_user($user_id, $password, $user_name, $status);
     }
     
-    
     function add_role ($role_id, $role_name, $role_description = "") { //2027年5月以降のバージョンで削除
         return $this->create_role($role_id, $role_name, $role_description);
     }
-    
     
     function add_permission ($resource_id, $permission_name, $permission_description = "") { //2027年5月以降のバージョンで削除
         return $this->create_permission($resource_id, $permission_name, $permission_description);
@@ -1505,6 +1562,14 @@ class wakarana extends wakarana_common {
     
     function add_permitted_value ($permitted_value_id, $permitted_value_name, $permitted_value_description = "") { //2027年5月以降のバージョンで削除
         return $this->create_permitted_value($permitted_value_id, $permitted_value_name, $permitted_value_description);
+    }
+    
+    function delete_login_tokens ($expire = -1) { //2027年6月以降のバージョンで削除
+        return $this->delete_session_tokens($expire);
+    }
+    
+    function delete_login_token ($token) { //2027年6月以降のバージョンで削除
+        return $this->delete_session_token($token);
     }
 }
 
@@ -1841,7 +1906,7 @@ class wakarana_user extends wakarana_data_item {
         $this->wakarana->begin_transaction();
         
         if ($status !== WAKARANA_STATUS_NORMAL) {
-            $this->delete_login_tokens();
+            $this->delete_session_tokens();
         }
         
         try {
@@ -2360,7 +2425,7 @@ class wakarana_user extends wakarana_data_item {
     function delete_all_tokens () {
         $this->wakarana->begin_transaction();
         
-        if ($this->delete_login_tokens() && $this->delete_one_time_tokens() && $this->delete_email_address_verification_code() && $this->delete_invite_codes() && $this->delete_password_reset_token() && $this->delete_2sv_token()) {
+        if ($this->delete_session_tokens() && $this->delete_one_time_tokens() && $this->delete_email_address_verification_code() && $this->delete_invite_codes() && $this->delete_password_reset_token() && $this->delete_2sv_token()) {
             $this->wakarana->commit_transaction();
             
             return TRUE;
@@ -2438,27 +2503,33 @@ class wakarana_user extends wakarana_data_item {
     }
     
     
-    function update_last_access ($token = NULL) {
+    function update_last_access ($session_id = NULL, $ip_address = NULL) {
         $last_access = date("Y-m-d H:i:s");
         
         try {
             $this->wakarana->db_obj->exec('UPDATE "wakarana_users" SET "last_access" = \''.$last_access.'\'  WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
         } catch (PDOException $err) {
-            $this->print_error("ユーザーの最終アクセス日時の更新に失敗しました。".$err->getMessage());
+            $this->print_error("ユーザーの最終アクセス情報更新に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
         $this->user_info["last_access"] = $last_access;
         
-        if (!empty($token)) {
+        if (!empty($session_id)) {
             try {
-                $stmt = $this->wakarana->db_obj->prepare('UPDATE "wakarana_login_tokens" SET "last_access"=\''.$last_access.'\'  WHERE "token" = :token');
+                if (empty($ip_address)) {
+                    $stmt = $this->wakarana->db_obj->prepare('UPDATE "wakarana_sessions" SET "last_access" = \''.$last_access.'\' WHERE "session_id" = :session_id');
+                } else {
+                    $stmt = $this->wakarana->db_obj->prepare('UPDATE "wakarana_sessions" SET "last_access" = \''.$last_access.'\', "ip_address" = :ip_address WHERE "session_id" = :session_id');
+                    
+                    $stmt->bindValue(":ip_address", $ip_address, PDO::PARAM_STR);
+                }
                 
-                $stmt->bindValue(":token", $token, PDO::PARAM_STR);
+                $stmt->bindValue(":session_id", $session_id, PDO::PARAM_STR);
                 
                 $stmt->execute();
             } catch (PDOException $err) {
-                $this->print_error("ログイントークンの最終アクセス日時の更新に失敗しました。".$err->getMessage());
+                $this->print_error("セッショントークンの最終アクセス情報更新に失敗しました。".$err->getMessage());
                 return FALSE;
             }
         }
@@ -2467,33 +2538,37 @@ class wakarana_user extends wakarana_data_item {
     }
     
     
-    function get_login_tokens () {
+    function get_sessions () {
         try {
-            $stmt = $this->wakarana->db_obj->query('SELECT SUBSTR("token", 1, 6) AS "token", "token_created", "ip_address", "operating_system", "browser_name", "last_access" FROM "wakarana_login_tokens" WHERE "user_id" = \''.$this->user_info["user_id"].'\' ORDER BY "last_access" DESC');
-            
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $stmt = $this->wakarana->db_obj->query('SELECT "session_id", "token_created", "ip_address", "operating_system", "browser_name", "last_access" FROM "wakarana_sessions" WHERE "user_id" = \''.$this->user_info["user_id"].'\' ORDER BY "last_access" DESC');
         } catch (PDOException $err) {
-            $this->print_error("ログイントークン情報の取得に失敗しました。".$err->getMessage());
+            $this->print_error("セッション情報の取得に失敗しました。".$err->getMessage());
             return FALSE;
         }
+        
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
     
     
-    function create_login_token () {
-        $this->wakarana->delete_login_tokens();
+    function create_session_token ($ip_address = NULL) {
+        $this->wakarana->delete_session_tokens();
         
+        $session_id = wakarana::generate_unique_id();
         $token = wakarana::create_token();
-        
         $token_created = date("Y-m-d H:i:s");
+        
+        if (is_null($ip_address)) {
+            $ip_address = $this->wakarana->get_client_ip_address();
+        }
         
         $client_env = wakarana::get_client_environment();
         
         $this->wakarana->begin_transaction();
         
         try {
-            $this->wakarana->db_obj->exec('DELETE FROM "wakarana_login_tokens" WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "token" NOT IN (SELECT "token" FROM "wakarana_login_tokens" WHERE "user_id" = \''.$this->user_info["user_id"].'\' ORDER BY "token_created" DESC LIMIT '.($this->wakarana->config["login_tokens_per_user"] - 1).')');
+            $this->wakarana->db_obj->exec('DELETE FROM "wakarana_sessions" WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "token" NOT IN (SELECT "token" FROM "wakarana_sessions" WHERE "user_id" = \''.$this->user_info["user_id"].'\' ORDER BY "token_created" DESC LIMIT '.($this->wakarana->config["sessions_per_user"] - 1).')');
             
-            $stmt = $this->wakarana->db_obj->prepare('INSERT INTO "wakarana_login_tokens"("token", "user_id", "token_created", "ip_address", "operating_system", "browser_name", "last_access") VALUES (\''.$token.'\', \''.$this->user_info["user_id"].'\', \''.$token_created.'\', \''.$this->wakarana->get_client_ip_address().'\', :operating_system, :browser_name, \''.$token_created.'\')');
+            $stmt = $this->wakarana->db_obj->prepare('INSERT INTO "wakarana_sessions"("session_id", "token", "user_id", "token_created", "ip_address", "operating_system", "browser_name", "last_access") VALUES (\''.$session_id.'\', \''.$token.'\', \''.$this->user_info["user_id"].'\', \''.$token_created.'\', \''.$ip_address.'\', :operating_system, :browser_name, \''.$token_created.'\')');
             
             if (!empty($client_env["operating_system"])) {
                 $stmt->bindValue(":operating_system", $client_env["operating_system"], PDO::PARAM_STR);
@@ -2509,7 +2584,7 @@ class wakarana_user extends wakarana_data_item {
             
             $stmt->execute();
         } catch (PDOException $err) {
-            $this->print_error("ログイントークンの保存に失敗しました。".$err->getMessage());
+            $this->print_error("セッショントークンの保存に失敗しました。".$err->getMessage());
             
             $this->wakarana->rollback_transaction();
             
@@ -2528,27 +2603,27 @@ class wakarana_user extends wakarana_data_item {
     }
     
     
-    function set_login_token () {
-        $token = $this->create_login_token();
+    function set_session_token () {
+        $token = $this->create_session_token();
         
-        if (!empty($token) && setcookie($this->wakarana->config["login_token_cookie_name"], $token, time() + $this->wakarana->config["login_token_expire"], "/", $this->wakarana->config["cookie_domain"], FALSE, TRUE)) {
+        if (!empty($token) && setcookie($this->wakarana->config["session_token_cookie_name"], $token, time() + $this->wakarana->config["session_expire"], "/", $this->wakarana->config["cookie_domain"], FALSE, TRUE)) {
             return TRUE;
         } else {
-            $this->print_error("ログイントークンの送信に失敗しました。");
+            $this->print_error("セッショントークンの送信に失敗しました。");
             return FALSE;
         }
     }
     
     
-    function delete_login_token ($abbreviated_token) {
+    function delete_session_token ($session_id) {
         try {
-            $stmt = $this->wakarana->db_obj->prepare('DELETE FROM "wakarana_login_tokens" WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "token" LIKE :token');
+            $stmt = $this->wakarana->db_obj->prepare('DELETE FROM "wakarana_sessions" WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "session_id" = :session_id');
             
-            $stmt->bindValue(":token", $abbreviated_token."%", PDO::PARAM_STR);
+            $stmt->bindValue(":session_id", $session_id, PDO::PARAM_STR);
             
             $stmt->execute();
         } catch (PDOException $err) {
-            $this->print_error("指定されたログイントークンの削除に失敗しました。".$err->getMessage());
+            $this->print_error("指定されたセッショントークンの削除に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -2556,11 +2631,11 @@ class wakarana_user extends wakarana_data_item {
     }
     
     
-    function delete_login_tokens () {
+    function delete_session_tokens () {
         try {
-            $this->wakarana->db_obj->exec('DELETE FROM "wakarana_login_tokens" WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
+            $this->wakarana->db_obj->exec('DELETE FROM "wakarana_sessions" WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
         } catch (PDOException $err) {
-            $this->print_error("ユーザーのログイントークンの削除に失敗しました。".$err->getMessage());
+            $this->print_error("ユーザーのセッショントークンの削除に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -2568,10 +2643,14 @@ class wakarana_user extends wakarana_data_item {
     }
     
     
-    function authenticate ($password, $totp_pin = NULL) {
+    function authenticate ($password, $ip_address = NULL) {
         $this->rejection_reason = NULL;
         
-        if (!($this->wakarana->check_client_auth_interval($this->wakarana->get_client_ip_address()) && $this->check_auth_interval())) {
+        if (is_null($ip_address)) {
+            $ip_address = $this->wakarana->get_client_ip_address();
+        }
+        
+        if (!($this->wakarana->check_client_auth_interval($ip_address) && $this->check_auth_interval())) {
             $this->rejection_reason = "currently_locked_out";
             $this->add_auth_log(FALSE);
             return FALSE;
@@ -2585,15 +2664,8 @@ class wakarana_user extends wakarana_data_item {
             }
             
             if ($this->get_totp_enabled()) {
-                if (!is_null($totp_pin)) {
-                    if ($this->totp_check($totp_pin)) {
-                        $this->add_auth_log(TRUE);
-                        return TRUE;
-                    }
-                } else {
-                    $this->add_auth_log(TRUE);
-                    return $this->create_2sv_token();
-                }
+                $this->add_auth_log(TRUE);
+                return $this->create_2sv_token();
             } else {
                 $this->add_auth_log(TRUE);
                 return TRUE;
@@ -2979,6 +3051,19 @@ class wakarana_user extends wakarana_data_item {
         unset($this->user_info);
         
         return TRUE;
+    }
+    
+    
+    function create_login_token () { //2027年6月以降のバージョンで削除
+        return $this->create_session_token();
+    }
+    
+    function set_login_token () { //2027年6月以降のバージョンで削除
+        return $this->set_session_token();
+    }
+    
+    function delete_login_tokens () { //2027年6月以降のバージョンで削除
+        return $this->delete_session_tokens();
     }
 }
 
