@@ -1552,11 +1552,9 @@ class wakarana extends wakarana_common {
         return $this->create_user($user_id, $password, $user_name, $status);
     }
     
-    
     function add_role ($role_id, $role_name, $role_description = "") { //2027年5月以降のバージョンで削除
         return $this->create_role($role_id, $role_name, $role_description);
     }
-    
     
     function add_permission ($resource_id, $permission_name, $permission_description = "") { //2027年5月以降のバージョンで削除
         return $this->create_permission($resource_id, $permission_name, $permission_description);
@@ -1564,6 +1562,14 @@ class wakarana extends wakarana_common {
     
     function add_permitted_value ($permitted_value_id, $permitted_value_name, $permitted_value_description = "") { //2027年5月以降のバージョンで削除
         return $this->create_permitted_value($permitted_value_id, $permitted_value_name, $permitted_value_description);
+    }
+    
+    function delete_login_tokens ($expire = -1) { //2027年6月以降のバージョンで削除
+        return $this->delete_session_tokens($expire);
+    }
+    
+    function delete_login_token ($token) { //2027年6月以降のバージョンで削除
+        return $this->delete_session_token($token);
     }
 }
 
@@ -3045,6 +3051,19 @@ class wakarana_user extends wakarana_data_item {
         unset($this->user_info);
         
         return TRUE;
+    }
+    
+    
+    function create_login_token () { //2027年6月以降のバージョンで削除
+        return $this->create_session_token();
+    }
+    
+    function set_login_token () { //2027年6月以降のバージョンで削除
+        return $this->set_session_token();
+    }
+    
+    function delete_login_tokens () { //2027年6月以降のバージョンで削除
+        return $this->delete_session_tokens();
     }
 }
 
