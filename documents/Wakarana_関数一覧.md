@@ -973,6 +973,17 @@ wakarana_userインスタンスで直前に行われた各種認証・登録処�
 **返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
+#### wakarana_user::replace_primary_email_address($email_address)
+ユーザーのメインメールアドレスを削除し、新しいメールアドレスに置き換える。  
+ユーザーごとの登録可能なメールアドレスの数が1件のみに設定されていなければこの関数は使用できない。  
+  
+**$email_address** : 新しいメールアドレス  
+  
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。  
+  
+**拒絶理由文字列** : "invalid_email_address"(メールアドレスとして正しくない文字列である)、"blacklisted_email_domain"(メールドメインがブラックリストに登録されている)、"email_address_already_exists"(既に登録されているメールアドレスである)
+
+
 #### wakarana_user::remove_email_address($email_address)
 ユーザーのメールアドレスを削除する。  
 この関数ではプライマリメールアドレスは削除できない。  
@@ -1249,6 +1260,18 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
 **返り値** : 認証された場合はTRUEを返し、それ以外の場合はFALSEを返す。  
   
 **拒絶理由文字列** : "invalid_email_address"(メールアドレスとして正しくない文字列である)、"blacklisted_email_domain"(メールドメインがブラックリストに登録されている)、"email_address_already_exists"(既に登録されているメールアドレスである)、"registration_limit_over"(メールアドレス登録数の上限に達している)、"parameters_not_matched"(メールアドレスまたは確認コードが誤っている)
+
+
+#### wakarana_user::verify_and_replace_primary_email_address($email_address, $verification_code)
+メールアドレスと、ユーザーのメールアドレス追加用に生成された確認コードとを照合し、認証された場合は新しいメールアドレスでユーザーのメインメールアドレスを置き換える。使用済みのメールアドレス確認コードは削除される。  
+ユーザーごとの登録可能なメールアドレスの数が1件のみに設定されていなければこの関数は使用できない。  
+  
+**$email_address** : コードが紐付けられたメールアドレス  
+**$verification_code** : メールアドレス確認コード。大文字小文字を区別しない。  
+  
+**返り値** : 認証された場合はTRUEを返し、それ以外の場合はFALSEを返す。  
+  
+**拒絶理由文字列** : "invalid_email_address"(メールアドレスとして正しくない文字列である)、"blacklisted_email_domain"(メールドメインがブラックリストに登録されている)、"email_address_already_exists"(既に登録されているメールアドレスである)、"parameters_not_matched"(メールアドレスまたは確認コードが誤っている)
 
 
 #### wakarana_user::get_email_address_verification_code_expire($email_address, $verification_code)
