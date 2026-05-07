@@ -500,49 +500,48 @@ wakarana_permitted_valueインスタンスを生成する。
 **返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
-#### wakarana::authenticate($user_id, $password, $totp_pin=NULL)
-ユーザーIDとパスワード、TOTPコード(2要素認証を使用する場合)を照合するが、トークンの生成と送信は行わない。  
+#### wakarana::authenticate($user_id, $password, $ip_address=NULL)
+ユーザーIDとパスワードを照合するが、トークンの生成と送信は行わない。  
 内部的にログイン試行ログの参照と登録は実施する。  
   
 **$user_id** : ユーザーID  
 **$password** : パスワード  
-**$totp_pin** : 6桁のTOTPコード。2要素認証を使用しない場合と2要素認証の入力画面を分ける場合は省略。  
+**$ip_address** : IPアドレス。NULLの場合はクライアント端末のIPアドレスを参照する。  
   
-**返り値** : 認証された場合はユーザーのwakarana_userインスタンス、ユーザーアカウントが停止中の場合はその状態値(WAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_UNAPPROVED)、ユーザーIDが2段階認証の対象ユーザーでTOTPコードがNULLだった場合は仮トークン、それ以外の場合はFALSEを返す。  
+**返り値** : 認証された場合はユーザーのwakarana_userインスタンス、ユーザーアカウントが停止中の場合はその状態値(WAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_UNAPPROVED)、ユーザーIDが2段階認証の対象ユーザーのものだった場合は仮トークン、それ以外の場合はFALSEを返す。  
   
-**拒絶理由文字列** : "parameters_not_matched"(ユーザーIDまたはパスワード、TOTPコードのいずれかが誤っている)、"unavailable_user"(ユーザーアカウントが停止中である)、"currently_locked_out"(ロックアウト中のためログインを試行できない)
+**拒絶理由文字列** : "parameters_not_matched"(ユーザーIDまたはパスワードが誤っている)、"unavailable_user"(ユーザーアカウントが停止中である)、"currently_locked_out"(ロックアウト中のためログインを試行できない)
 
 
-#### wakarana::login($user_id, $password, $totp_pin=NULL)
-ユーザーIDとパスワード、TOTPコード(2要素認証を使用する場合)を照合し、正しければセッショントークンを生成してクライアント端末に送信する。  
+#### wakarana::login($user_id, $password)
+ユーザーIDとパスワードを照合し、正しければセッショントークンを生成してクライアント端末に送信する。  
   
 この関数はHTTPヘッダーの出力を伴うため、この関数より前にHTTPヘッダー以外の何らかの文字が出力されていた場合はエラーとなる。  
   
 **$user_id** : ユーザーID  
 **$password** : パスワード  
-**$totp_pin** : 6桁のTOTPコード。2要素認証を使用しない場合と2要素認証の入力画面を分ける場合は省略。  
   
-**返り値** : ログインが完了した場合はwakarana_userインスタンス、ユーザーアカウントが停止中の場合はその状態値(WAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_UNAPPROVED)、ユーザーIDが2要素認証の対象ユーザーでTOTPコードがNULLだった場合は仮トークン、それ以外の場合はFALSEを返す。  
+**返り値** : ログインが完了した場合はwakarana_userインスタンス、ユーザーアカウントが停止中の場合はその状態値(WAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_UNAPPROVED)、ユーザーIDが2要素認証の対象ユーザーのものだった場合は仮トークン、それ以外の場合はFALSEを返す。  
   
 **拒絶理由文字列** : "parameters_not_matched"(ユーザーIDまたはパスワード、TOTPコードのいずれかが誤っている)、"unavailable_user"(ユーザーアカウントが停止中である)、"currently_locked_out"(ロックアウト中のためログインを試行できない)
 
 
-#### wakarana::authenticate_with_email_address($email_address, $password, $totp_pin=NULL)
-ユーザーIDの代わりにメールアドレスを使用し、パスワードとTOTPコード(2要素認証を使用する場合)を照合する。トークンの生成と送信は行わない。  
+#### wakarana::authenticate_with_email_address($email_address, $password, $ip_address=NULL)
+ユーザーIDの代わりにメールアドレスを使用し、パスワードを照合する。トークンの生成と送信は行わない。  
 内部的にログイン試行ログの参照と登録は実施する。  
   
 wakarana_config.iniで同じメールアドレスを複数アカウントに使用できるよう設定している場合、この関数は使用できない。  
   
 **$email_address** : メールアドレス  
 **$password** : パスワード  
-**$totp_pin** : 6桁のTOTPコード。2要素認証を使用しない場合と2要素認証の入力画面を分ける場合は省略。  
+**$ip_address** : IPアドレス。NULLの場合はクライアント端末のIPアドレスを参照する。  
   
-**返り値** : 認証された場合はユーザーのwakarana_userインスタンス、ユーザーアカウントが停止中の場合はその状態値(WAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_UNAPPROVED)、ユーザーIDが2段階認証の対象ユーザーでTOTPコードがNULLだった場合は仮トークン、それ以外の場合はFALSEを返す。  
+**返り値** : 認証された場合はユーザーのwakarana_userインスタンス、ユーザーアカウントが停止中の場合はその状態値(WAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_UNAPPROVED)、メールアドレスが2要素認証の対象ユーザーのものだった場合は仮トークン、それ以外の場合はFALSEを返す。  
   
-**拒絶理由文字列** : "parameters_not_matched"(メールアドレスまたはパスワード、TOTPコードのいずれかが誤っている)、"unavailable_user"(ユーザーアカウントが停止中である)、"currently_locked_out"(ロックアウト中のためログインを試行できない)
+**拒絶理由文字列** : "parameters_not_matched"(メールアドレスまたはパスワードが誤っている)、"unavailable_user"(ユーザーアカウントが停止中である)、"currently_locked_out"(ロックアウト中のためログインを試行できない)
 
 
-#### wakarana::login_with_email_address($email_address, $password, $totp_pin=NULL)
+#### wakarana::login_with_email_address($email_address, $password)
 ユーザーIDの代わりにメールアドレスを使用し、パスワードとTOTPコード(2要素認証を使用する場合)を照合、正しければセッショントークンを生成してクライアント端末に送信する。  
   
 この関数はHTTPヘッダーの出力を伴うため、この関数より前にHTTPヘッダー以外の何らかの文字が出力されていた場合はエラーとなる。  
@@ -550,11 +549,10 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
   
 **$email_address** : メールアドレス  
 **$password** : パスワード  
-**$totp_pin** : 6桁のTOTPコード。2要素認証を使用しない場合と2要素認証の入力画面を分ける場合は省略。  
   
-**返り値** : ログインが完了した場合はwakarana_userインスタンス、ユーザーアカウントが停止中の場合はその状態値(WAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_UNAPPROVED)、ユーザーIDが2要素認証の対象ユーザーでTOTPコードがNULLだった場合は仮トークン、それ以外の場合はFALSEを返す。  
+**返り値** : ログインが完了した場合はwakarana_userインスタンス、ユーザーアカウントが停止中の場合はその状態値(WAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_UNAPPROVED)、メールアドレスが2要素認証の対象ユーザーのものだった場合は仮トークン、それ以外の場合はFALSEを返す。  
   
-**拒絶理由文字列** : "parameters_not_matched"(メールアドレスまたはパスワード、TOTPコードのいずれかが誤っている)、"unavailable_user"(ユーザーアカウントが停止中である)、"currently_locked_out"(ロックアウト中のためログインを試行できない)
+**拒絶理由文字列** : "parameters_not_matched"(メールアドレスまたはパスワードが誤っている)、"unavailable_user"(ユーザーアカウントが停止中である)、"currently_locked_out"(ロックアウト中のためログインを試行できない)
 
 
 #### wakarana::delete_session_tokens($expire=-1)
@@ -719,11 +717,12 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
 **返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
-#### wakarana::totp_authenticate($tmp_token, $totp_pin)
+#### wakarana::totp_authenticate($tmp_token, $totp_pin, $ip_address=NULL)
 ユーザーIDとパスワードが照合済みのユーザーに対してTOTPによる第2段階の認証を行う。  
   
 **tmp_token** : wakarana::authenticateにより発行される仮トークン  
 **$totp_pin** : 6桁のTOTPコード  
+**$ip_address** : IPアドレス。NULLの場合はクライアント端末のIPアドレスを参照する。  
   
 **返り値** : 認証された場合はユーザーのwakarana_userインスタンス、そうでない場合はFALSEを返す。  
   
@@ -1181,9 +1180,11 @@ wakarana_userインスタンスで直前に行われた各種認証・登録処�
 **返り値** : 成功した場合は、ユーザーの個々のセッション情報が格納された連想配列("session_id"(セッションID)、"token_created"(セッショントークンの生成日時)、"ip_address"(最終アクセス時のクライアント端末のIPアドレス)、"operating_system"(ログイン時のクライアント端末のOS名)、"browser_name"(ログイン時のクライアント端末のブラウザ名)、"last_access"(当該セッショントークンでの最終アクセス日時))を、最終アクセス日時の新しい順に配列に入れて返す。失敗した場合はFALSEを返す。
 
 
-#### wakarana_user::create_session_token()
+#### wakarana_user::create_session_token($ip_address=NULL)
 セッショントークンの生成とデータベース登録処理を行うが、クライアント端末への送信は行わない。  
 wakarana::loginとは別のトークン送信処理を実装する必要がある環境向け。  
+  
+**$ip_address** : IPアドレス。NULLの場合はクライアント端末のIPアドレスを参照する。  
   
 **返り値** : 成功した場合は登録されたセッショントークン、失敗した場合はFALSEを返す。
 
@@ -1210,16 +1211,16 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
 **返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
-#### wakarana_user::authenticate($password, $totp_pin=NULL)
-ユーザーに対するパスワードとTOTPコード(2要素認証を使用する場合)の照合を行う。  
+#### wakarana_user::authenticate($password, $ip_address=NULL)
+ユーザーに対するパスワードの照合を行う。  
 セッショントークンの生成と送信は行わないが、内部的にログイン試行ログの参照と登録は実施する。  
   
 **$password** : パスワード  
-**$totp_pin** : 6桁のTOTPコード。2要素認証を使用しない場合と2要素認証の入力画面を分ける場合は省略。  
+**$ip_address** : IPアドレス。NULLの場合はクライアント端末のIPアドレスを参照する。  
   
 **返り値** : 認証された場合はTRUE、そうでない場合はFALSEを返す。  
   
-**拒絶理由文字列** : "parameters_not_matched"(パスワードまたはTOTPコードが誤っている)、"unavailable_user"(ユーザーアカウントが停止中である)、"currently_locked_out"(ロックアウト中のためログインを試行できない)
+**拒絶理由文字列** : "parameters_not_matched"(パスワードが誤っている)、"unavailable_user"(ユーザーアカウントが停止中である)、"currently_locked_out"(ロックアウト中のためログインを試行できない)
 
 
 #### wakarana_user::create_email_address_verification_code($email_address, $check_registration_limit=TRUE)

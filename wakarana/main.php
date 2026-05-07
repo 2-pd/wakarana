@@ -766,7 +766,7 @@ class wakarana extends wakarana_common {
     }
     
     
-    function authenticate ($user_id, $password, $totp_pin = NULL) {
+    function authenticate ($user_id, $password, $ip_address = NULL) {
         $this->rejection_reason = NULL;
         
         $user = $this->get_user($user_id);
@@ -776,7 +776,7 @@ class wakarana extends wakarana_common {
             return FALSE;
         }
         
-        $result = $user->authenticate($password, $totp_pin);
+        $result = $user->authenticate($password, $ip_address);
         
         if ($result === TRUE) {
             return $user;
@@ -787,8 +787,8 @@ class wakarana extends wakarana_common {
     }
     
     
-    function login ($user_id, $password, $totp_pin = NULL) {
-        $user = $this->authenticate($user_id, $password, $totp_pin);
+    function login ($user_id, $password) {
+        $user = $this->authenticate($user_id, $password);
         
         if (is_object($user)) {
             $user->set_session_token();
@@ -798,7 +798,7 @@ class wakarana extends wakarana_common {
     }
     
     
-    function authenticate_with_email_address ($email_address, $password, $totp_pin = NULL) {
+    function authenticate_with_email_address ($email_address, $password, $ip_address = NULL) {
         $this->rejection_reason = NULL;
         
         if ($this->config["allow_nonunique_email_address"]) {
@@ -813,7 +813,7 @@ class wakarana extends wakarana_common {
             return FALSE;
         }
         
-        $result = $users[0]->authenticate($password, $totp_pin);
+        $result = $users[0]->authenticate($password, $ip_address);
         
         if ($result === TRUE) {
             return $users[0];
@@ -824,8 +824,8 @@ class wakarana extends wakarana_common {
     }
     
     
-    function login_with_email_address ($email_address, $password, $totp_pin = NULL) {
-        $user = $this->authenticate_with_email_address($email_address, $password, $totp_pin);
+    function login_with_email_address ($email_address, $password) {
+        $user = $this->authenticate_with_email_address($email_address, $password);
         
         if (is_object($user)) {
             $user->set_session_token();
@@ -1324,7 +1324,7 @@ class wakarana extends wakarana_common {
     }
     
     
-    function totp_authenticate ($tmp_token, $totp_pin) {
+    function totp_authenticate ($tmp_token, $totp_pin, $ip_address = NULL) {
         $this->rejection_reason = NULL;
         
         $this->delete_2sv_tokens();
@@ -1354,7 +1354,11 @@ class wakarana extends wakarana_common {
             return FALSE;
         }
         
-        if ($this->check_client_auth_interval($this->get_client_ip_address(), TRUE) && $user->check_auth_interval(TRUE)) {
+        if (is_null($ip_address)) {
+            $ip_address = $this->get_client_ip_address();
+        }
+        
+        if ($this->check_client_auth_interval($ip_address, TRUE) && $user->check_auth_interval(TRUE)) {
             if ($user->totp_check($totp_pin)) {
                 $user->delete_2sv_token();
                 
@@ -2540,12 +2544,16 @@ class wakarana_user extends wakarana_data_item {
     }
     
     
-    function create_session_token () {
+    function create_session_token ($ip_address = NULL) {
         $this->wakarana->delete_session_tokens();
         
         $session_id = wakarana::generate_unique_id();
         $token = wakarana::create_token();
         $token_created = date("Y-m-d H:i:s");
+        
+        if (is_null($ip_address)) {
+            $ip_address = $this->wakarana->get_client_ip_address();
+        }
         
         $client_env = wakarana::get_client_environment();
         
@@ -2554,7 +2562,7 @@ class wakarana_user extends wakarana_data_item {
         try {
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_sessions" WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "token" NOT IN (SELECT "token" FROM "wakarana_sessions" WHERE "user_id" = \''.$this->user_info["user_id"].'\' ORDER BY "token_created" DESC LIMIT '.($this->wakarana->config["sessions_per_user"] - 1).')');
             
-            $stmt = $this->wakarana->db_obj->prepare('INSERT INTO "wakarana_sessions"("session_id", "token", "user_id", "token_created", "ip_address", "operating_system", "browser_name", "last_access") VALUES (\''.$session_id.'\', \''.$token.'\', \''.$this->user_info["user_id"].'\', \''.$token_created.'\', \''.$this->wakarana->get_client_ip_address().'\', :operating_system, :browser_name, \''.$token_created.'\')');
+            $stmt = $this->wakarana->db_obj->prepare('INSERT INTO "wakarana_sessions"("session_id", "token", "user_id", "token_created", "ip_address", "operating_system", "browser_name", "last_access") VALUES (\''.$session_id.'\', \''.$token.'\', \''.$this->user_info["user_id"].'\', \''.$token_created.'\', \''.$ip_address.'\', :operating_system, :browser_name, \''.$token_created.'\')');
             
             if (!empty($client_env["operating_system"])) {
                 $stmt->bindValue(":operating_system", $client_env["operating_system"], PDO::PARAM_STR);
@@ -2629,10 +2637,14 @@ class wakarana_user extends wakarana_data_item {
     }
     
     
-    function authenticate ($password, $totp_pin = NULL) {
+    function authenticate ($password, $ip_address = NULL) {
         $this->rejection_reason = NULL;
         
-        if (!($this->wakarana->check_client_auth_interval($this->wakarana->get_client_ip_address()) && $this->check_auth_interval())) {
+        if (is_null($ip_address)) {
+            $ip_address = $this->wakarana->get_client_ip_address();
+        }
+        
+        if (!($this->wakarana->check_client_auth_interval($ip_address) && $this->check_auth_interval())) {
             $this->rejection_reason = "currently_locked_out";
             $this->add_auth_log(FALSE);
             return FALSE;
@@ -2646,15 +2658,8 @@ class wakarana_user extends wakarana_data_item {
             }
             
             if ($this->get_totp_enabled()) {
-                if (!is_null($totp_pin)) {
-                    if ($this->totp_check($totp_pin)) {
-                        $this->add_auth_log(TRUE);
-                        return TRUE;
-                    }
-                } else {
-                    $this->add_auth_log(TRUE);
-                    return $this->create_2sv_token();
-                }
+                $this->add_auth_log(TRUE);
+                return $this->create_2sv_token();
             } else {
                 $this->add_auth_log(TRUE);
                 return TRUE;
