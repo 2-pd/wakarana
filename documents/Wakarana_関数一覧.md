@@ -1058,7 +1058,7 @@ wakarana_userインスタンスで直前に行われた各種認証・登録処�
 **返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
-#### wakarana_user::generate_recovery_code($code_count=10)
+#### wakarana_user::generate_recovery_codes($code_count=10)
 2要素認証失敗時用のリカバリコードを生成する。  
 ユーザーに対して既にリカバリコードが割り当てられている場合、それらは全て削除される。  
   

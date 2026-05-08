@@ -1590,7 +1590,7 @@ class wakarana extends wakarana_common {
     
     
     static function create_random_code ($code_length = 16) {
-        $key_bin = random_bytes($code_length * 5 / 8);
+        $key_bin = random_bytes(ceil($code_length * 5 / 8));
         
         $random_code = "";
         for ($cnt = 0; $cnt < $code_length; $cnt++) {
@@ -2045,6 +2045,37 @@ class wakarana_user extends wakarana_data_item {
         $this->user_info["totp_key"] = NULL;
         
         return TRUE;
+    }
+    
+    
+    function generate_recovery_codes ($code_count=10) {
+        if (!is_numeric($code_count) || $code_count < 1) {
+            $this->print_error("リカバリコードの生成個数が自然数ではありません。");
+            return FALSE;
+        }
+        
+        $this->wakarana->begin_transaction();
+        
+        $this->delete_recovery_codes();
+        
+        $recovery_codes = array();
+        try {
+            for ($cnt = 0; $cnt < $code_count; $cnt++) {
+                $recovery_codes[] = wakarana::create_random_code(24);
+                
+                $this->wakarana->db_obj->exec('INSERT INTO "wakarana_recovery_codes"("user_id", "recovery_code") VALUES (\''.$this->user_info["user_id"].'\', \''.$recovery_codes[$cnt].'\')');
+            }
+        } catch (PDOException $err) {
+            $this->print_error("新しいリカバリコードの生成に失敗しました。".$err->getMessage());
+            
+            $this->wakarana->rollback_transaction();
+            
+            return FALSE;
+        }
+        
+        $this->wakarana->commit_transaction();
+        
+        return $recovery_codes;
     }
     
     
