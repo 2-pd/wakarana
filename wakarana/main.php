@@ -2914,37 +2914,7 @@ class wakarana_user extends wakarana_data_item {
     
     
     function create_invite_code ($code_expire = NULL, $remaining_number = NULL) {
-        $this->wakarana->delete_expired_invite_codes();
-        
-        if (is_null($code_expire)) {
-            $code_expire_q = "NULL";
-        } else {
-            if (!preg_match("/\A[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01]) ([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]\z/u", $code_expire)) {
-                $this->print_error("異常な有効期限が指定されました。");
-                return FALSE;
-            }
-            
-            $code_expire_q = "'".$code_expire."'";
-        }
-        
-        if (empty($remaining_number)) {
-            $remaining_number_q = "NULL";
-        } else {
-            $remaining_number_q = intval($remaining_number);
-        }
-        
-        $invite_code = wakarana::create_random_code();
-        
-        $code_created = date("Y-m-d H:i:s");
-        
-        try {
-            $this->wakarana->db_obj->exec('INSERT INTO "wakarana_invite_codes"("invite_code", "user_id", "code_created", "code_expire", "remaining_number") VALUES (\''.$invite_code.'\', \''.$this->user_info["user_id"].'\', \''.$code_created.'\', '.$code_expire_q.', '.$remaining_number_q.')');
-        } catch (PDOException $err) {
-            $this->print_error("招待コードの生成に失敗しました。".$err->getMessage());
-            return FALSE;
-        }
-        
-        return $invite_code;
+        return $this->wakarana->create_invite_code($code_expire, $remaining_number, $this->user_info["user_id"]);
     }
     
     
