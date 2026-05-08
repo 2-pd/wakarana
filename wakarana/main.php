@@ -1086,6 +1086,60 @@ class wakarana extends wakarana_common {
     }
     
     
+    function create_invite_code ($code_expire = NULL, $remaining_number = NULL, $user_id = NULL) {
+        $this->delete_expired_invite_codes();
+        
+        if (is_null($user_id)) {
+            $user_id_q = "NULL";
+        } elseif (self::check_id_string($user_id)) {
+            $user_id_q = "'".$user_id."'";
+        } else {
+            $this->print_error("ユーザーIDが異常です。");
+            return FALSE;
+        }
+        
+        $code_created = date("Y-m-d H:i:s");
+        
+        if (is_null($code_expire)) {
+            $code_expire_q = "NULL";
+        } else {
+            if (!preg_match("/\A[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01]) ([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]\z/u", $code_expire)) {
+                $this->print_error("異常な有効期限が指定されました。");
+                return FALSE;
+            }
+            
+            if ($code_expire <= $code_created) {
+                $this->print_error("有効期限として現在以前の日時を指定することはできません。");
+                return FALSE;
+            }
+            
+            $code_expire_q = "'".$code_expire."'";
+        }
+        
+        if (empty($remaining_number)) {
+            $remaining_number_q = "NULL";
+        } else {
+            $remaining_number_q = intval($remaining_number);
+            
+            if ($remaining_number_q <= 0) {
+                $this->print_error("自然数でない数値をコードの使用可能回数として指定することはできません。");
+                return FALSE;
+            }
+        }
+        
+        $invite_code = self::create_random_code();
+        
+        try {
+            $this->db_obj->exec('INSERT INTO "wakarana_invite_codes"("invite_code", "user_id", "code_created", "code_expire", "remaining_number") VALUES (\''.$invite_code.'\', '.$user_id_q.', \''.$code_created.'\', '.$code_expire_q.', '.$remaining_number_q.')');
+        } catch (PDOException $err) {
+            $this->print_error("招待コードの生成に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        return $invite_code;
+    }
+    
+    
     function get_invite_codes () {
         $this->delete_expired_invite_codes();
         
