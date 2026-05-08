@@ -1502,6 +1502,17 @@ class wakarana extends wakarana_common {
     }
     
     
+    function login_with_recovery_code ($tmp_token, $recovery_code) {
+        $user = $this->authenticate_with_recovery_code($tmp_token, $recovery_code);
+        
+        if (is_object($user)) {
+            $user->set_session_token();
+        }
+        
+        return $user;
+    }
+    
+    
     function check ($token = NULL, $update_last_access = TRUE, $ip_address = NULL) {
         if (empty($token)) {
             if (isset($_COOKIE[$this->config["session_token_cookie_name"]])) {
