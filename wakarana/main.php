@@ -2048,6 +2048,18 @@ class wakarana_user extends wakarana_data_item {
     }
     
     
+    function delete_recovery_codes () {
+        try {
+            $this->wakarana->db_obj->exec('DELETE FROM "wakarana_recovery_codes" WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
+        } catch (PDOException $err) {
+            $this->print_error("リカバリコードの削除に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        return TRUE;
+    }
+    
+    
     function set_value ($custom_field_name, $custom_field_value) {
         if (!wakarana::check_id_string($custom_field_name) || !isset($this->wakarana->custom_fields[$custom_field_name])) {
             $this->print_error("指定されたカスタムフィールドは存在しません。");
@@ -3090,7 +3102,7 @@ class wakarana_user extends wakarana_data_item {
     function delete_user () {
         $this->wakarana->begin_transaction();
         
-        if (!$this->delete_all_tokens() || !$this->remove_all_email_addresses() || !$this->delete_all_values() || !$this->delete_auth_logs()) {
+        if (!$this->delete_all_tokens() || !$this->remove_all_email_addresses() || !$this->delete_all_values() || !$this->delete_auth_logs() || !$this->delete_recovery_codes()) {
             $this->wakarana->rollback_transaction();
             
             return FALSE;
