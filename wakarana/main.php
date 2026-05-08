@@ -2806,6 +2806,20 @@ class wakarana_user extends wakarana_data_item {
     }
     
     
+    function verify_and_replace_primary_email_address ($email_address, $verification_code) {
+        if ($this->wakarana->config["email_addresses_per_user"] !== 1) {
+            $this->print_error("各ユーザーが複数のメールアドレスを登録可能な設定ではこの関数を使用できません。");
+            return FALSE;
+        }
+        
+        if ($this->email_address_verify($email_address, $verification_code, TRUE)) {
+            return $this->replace_primary_email_address($email_address);
+        } else {
+            return FALSE;
+        }
+    }
+    
+    
     function get_email_address_verification_code_expire ($email_address, $verification_code) {
         $this->wakarana->delete_email_address_verification_codes();
         
