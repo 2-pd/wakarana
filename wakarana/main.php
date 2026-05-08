@@ -789,7 +789,10 @@ class wakarana extends wakarana_common {
         if ($result === TRUE) {
             return $user;
         } else {
-            $this->rejection_reason = $user->get_rejection_reason();
+            if (empty($result)) {
+                $this->rejection_reason = $user->get_rejection_reason();
+            }
+            
             return $result;
         }
     }
@@ -826,7 +829,10 @@ class wakarana extends wakarana_common {
         if ($result === TRUE) {
             return $users[0];
         } else {
-            $this->rejection_reason = $users[0]->get_rejection_reason();
+            if (empty($result)) {
+                $this->rejection_reason = $users[0]->get_rejection_reason();
+            }
+            
             return $result;
         }
     }
@@ -1370,25 +1376,7 @@ class wakarana extends wakarana_common {
     }
     
     
-    function delete_2sv_tokens ($expire=-1) {
-        if ($expire === -1) {
-            $expire = $this->config["two_step_verification_token_expire"];
-        }
-        
-        try {
-            $this->db_obj->exec('DELETE FROM "wakarana_two_step_verification_tokens" WHERE "token_created" <= \''.date("Y-m-d H:i:s", time() - $expire).'\'');
-        } catch (PDOException $err) {
-            $this->print_error("2段階認証用一時トークンの削除に失敗しました。".$err->getMessage());
-            return FALSE;
-        }
-        
-        return TRUE;
-    }
-    
-    
-    function totp_authenticate ($tmp_token, $totp_pin, $ip_address = NULL) {
-        $this->rejection_reason = NULL;
-        
+    function get_2sv_token_holder ($tmp_token) {
         $this->delete_2sv_tokens();
         
         try {
@@ -1398,7 +1386,7 @@ class wakarana extends wakarana_common {
             
             $stmt->execute();
         } catch (PDOException $err) {
-            $this->print_error("2段階認証用一時トークンの認証に失敗しました。".$err->getMessage());
+            $this->print_error("2段階認証用仮トークンの認証に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -1416,29 +1404,58 @@ class wakarana extends wakarana_common {
             return FALSE;
         }
         
+        if ($user->get_status() !== WAKARANA_STATUS_NORMAL) {
+            $this->rejection_reason = "unavailable_user";
+            return FALSE;
+        }
+        
+        return $user;
+    }
+    
+    
+    function delete_2sv_tokens ($expire=-1) {
+        if ($expire === -1) {
+            $expire = $this->config["two_step_verification_token_expire"];
+        }
+        
+        try {
+            $this->db_obj->exec('DELETE FROM "wakarana_two_step_verification_tokens" WHERE "token_created" <= \''.date("Y-m-d H:i:s", time() - $expire).'\'');
+        } catch (PDOException $err) {
+            $this->print_error("2段階認証用仮トークンの削除に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        return TRUE;
+    }
+    
+    
+    function totp_authenticate ($tmp_token, $totp_pin, $ip_address = NULL) {
+        $this->rejection_reason = NULL;
+        
         if (is_null($ip_address)) {
             $ip_address = $this->get_client_ip_address();
         }
         
-        if ($this->check_client_auth_interval($ip_address, TRUE) && $user->check_auth_interval(TRUE)) {
-            if ($user->totp_check($totp_pin)) {
-                $user->delete_2sv_token();
-                
-                if ($user->get_status() === WAKARANA_STATUS_NORMAL) {
+        $user = $this->get_2sv_token_holder($tmp_token);
+        
+        if (is_object($user)) {
+            if ($this->check_client_auth_interval($ip_address, TRUE) && $user->check_auth_interval(TRUE)) {
+                if ($user->totp_check($totp_pin)) {
+                    $user->delete_2sv_token();
+                    
                     $user->add_auth_log(TRUE);
                     
                     return $user;
+                } else {
+                    $this->rejection_reason = "pin_not_matched";
                 }
-                
-                $this->rejection_reason = "unavailable_user";
             } else {
-                $this->rejection_reason = "pin_not_matched";
+                $this->rejection_reason = "currently_locked_out";
             }
-        } else {
-            $this->rejection_reason = "currently_locked_out";
+            
+            $user->add_auth_log(FALSE);
         }
         
-        $user->add_auth_log(FALSE);
         return FALSE;
     }
     
@@ -1457,39 +1474,14 @@ class wakarana extends wakarana_common {
     function authenticate_with_recovery_code ($tmp_token, $recovery_code, $ip_address = NULL) {
         $this->rejection_reason = NULL;
         
-        $this->delete_2sv_tokens();
-        
-        try {
-            $stmt = $this->db_obj->prepare('SELECT "user_id" FROM "wakarana_two_step_verification_tokens" WHERE "token" = :token');
-            
-            $stmt->bindValue(":token", $tmp_token, PDO::PARAM_STR);
-            
-            $stmt->execute();
-        } catch (PDOException $err) {
-            $this->print_error("2段階認証用一時トークンの認証に失敗しました。".$err->getMessage());
-            return FALSE;
-        }
-        
-        $user_id = $stmt->fetchColumn();
-        
-        if ($user_id === FALSE) {
-            $this->rejection_reason = "invalid_token";
-            return FALSE;
-        }
-        
-        $user = $this->get_user($user_id);
-        
-        if (empty($user)) {
-            $this->print_error("ユーザー情報の取得に失敗しました。");
-            return FALSE;
-        }
-        
         if (is_null($ip_address)) {
             $ip_address = $this->get_client_ip_address();
         }
         
-        if ($this->check_client_auth_interval($ip_address, TRUE) && $user->check_auth_interval(TRUE)) {
-            if ($user->get_status() === WAKARANA_STATUS_NORMAL) {
+        $user = $this->get_2sv_token_holder($tmp_token);
+        
+        if (is_object($user)) {
+            if ($this->check_client_auth_interval($ip_address, TRUE) && $user->check_auth_interval(TRUE)) {
                 if ($user->check_recovery_code($recovery_code)) {
                     $user->delete_2sv_token();
                     
@@ -1500,13 +1492,12 @@ class wakarana extends wakarana_common {
                     $this->rejection_reason = "code_not_matched";
                 }
             } else {
-                $this->rejection_reason = "unavailable_user";
+                $this->rejection_reason = "currently_locked_out";
             }
-        } else {
-            $this->rejection_reason = "currently_locked_out";
+            
+            $user->add_auth_log(FALSE);
         }
         
-        $user->add_auth_log(FALSE);
         return FALSE;
     }
     
@@ -3086,7 +3077,7 @@ class wakarana_user extends wakarana_data_item {
         try {
             $this->wakarana->db_obj->exec('INSERT INTO "wakarana_two_step_verification_tokens"("token", "user_id", "token_created") VALUES (\''.$token.'\', \''.$this->user_info["user_id"].'\', \''.$token_created.'\') ON CONFLICT("user_id") DO UPDATE SET "token" = \''.$token.'\', "token_created"=\''.$token_created.'\'');
         } catch (PDOException $err) {
-            $this->print_error("2段階認証用一時トークンの生成に失敗しました。".$err->getMessage());
+            $this->print_error("2段階認証用仮トークンの生成に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -3098,7 +3089,7 @@ class wakarana_user extends wakarana_data_item {
         try {
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_two_step_verification_tokens" WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
         } catch (PDOException $err) {
-            $this->print_error("ユーザーの2段階認証用一時トークンの削除に失敗しました。".$err->getMessage());
+            $this->print_error("ユーザーの2段階認証用仮トークンの削除に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
