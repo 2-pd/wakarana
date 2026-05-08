@@ -2048,7 +2048,7 @@ class wakarana_user extends wakarana_data_item {
     }
     
     
-    function generate_recovery_codes ($code_count=10) {
+    function generate_recovery_codes ($code_count = 10) {
         if (!is_numeric($code_count) || $code_count < 1) {
             $this->print_error("リカバリコードの生成個数が自然数ではありません。");
             return FALSE;
@@ -3124,6 +3124,37 @@ class wakarana_user extends wakarana_data_item {
     function totp_check ($totp_pin) {
         if ($this->get_totp_enabled()) {
             return $this->wakarana->totp_compare($this->user_info["totp_key"], $totp_pin);
+        } else {
+            return FALSE;
+        }
+    }
+    
+    
+    function check_recovery_code ($recovery_code) {
+        try {
+            $stmt = $this->wakarana->db_obj->prepare('SELECT 1 FROM "wakarana_recovery_codes" WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "recovery_code" = :recovery_code LIMIT 1');
+            
+            $stmt->bindValue(":recovery_code", $recovery_code, PDO::PARAM_STR);
+            
+            $stmt->execute();
+        } catch (PDOException $err) {
+            $this->print_error("リカバリコードの確認に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        if (!empty($stmt->fetchColumn())) {
+            try {
+                $stmt = $this->wakarana->db_obj->prepare('DELETE FROM "wakarana_recovery_codes" WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "recovery_code" = :recovery_code');
+                
+                $stmt->bindValue(":recovery_code", $recovery_code, PDO::PARAM_STR);
+                
+                $stmt->execute();
+            } catch (PDOException $err) {
+                $this->print_error("使用済みリカバリコードの削除に失敗しました。".$err->getMessage());
+                return FALSE;
+            }
+            
+            return TRUE;
         } else {
             return FALSE;
         }
