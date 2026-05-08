@@ -408,6 +408,17 @@ class wakarana_config extends wakarana_common {
         
         try {
             if ($this->config["use_sqlite"]) {
+                $this->db_obj->exec("CREATE TABLE IF NOT EXISTS `wakarana_recovery_codes`(`user_id` TEXT COLLATE NOCASE NOT NULL, `recovery_code` TEXT NOT NULL, PRIMARY KEY(`user_id`, `recovery_code`))");
+            } else {
+                $this->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_recovery_codes"("user_id" varchar(60) NOT NULL, "recovery_code" varchar(24) NOT NULL, PRIMARY KEY("user_id", "recovery_code"))');
+            }
+        } catch (PDOException $err) {
+            $this->print_error("テーブル wakarana_recovery_codes の作成処理に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        try {
+            if ($this->config["use_sqlite"]) {
                 $this->db_obj->exec("CREATE TABLE IF NOT EXISTS `wakarana_sessions`(`session_id` TEXT NOT NULL PRIMARY KEY, `token` TEXT NOT NULL, `user_id` TEXT COLLATE NOCASE NOT NULL, `token_created` TEXT NOT NULL, `ip_address` TEXT NOT NULL, `operating_system` TEXT, `browser_name` TEXT, `last_access` TEXT NOT NULL)");
             } else {
                 $this->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_sessions"("session_id" varchar(16) NOT NULL PRIMARY KEY, "token" varchar(43) NOT NULL, "user_id" varchar(60) NOT NULL, "token_created" timestamp NOT NULL, "ip_address" varchar(39) NOT NULL, "operating_system" varchar(30), "browser_name" varchar(30), "last_access" timestamp NOT NULL)');
