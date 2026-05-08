@@ -1454,6 +1454,63 @@ class wakarana extends wakarana_common {
     }
     
     
+    function authenticate_with_recovery_code ($tmp_token, $recovery_code, $ip_address = NULL) {
+        $this->rejection_reason = NULL;
+        
+        $this->delete_2sv_tokens();
+        
+        try {
+            $stmt = $this->db_obj->prepare('SELECT "user_id" FROM "wakarana_two_step_verification_tokens" WHERE "token" = :token');
+            
+            $stmt->bindValue(":token", $tmp_token, PDO::PARAM_STR);
+            
+            $stmt->execute();
+        } catch (PDOException $err) {
+            $this->print_error("2段階認証用一時トークンの認証に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        $user_id = $stmt->fetchColumn();
+        
+        if ($user_id === FALSE) {
+            $this->rejection_reason = "invalid_token";
+            return FALSE;
+        }
+        
+        $user = $this->get_user($user_id);
+        
+        if (empty($user)) {
+            $this->print_error("ユーザー情報の取得に失敗しました。");
+            return FALSE;
+        }
+        
+        if (is_null($ip_address)) {
+            $ip_address = $this->get_client_ip_address();
+        }
+        
+        if ($this->check_client_auth_interval($ip_address, TRUE) && $user->check_auth_interval(TRUE)) {
+            if ($user->get_status() === WAKARANA_STATUS_NORMAL) {
+                if ($user->check_recovery_code($recovery_code)) {
+                    $user->delete_2sv_token();
+                    
+                    $user->add_auth_log(TRUE);
+                    
+                    return $user;
+                } else {
+                    $this->rejection_reason = "code_not_matched";
+                }
+            } else {
+                $this->rejection_reason = "unavailable_user";
+            }
+        } else {
+            $this->rejection_reason = "currently_locked_out";
+        }
+        
+        $user->add_auth_log(FALSE);
+        return FALSE;
+    }
+    
+    
     function check ($token = NULL, $update_last_access = TRUE, $ip_address = NULL) {
         if (empty($token)) {
             if (isset($_COOKIE[$this->config["session_token_cookie_name"]])) {
