@@ -1875,6 +1875,26 @@ class wakarana_user extends wakarana_data_item {
     }
     
     
+    function replace_primary_email_address ($email_address) {
+        if ($this->wakarana->config["email_addresses_per_user"] !== 1) {
+            $this->print_error("各ユーザーが複数のメールアドレスを登録可能な設定ではこの関数を使用できません。");
+            return FALSE;
+        }
+        
+        $this->wakarana->begin_transaction();
+        
+        if ($this->remove_all_email_addresses() && $this->add_email_address($email_address)) {
+            $this->wakarana->commit_transaction();
+            
+            return TRUE;
+        } else {
+            $this->wakarana->rollback_transaction();
+            
+            return FALSE;
+        }
+    }
+    
+    
     function remove_email_address ($email_address) {
         if ($this->get_primary_email_address() === $email_address) {
             $this->print_error("この関数ではプライマリメールアドレスを削除することはできません。");
@@ -2781,6 +2801,20 @@ class wakarana_user extends wakarana_data_item {
             }
         } else {
             $this->rejection_reason = "parameters_not_matched";
+            return FALSE;
+        }
+    }
+    
+    
+    function verify_and_replace_primary_email_address ($email_address, $verification_code) {
+        if ($this->wakarana->config["email_addresses_per_user"] !== 1) {
+            $this->print_error("各ユーザーが複数のメールアドレスを登録可能な設定ではこの関数を使用できません。");
+            return FALSE;
+        }
+        
+        if ($this->email_address_verify($email_address, $verification_code, TRUE)) {
+            return $this->replace_primary_email_address($email_address);
+        } else {
             return FALSE;
         }
     }

@@ -35,7 +35,7 @@ class wakarana_common {
         }
         
         $config_path = $this->base_path."/wakarana_config.ini";
-        $this->config = @parse_ini_file($config_path);
+        $this->config = @parse_ini_file($config_path, FALSE, INI_SCANNER_TYPED);
         
         if (empty($this->config)) {
             $this->print_error("設定ファイル ".$config_path." の読み込みに失敗しました。");
