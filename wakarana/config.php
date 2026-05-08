@@ -650,9 +650,9 @@ class wakarana_config extends wakarana_common {
         
         try {
             if ($this->config["use_sqlite"]) {
-                $this->db_obj->exec("CREATE TABLE IF NOT EXISTS `wakarana_invite_codes`(`invite_code` TEXT NOT NULL PRIMARY KEY, `user_id` TEXT COLLATE NOCASE NOT NULL, `code_created` TEXT NOT NULL, `code_expire` TEXT, `remaining_number` INTEGER)");
+                $this->db_obj->exec("CREATE TABLE IF NOT EXISTS `wakarana_invite_codes`(`invite_code` TEXT NOT NULL PRIMARY KEY, `user_id` TEXT COLLATE NOCASE, `code_created` TEXT NOT NULL, `code_expire` TEXT, `remaining_number` INTEGER)");
             } else {
-                $this->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_invite_codes"("invite_code" varchar(16) NOT NULL PRIMARY KEY, "user_id" varchar(60) NOT NULL, "code_created" timestamp NOT NULL, "code_expire" timestamp, "remaining_number" integer)');
+                $this->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_invite_codes"("invite_code" varchar(16) NOT NULL PRIMARY KEY, "user_id" varchar(60), "code_created" timestamp NOT NULL, "code_expire" timestamp, "remaining_number" integer)');
             }
         } catch (PDOException $err) {
             $this->print_error("テーブル wakarana_invite_codes の作成処理に失敗しました。".$err->getMessage());
