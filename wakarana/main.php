@@ -789,7 +789,10 @@ class wakarana extends wakarana_common {
         if ($result === TRUE) {
             return $user;
         } else {
-            $this->rejection_reason = $user->get_rejection_reason();
+            if (empty($result)) {
+                $this->rejection_reason = $user->get_rejection_reason();
+            }
+            
             return $result;
         }
     }
@@ -826,7 +829,10 @@ class wakarana extends wakarana_common {
         if ($result === TRUE) {
             return $users[0];
         } else {
-            $this->rejection_reason = $users[0]->get_rejection_reason();
+            if (empty($result)) {
+                $this->rejection_reason = $users[0]->get_rejection_reason();
+            }
+            
             return $result;
         }
     }
@@ -1370,25 +1376,7 @@ class wakarana extends wakarana_common {
     }
     
     
-    function delete_2sv_tokens ($expire=-1) {
-        if ($expire === -1) {
-            $expire = $this->config["two_step_verification_token_expire"];
-        }
-        
-        try {
-            $this->db_obj->exec('DELETE FROM "wakarana_two_step_verification_tokens" WHERE "token_created" <= \''.date("Y-m-d H:i:s", time() - $expire).'\'');
-        } catch (PDOException $err) {
-            $this->print_error("2段階認証用一時トークンの削除に失敗しました。".$err->getMessage());
-            return FALSE;
-        }
-        
-        return TRUE;
-    }
-    
-    
-    function totp_authenticate ($tmp_token, $totp_pin, $ip_address = NULL) {
-        $this->rejection_reason = NULL;
-        
+    function get_2sv_token_holder ($tmp_token) {
         $this->delete_2sv_tokens();
         
         try {
@@ -1398,7 +1386,7 @@ class wakarana extends wakarana_common {
             
             $stmt->execute();
         } catch (PDOException $err) {
-            $this->print_error("2段階認証用一時トークンの認証に失敗しました。".$err->getMessage());
+            $this->print_error("2段階認証用仮トークンの認証に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -1416,35 +1404,106 @@ class wakarana extends wakarana_common {
             return FALSE;
         }
         
+        if ($user->get_status() !== WAKARANA_STATUS_NORMAL) {
+            $this->rejection_reason = "unavailable_user";
+            return FALSE;
+        }
+        
+        return $user;
+    }
+    
+    
+    function delete_2sv_tokens ($expire=-1) {
+        if ($expire === -1) {
+            $expire = $this->config["two_step_verification_token_expire"];
+        }
+        
+        try {
+            $this->db_obj->exec('DELETE FROM "wakarana_two_step_verification_tokens" WHERE "token_created" <= \''.date("Y-m-d H:i:s", time() - $expire).'\'');
+        } catch (PDOException $err) {
+            $this->print_error("2段階認証用仮トークンの削除に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        return TRUE;
+    }
+    
+    
+    function totp_authenticate ($tmp_token, $totp_pin, $ip_address = NULL) {
+        $this->rejection_reason = NULL;
+        
         if (is_null($ip_address)) {
             $ip_address = $this->get_client_ip_address();
         }
         
-        if ($this->check_client_auth_interval($ip_address, TRUE) && $user->check_auth_interval(TRUE)) {
-            if ($user->totp_check($totp_pin)) {
-                $user->delete_2sv_token();
-                
-                if ($user->get_status() === WAKARANA_STATUS_NORMAL) {
+        $user = $this->get_2sv_token_holder($tmp_token);
+        
+        if (is_object($user)) {
+            if ($this->check_client_auth_interval($ip_address, TRUE) && $user->check_auth_interval(TRUE)) {
+                if ($user->totp_check($totp_pin)) {
+                    $user->delete_2sv_token();
+                    
                     $user->add_auth_log(TRUE);
                     
                     return $user;
+                } else {
+                    $this->rejection_reason = "pin_not_matched";
                 }
-                
-                $this->rejection_reason = "unavailable_user";
             } else {
-                $this->rejection_reason = "pin_not_matched";
+                $this->rejection_reason = "currently_locked_out";
             }
-        } else {
-            $this->rejection_reason = "currently_locked_out";
+            
+            $user->add_auth_log(FALSE);
         }
         
-        $user->add_auth_log(FALSE);
         return FALSE;
     }
     
     
     function totp_login ($tmp_token, $totp_pin) {
         $user = $this->totp_authenticate($tmp_token, $totp_pin);
+        
+        if (is_object($user)) {
+            $user->set_session_token();
+        }
+        
+        return $user;
+    }
+    
+    
+    function authenticate_with_recovery_code ($tmp_token, $recovery_code, $ip_address = NULL) {
+        $this->rejection_reason = NULL;
+        
+        if (is_null($ip_address)) {
+            $ip_address = $this->get_client_ip_address();
+        }
+        
+        $user = $this->get_2sv_token_holder($tmp_token);
+        
+        if (is_object($user)) {
+            if ($this->check_client_auth_interval($ip_address, TRUE) && $user->check_auth_interval(TRUE)) {
+                if ($user->check_recovery_code($recovery_code)) {
+                    $user->delete_2sv_token();
+                    
+                    $user->add_auth_log(TRUE);
+                    
+                    return $user;
+                } else {
+                    $this->rejection_reason = "code_not_matched";
+                }
+            } else {
+                $this->rejection_reason = "currently_locked_out";
+            }
+            
+            $user->add_auth_log(FALSE);
+        }
+        
+        return FALSE;
+    }
+    
+    
+    function login_with_recovery_code ($tmp_token, $recovery_code) {
+        $user = $this->authenticate_with_recovery_code($tmp_token, $recovery_code);
         
         if (is_object($user)) {
             $user->set_session_token();
@@ -1590,7 +1649,7 @@ class wakarana extends wakarana_common {
     
     
     static function create_random_code ($code_length = 16) {
-        $key_bin = random_bytes($code_length * 5 / 8);
+        $key_bin = random_bytes(ceil($code_length * 5 / 8));
         
         $random_code = "";
         for ($cnt = 0; $cnt < $code_length; $cnt++) {
@@ -2043,6 +2102,49 @@ class wakarana_user extends wakarana_data_item {
         }
         
         $this->user_info["totp_key"] = NULL;
+        
+        return TRUE;
+    }
+    
+    
+    function generate_recovery_codes ($code_count = 10) {
+        if (!is_numeric($code_count) || $code_count < 1) {
+            $this->print_error("リカバリコードの生成個数が自然数ではありません。");
+            return FALSE;
+        }
+        
+        $this->wakarana->begin_transaction();
+        
+        $this->delete_recovery_codes();
+        
+        $recovery_codes = array();
+        try {
+            for ($cnt = 0; $cnt < $code_count; $cnt++) {
+                $recovery_codes[] = wakarana::create_random_code(24);
+                
+                $this->wakarana->db_obj->exec('INSERT INTO "wakarana_recovery_codes"("user_id", "recovery_code") VALUES (\''.$this->user_info["user_id"].'\', \''.$recovery_codes[$cnt].'\')');
+            }
+        } catch (PDOException $err) {
+            $this->print_error("新しいリカバリコードの生成に失敗しました。".$err->getMessage());
+            
+            $this->wakarana->rollback_transaction();
+            
+            return FALSE;
+        }
+        
+        $this->wakarana->commit_transaction();
+        
+        return $recovery_codes;
+    }
+    
+    
+    function delete_recovery_codes () {
+        try {
+            $this->wakarana->db_obj->exec('DELETE FROM "wakarana_recovery_codes" WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
+        } catch (PDOException $err) {
+            $this->print_error("リカバリコードの削除に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
         
         return TRUE;
     }
@@ -2986,7 +3088,7 @@ class wakarana_user extends wakarana_data_item {
         try {
             $this->wakarana->db_obj->exec('INSERT INTO "wakarana_two_step_verification_tokens"("token", "user_id", "token_created") VALUES (\''.$token.'\', \''.$this->user_info["user_id"].'\', \''.$token_created.'\') ON CONFLICT("user_id") DO UPDATE SET "token" = \''.$token.'\', "token_created"=\''.$token_created.'\'');
         } catch (PDOException $err) {
-            $this->print_error("2段階認証用一時トークンの生成に失敗しました。".$err->getMessage());
+            $this->print_error("2段階認証用仮トークンの生成に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -2998,7 +3100,7 @@ class wakarana_user extends wakarana_data_item {
         try {
             $this->wakarana->db_obj->exec('DELETE FROM "wakarana_two_step_verification_tokens" WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
         } catch (PDOException $err) {
-            $this->print_error("ユーザーの2段階認証用一時トークンの削除に失敗しました。".$err->getMessage());
+            $this->print_error("ユーザーの2段階認証用仮トークンの削除に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -3087,10 +3189,41 @@ class wakarana_user extends wakarana_data_item {
     }
     
     
+    function check_recovery_code ($recovery_code) {
+        try {
+            $stmt = $this->wakarana->db_obj->prepare('SELECT 1 FROM "wakarana_recovery_codes" WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "recovery_code" = :recovery_code LIMIT 1');
+            
+            $stmt->bindValue(":recovery_code", $recovery_code, PDO::PARAM_STR);
+            
+            $stmt->execute();
+        } catch (PDOException $err) {
+            $this->print_error("リカバリコードの確認に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        if (!empty($stmt->fetchColumn())) {
+            try {
+                $stmt = $this->wakarana->db_obj->prepare('DELETE FROM "wakarana_recovery_codes" WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "recovery_code" = :recovery_code');
+                
+                $stmt->bindValue(":recovery_code", $recovery_code, PDO::PARAM_STR);
+                
+                $stmt->execute();
+            } catch (PDOException $err) {
+                $this->print_error("使用済みリカバリコードの削除に失敗しました。".$err->getMessage());
+                return FALSE;
+            }
+            
+            return TRUE;
+        } else {
+            return FALSE;
+        }
+    }
+    
+    
     function delete_user () {
         $this->wakarana->begin_transaction();
         
-        if (!$this->delete_all_tokens() || !$this->remove_all_email_addresses() || !$this->delete_all_values() || !$this->delete_auth_logs()) {
+        if (!$this->delete_all_tokens() || !$this->remove_all_email_addresses() || !$this->delete_all_values() || !$this->delete_auth_logs() || !$this->delete_recovery_codes()) {
             $this->wakarana->rollback_transaction();
             
             return FALSE;

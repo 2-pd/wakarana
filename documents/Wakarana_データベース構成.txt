@@ -56,9 +56,16 @@ _/_/_/_/ データベース _/_/_/_/
   INDEX `wakarana_idx_cn2` `custom_field_name`, `custom_field_value`
 
 
+テーブル `wakarana_recovery_codes`
+  `user_id` varchar(60) [TEXT COLLATE NOCASE] (NOT NULL) ユーザーID
+  `recovery_code` varchar(24) [TEXT] (NOT NULL) 2要素認証失敗時用リカバリコード
+  
+  PRIMARY KEY `user_id`, `recovery_code`
+
+
 テーブル `wakarana_sessions`
   `session_id` varchar(16) [TEXT] (NOT NULL PRIMARY KEY) セッションID
-  `token` varchar(43) [TEXT] (NOT NULL) セッショントークン(/dev/urandom由来の32バイト乱数バイナリをBase64エンコード(+と/の代わりに-と_)したもの)
+  `token` varchar(43) [TEXT] (NOT NULL UNIQUE) セッショントークン(/dev/urandom由来の32バイト乱数バイナリをBase64エンコード(+と/の代わりに-と_)したもの)
   `user_id` varchar(60) [TEXT COLLATE NOCASE] (NOT NULL) ユーザーID
   `token_created` timestamp [TEXT] (NOT NULL) セッショントークンの生成日時
   `ip_address` varchar(39) [TEXT] (NOT NULL) 利用者のIPアドレス
@@ -66,11 +73,10 @@ _/_/_/_/ データベース _/_/_/_/
   `browser_name` varchar(30) [TEXT] セッショントークンを割り当てられた端末のブラウザ名(「Chrome」、「Firefox」等)
   `last_access` timestamp [TEXT] (NOT NULL) セッションの最終アクセス日時
   
-  UNIQUE INDEX `wakarana_idx_s1` `token`
-  INDEX `wakarana_idx_s2` `token_created`
-  INDEX `wakarana_idx_s3` `user_id`, `token_created`
+  INDEX `wakarana_idx_s1` `token_created`
+  INDEX `wakarana_idx_s2` `user_id`, `token_created`
   
- ※`last_access`については、処理の高速化の観点から、あえてインデックスを指定しない。
+ ※`last_access`と`ip_address`については、処理の高速化の観点から、あえてインデックスを指定しない。
 
 
 テーブル `wakarana_roles`
@@ -196,7 +202,7 @@ _/_/_/_/ データベース _/_/_/_/
 
 テーブル `wakarana_password_reset_tokens`
   `token` varchar(43) [TEXT] (NOT NULL PRIMARY KEY) メールアドレス確認用トークン(上記と同じ)
-  `user_id` varchar(60) [TEXT COLLATE NOCASE] (UNIQUE NOT NULL)ユーザーID(NULLの場合は、ユーザーID登録前のメールアドレス確認)
+  `user_id` varchar(60) [TEXT COLLATE NOCASE] (NOT NULL UNIQUE)ユーザーID(NULLの場合は、ユーザーID登録前のメールアドレス確認)
   `token_created` timestamp [TEXT] (NOT NULL) そのトークンの生成日時
   
   INDEX `wakarana_idx_pr1` `token_created`
@@ -204,7 +210,7 @@ _/_/_/_/ データベース _/_/_/_/
 
 テーブル `wakarana_two_step_verification_tokens`
   `token` varchar(43) [TEXT] (NOT NULL PRIMARY KEY) 仮トークン(上記と同じ)
-  `user_id` varchar(60) [TEXT COLLATE NOCASE] (UNIQUE NOT NULL) ユーザーID
+  `user_id` varchar(60) [TEXT COLLATE NOCASE] (NOT NULL UNIQUE) ユーザーID
   `token_created` timestamp [TEXT] (NOT NULL) そのトークンの生成日時
   
   INDEX `wakarana_idx_t1` `token_created`

@@ -457,7 +457,7 @@ wakarana_permitted_valueインスタンスを生成する。
 
 
 #### wakarana::delete_all_tokens()
-データベースに存在する各種トークン(セッショントークン、ワンタイムトークン、メールアドレス確認トークン、パスワードリセット用トークン、2段階認証用一時トークン)を全て削除する。  
+データベースに存在する各種トークン(セッショントークン、ワンタイムトークン、メールアドレス確認トークン、パスワードリセット用トークン、2段階認証用仮トークン)を全て削除する。  
   
 **返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
@@ -722,10 +722,20 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
 **返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
-#### wakarana::delete_2sv_tokens($expire=-1)
-指定した経過時間より前に生成された2段階認証用一時トークンを無効化する。  
+#### wakarana::get_2sv_token_holder($tmp_token)
+2段階認証用仮トークンの割り当て対象ユーザーを照会する。  
   
-**$expire** : 経過時間の秒数。-1を指定した場合はwakarana_config.iniで指定した2段階認証用一時トークンの有効秒数が代わりに使用される。  
+**tmp_token** : wakarana::authenticate等により発行される仮トークン  
+  
+**返り値** : 有効なユーザーに割り当てられた正しい仮トークンだった場合は当該ユーザーのwakarana_userインスタンスを、それ以外の場合はFALSEを返す。  
+  
+**拒絶理由文字列** : "invalid_token"(有効な仮トークンではない)、"unavailable_user"(ユーザーアカウントが停止中である)
+
+
+#### wakarana::delete_2sv_tokens($expire=-1)
+指定した経過時間より前に生成された2段階認証用仮トークンを無効化する。  
+  
+**$expire** : 経過時間の秒数。-1を指定した場合はwakarana_config.iniで指定した2段階認証用仮トークンの有効秒数が代わりに使用される。  
   
 **返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
@@ -733,7 +743,7 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
 #### wakarana::totp_authenticate($tmp_token, $totp_pin, $ip_address=NULL)
 ユーザーIDとパスワードが照合済みのユーザーに対してTOTPによる第2段階の認証を行う。  
   
-**tmp_token** : wakarana::authenticateにより発行される仮トークン  
+**tmp_token** : wakarana::authenticate等により発行される仮トークン  
 **$totp_pin** : 6桁のTOTPコード  
 **$ip_address** : IPアドレス。NULLの場合はクライアント端末のIPアドレスを参照する。  
   
@@ -747,12 +757,37 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
   
 この関数はHTTPヘッダーの出力を伴うため、この関数より前にHTTPヘッダー以外の何らかの文字が出力されていた場合はエラーとなる。  
   
-**tmp_token** : wakarana::loginにより発行される仮トークン  
+**tmp_token** : wakarana::login等により発行される仮トークン  
 **$totp_pin** : 6桁のTOTPコード  
   
 **返り値** : ログインが完了した場合はユーザーのwakarana_userインスタンス、そうでない場合はFALSEを返す。  
   
 **拒絶理由文字列** : "invalid_token"(有効な仮トークンではない)、"pin_not_matched"(TOTPコードが一致しない)、"unavailable_user"(ユーザーアカウントが停止中である)、"currently_locked_out"(ロックアウト中のためログインを試行できない)
+
+
+#### wakarana::authenticate_with_recovery_code($tmp_token, $recovery_code, $ip_address=NULL)
+ユーザーIDとパスワードが照合済みのユーザーに対してTOTPの代わりにリカバリコードを使用して第2段階の認証を行う。  
+  
+**tmp_token** : wakarana::authenticate等により発行される仮トークン  
+**$recovery_code** : リカバリコード  
+**$ip_address** : IPアドレス。NULLの場合はクライアント端末のIPアドレスを参照する。  
+  
+**返り値** : 認証された場合はユーザーのwakarana_userインスタンス、そうでない場合はFALSEを返す。  
+  
+**拒絶理由文字列** : "invalid_token"(有効な仮トークンではない)、"code_not_matched"(リカバリコードが一致しない)、"unavailable_user"(ユーザーアカウントが停止中である)、"currently_locked_out"(ロックアウト中のためログインを試行できない)
+
+
+#### wakarana::login_with_recovery_code($tmp_token, $recovery_code)
+ユーザーIDとパスワードが照合済みのユーザーに対してTOTPの代わりにリカバリコードを使用して第2段階の認証を行い、正しければセッショントークンを生成してクライアント端末に送信する。  
+  
+この関数はHTTPヘッダーの出力を伴うため、この関数より前にHTTPヘッダー以外の何らかの文字が出力されていた場合はエラーとなる。  
+  
+**tmp_token** : wakarana::login等により発行される仮トークン  
+**$recovery_code** : リカバリコード  
+  
+**返り値** : ログインが完了した場合はユーザーのwakarana_userインスタンス、そうでない場合はFALSEを返す。  
+  
+**拒絶理由文字列** : "invalid_token"(有効な仮トークンではない)、"code_not_matched"(リカバリコードが一致しない)、"unavailable_user"(ユーザーアカウントが停止中である)、"currently_locked_out"(ロックアウト中のためログインを試行できない)
 
 
 #### wakarana::check($token=NULL, $update_last_access=TRUE, $ip_address=NULL)
@@ -1033,11 +1068,26 @@ wakarana_userインスタンスで直前に行われた各種認証・登録処�
 **返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
+#### wakarana_user::generate_recovery_codes($code_count=10)
+2要素認証失敗時用のリカバリコードを生成する。  
+ユーザーに対して既にリカバリコードが割り当てられている場合、それらは全て削除される。  
+  
+**$code_count** : 生成するリカバリコードの数。  
+  
+**返り値** : 成功した場合は各24文字のリカバリコードが格納された配列を返し、失敗した場合はFALSEを返す。
+
+
+#### wakarana_user::delete_recovery_codes()
+ユーザーに割り当てられたリカバリコードを全て削除する。  
+  
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
 #### wakarana_user::set_value($custom_field_name, $custom_field_value)
 ユーザーの指定したカスタムフィールドの単一の値を設定する。  
   
 **$custom_field_name** : カスタムフィールド名。2個以上の値の登録が可能なカスタムフィールドは指定できない。  
-**$custom_field_value** : 値として保存する文字列または数値    
+**$custom_field_value** : 値として保存する文字列または数値  
   
 **返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
@@ -1047,7 +1097,7 @@ wakarana_userインスタンスで直前に行われた各種認証・登録処�
 同一のユーザーに対して同じ値を複数追加することはできない。
   
 **$custom_field_name** : カスタムフィールド名  
-**$custom_field_value** : 値として保存する文字列または数値   
+**$custom_field_value** : 値として保存する文字列または数値  
 **$value_number** : 並び順番号。既に値が存在する並び順番号を指定した場合、それより後の値の並び順番号を後ろにずらして新しい値を挿入する。既存の項目数+1よりも大きい値は使用できない。  
   
 **返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
@@ -1154,7 +1204,7 @@ wakarana_userインスタンスで直前に行われた各種認証・登録処�
 
 
 #### wakarana_user::delete_all_tokens()
-ユーザーの各種トークン(セッショントークン、ワンタイムトークン、メールアドレス確認コード、パスワードリセット用トークン、2段階認証用一時トークン)を全て削除する。  
+ユーザーの各種トークン(セッショントークン、ワンタイムトークン、メールアドレス確認コード、パスワードリセット用トークン、2段階認証用仮トークン)を全て削除する。  
   
 **返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
@@ -1334,13 +1384,13 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
 
 
 #### wakarana_user::create_2sv_token()
-ユーザーに対して2段階認証用の一時トークンを発行する。  
+ユーザーに対して2段階認証用の仮トークンを発行する。  
   
-**返り値** : 成功した場合は一時トークン、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合は仮トークン、失敗した場合はFALSEを返す。
 
 
 #### wakarana_user::delete_2sv_token()
-ユーザーに対して発行されている2段階認証用の一時トークンを削除する。  
+ユーザーに対して発行されている2段階認証用の仮トークンを削除する。  
   
 **返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。  
 
@@ -1371,6 +1421,14 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
 **$totp_pin** : 6桁のTOTPコード  
   
 **返り値** : ユーザーに割り当てられた生成鍵に対して正しいTOTPコードだった場合はTRUEを、それ以外の場合はFALSEを返す。
+
+
+#### wakarana_user::check_recovery_code($recovery_code)
+2要素認証失敗時用リカバリコードを照合する。照合が終わったリカバリコードは自動的にデータベースから削除される。  
+  
+**$recovery_code** : リカバリコード  
+  
+**返り値** : 正しいリカバリコードだった場合はTRUEを、それ以外の場合はFALSEを返す。
 
 
 #### wakarana_user::delete_user()
