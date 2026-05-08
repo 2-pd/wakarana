@@ -56,6 +56,13 @@ _/_/_/_/ データベース _/_/_/_/
   INDEX `wakarana_idx_cn2` `custom_field_name`, `custom_field_value`
 
 
+テーブル `wakarana_recovery_codes`
+  `user_id` varchar(60) [TEXT COLLATE NOCASE] (NOT NULL) ユーザーID
+  `recovery_code` varchar(24) [TEXT] (NOT NULL) 2要素認証失敗時用リカバリコード
+  
+  PRIMARY KEY `user_id`, `recovery_code`
+
+
 テーブル `wakarana_sessions`
   `session_id` varchar(16) [TEXT] (NOT NULL PRIMARY KEY) セッションID
   `token` varchar(43) [TEXT] (NOT NULL) セッショントークン(/dev/urandom由来の32バイト乱数バイナリをBase64エンコード(+と/の代わりに-と_)したもの)
@@ -70,7 +77,7 @@ _/_/_/_/ データベース _/_/_/_/
   INDEX `wakarana_idx_s2` `token_created`
   INDEX `wakarana_idx_s3` `user_id`, `token_created`
   
- ※`last_access`については、処理の高速化の観点から、あえてインデックスを指定しない。
+ ※`last_access`と`ip_address`については、処理の高速化の観点から、あえてインデックスを指定しない。
 
 
 テーブル `wakarana_roles`
