@@ -639,6 +639,16 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
 **返り値** : 有効な招待コードだった場合はTRUE、それ以外の場合はFALSEを返す。
 
 
+#### wakarana::create_invite_code($code_expire=NULL, $remaining_number=NULL)
+発行ユーザーを指定せずにユーザー招待コードを生成する。  
+エンドユーザーの操作によるユーザー招待コードの発行時にはこの関数を使用すべきでない。  
+  
+**$code_expire** : 有効期限。YYYY-MM-DD hh:mm:ss形式の文字列。NULLを指定した場合は無限とみなす。  
+**$remaining_number** : コードの使用可能回数。NULLを指定した場合は無限とみなす。  
+  
+**返り値** : 成功した場合は16桁の招待コード文字列、失敗した場合はFALSEを返す。
+
+
 #### wakarana::get_invite_codes()
 有効な全ての招待コードを取得する。  
   

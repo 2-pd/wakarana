@@ -184,7 +184,7 @@ _/_/_/_/ データベース _/_/_/_/
 
 テーブル `wakarana_invite_codes`
   `invite_code` varchar(16) [TEXT] (NOT NULL PRIMARY KEY) 招待コード
-  `user_id` varchar(60) [TEXT COLLATE NOCASE] (NOT NULL) コードを発行したユーザーのユーザーID
+  `user_id` varchar(60) [TEXT COLLATE NOCASE] コードを発行したユーザーのユーザーID(ユーザーが発行したコードでない場合はNULL)
   `code_created` timestamp [TEXT] (NOT NULL) コードの生成日時
   `code_expire` timestamp [TEXT] コードの有効期限(NULLの場合は無期限)
   `remaining_number` integer [INTEGER] コードの残り使用可能回数(NULLの場合は無限)
