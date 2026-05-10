@@ -307,8 +307,8 @@ wakarana_userインスタンスを生成する。
 
 
 #### wakarana::create_user($user_id, $password, $user_name="", $status=WAKARANA_STATUS_NORMAL)
-新しいユーザーを追加する。追加したユーザーには自動的にベースロールが割り当てられる。  
-既に存在するユーザーIDを指定した場合はエラーとなる。  
+新しいユーザーを追加する。  
+追加したユーザーには自動的にベースロールが割り当てられる。既に存在するユーザーIDを指定した場合はエラーとなる。  
   
 **$user_id** : 追加するユーザーのID。半角英数字及びアンダーバーが使用可能。  
 **$password** : 追加するユーザーのパスワード  
@@ -318,6 +318,21 @@ wakarana_userインスタンスを生成する。
 **返り値** : 成功した場合は追加したユーザーのwakarana_userインスタンスを返す。失敗した場合はFALSEを返す。  
   
 **拒絶理由文字列** : "invalid_user_id"(ユーザーIDに使用できない文字が含まれる)、"user_already_exists"(ユーザーアカウントが既に存在している)、"weak_password"(弱いパスワードである)
+
+
+#### wakarana::create_user_with_invite_code($invite_code, $user_id, $password, $user_name="", $status=WAKARANA_STATUS_NORMAL)
+招待コードを検証し、有効であれば新しいユーザーを追加する。  
+追加したユーザーには自動的にベースロールが割り当てられる。既に存在するユーザーIDを指定した場合はエラーとなる。  
+  
+**$invite_code** : 招待コード文字列。大文字小文字を区別しない。  
+**$user_id** : 追加するユーザーのID。半角英数字及びアンダーバーが使用可能。  
+**$password** : 追加するユーザーのパスワード  
+**$user_name** : 追加するユーザーのハンドルネーム  
+**$status** : WAKARANA_STATUS_UNAPPROVEDを指定すると未承認ユーザー(ログイン不可)として作成することができる。  
+  
+**返り値** : 成功した場合は追加したユーザーのwakarana_userインスタンスを返す。失敗した場合はFALSEを返す。  
+  
+**拒絶理由文字列** : "invalid_invite_code"(有効な招待コードではない)、"invalid_user_id"(ユーザーIDに使用できない文字が含まれる)、"user_already_exists"(ユーザーアカウントが既に存在している)、"weak_password"(弱いパスワードである)
 
 
 #### wakarana::new_wakarana_role($role_info)
@@ -630,13 +645,40 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
 **返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
-#### wakarana::check_invite_code($invite_code)
-ユーザー招待コードを検証する。  
+#### wakarana::get_invite_code_expire($invite_code)
+ユーザー招待コードを検証して残り有効時間を取得する。  
   
 **$invite_code** : 招待コード文字列。大文字小文字を区別しない。  
-**$decrease_number** : TRUEを指定するか省略した場合、招待コードの残り回数が1つ減る。  
   
-**返り値** : 有効な招待コードだった場合はTRUE、それ以外の場合はFALSEを返す。
+**返り値** : 有効な招待コードだった場合はその有効期限までの残り秒数、それ以外の場合はFALSEを返す。
+
+
+#### wakarana::get_invite_code_info($invite_code)
+ユーザー招待コードの情報(発行したユーザー、有効か否か、発行日時、有効期限、残り回数、使用回数)を取得する。  
+エンドユーザーが入力した招待コードの有効性確認にはこの関数でなく wakarana::get_invite_code_expire を使用すべきである。  
+  
+**$invite_code** : 招待コード文字列。大文字小文字を区別しない。  
+  
+**返り値** : 有効な招待コードだった場合は、ユーザー招待コードの情報を連想配列("user_id"(発行者のユーザーID)、"is_active"(有効か否か)、"code_created"(YYYY-MM-DD hh:mm:ss形式の発行日時)、"code_expire"(YYYY-MM-DD hh:mm:ss形式の有効期限)、"remaining_number"(残り回数、無限の場合はNULL)、"usage_count"(使用された回数))で返す。それ以外の場合はFALSEを返す。
+
+
+#### wakarana::count_invite_codes($is_active=NULL)
+招待コードの総数を数える。  
+  
+**$is_active** : 招待コードの状態による絞り込み(TRUEなら有効な招待コード、FALSEなら無効となった招待コードのみを数える)  
+  
+**返り値** : 登録されているユーザーの総数を返す。
+
+
+#### wakarana::get_invite_codes($is_active=NULL, $start=0, $limit=100, $asc=TRUE)
+招待コードの一覧を取得する。  
+  
+**$is_active** : 招待コードの状態による絞り込み(TRUEなら有効な招待コード、FALSEなら無効となった招待コードのみを取得する)  
+**$start** : 何番目の招待コードから取得するか(1番目なら「0」)  
+**$limit** : 何件まで取得するか  
+**$asc** : 発行日時の古い順で取得する場合はTRUE、新しい順ならFALSE。  
+  
+**返り値** : 成功した場合は、各招待コードの情報が格納された連想配列("invite_code"(招待コード本体)以外の項目はwakarana::get_invite_code_infoの返り値と同様)を格納した配列(招待コードがない場合は空配列)を返す。失敗した場合はFALSEを返す。
 
 
 #### wakarana::create_invite_code($code_expire=NULL, $remaining_number=NULL, $user_id=NULL)
@@ -650,30 +692,25 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
 **返り値** : 成功した場合は16桁の招待コード文字列、失敗した場合はFALSEを返す。
 
 
-#### wakarana::get_invite_codes()
-有効な全ての招待コードを取得する。  
+#### wakarana::disable_invite_code($invite_code=NULL)
+ユーザー招待コードを無効化する。  
+エンドユーザーの操作により当該ユーザー自身が発行した招待コードを無効化する場合は、この関数でなく wakarana_user::disable_invite_code を使用すべきである。  
   
-**返り値** : 成功した場合は、各招待コードの情報が格納された連想配列("invite_code"(招待コード本体)以外の項目はwakarana::get_invite_code_infoの返り値と同様)を発行日時の古い順に並べた配列(招待コードがない場合は空配列)を返す。失敗した場合はFALSEを返す。
-
-
-#### wakarana::get_invite_code_info($invite_code)
-ユーザー招待コードの情報(発行したユーザー、発行日時、有効期限、残り回数)を取得する。  
-  
-**$invite_code** : 招待コード文字列。大文字小文字を区別しない。  
-  
-**返り値** : 有効な招待コードだった場合は、ユーザー招待コードの情報を連想配列("user_id"(発行者のユーザーID)、"code_created"(YYYY-MM-DD hh:mm:ss形式の発行日時)、"code_expire"(YYYY-MM-DD hh:mm:ss形式の有効期限)、"remaining_number"(残り回数、無限の場合はNULL))で返す。それ以外の場合はFALSEを返す。
-
-
-#### wakarana::delete_invite_code($invite_code=NULL)
-ユーザー招待コードを削除する。  
-  
-**$invite_code** : 招待コード文字列。NULLを指定した場合は全ての招待コードを削除する。  
+**$invite_code** : 招待コード文字列。NULLを指定した場合は全ての招待コードを無効化する。  
   
 **返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
-#### wakarana::delete_expired_invite_codes()
-有効期限切れのユーザー招待コードをデータベースから削除する。  
+#### wakarana::disable_expired_invite_codes()
+有効期限切れのユーザー招待コードを全て無効化する。  
+  
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
+#### wakarana::delete_disabled_invite_codes($keep_used_invite_codes=TRUE)
+有効でないユーザー招待コードを全て削除する。  
+  
+**$keep_used_invite_codes** : TRUEを指定した場合、使用回数が0でない招待コードは削除対象外となる。  
   
 **返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
@@ -1205,6 +1242,7 @@ wakarana_userインスタンスで直前に行われた各種認証・登録処�
 
 #### wakarana_user::delete_all_tokens()
 ユーザーの各種トークン(セッショントークン、ワンタイムトークン、メールアドレス確認コード、パスワードリセット用トークン、2段階認証用仮トークン)を全て削除する。  
+ユーザーの削除時にはこの関数が自動的に実行される。  
   
 **返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
@@ -1350,6 +1388,12 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
 **返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
+#### wakarana_user::get_used_invite_code()
+ユーザーがアカウントの作成時に使用した招待コードの情報を取得する。  
+  
+**返り値** : アカウント作成時に招待コードが使用されていた場合は、当該招待コードの情報が格納された連想配列("invite_code"(招待コード本体)以外の項目はwakarana::get_invite_code_infoの返り値と同様)、招待コードが使用されていなかった場合または使用された招待コードが削除済みだった場合はNULL、失敗した場合はFALSEを返す。
+
+
 #### wakarana_user::create_invite_code($code_expire=NULL, $remaining_number=NULL)
 ユーザー招待コードを生成する。  
   
@@ -1359,14 +1403,21 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
 **返り値** : 成功した場合は16桁の招待コード文字列、失敗した場合はFALSEを返す。
 
 
-#### wakarana_user::get_invite_codes()
-ユーザーが発行した有効な全ての招待コードを取得する。  
+#### wakarana_user::get_invite_codes($is_active=NULL)
+ユーザーが発行した全ての招待コードを取得する。  
+  
+**$invite_code** : 招待コード文字列。大文字小文字を区別しない。  
+**$is_active** : 招待コードの状態による絞り込み(TRUEなら有効な招待コード、FALSEなら無効となった招待コードのみを取得する)  
   
 **返り値** : 成功した場合は、各招待コードの情報が格納された連想配列("invite_code"(招待コード本体)以外の項目はwakarana::get_invite_code_infoの返り値と同様)を発行日時の古い順に並べた配列(招待コードがない場合は空配列)を返す。失敗した場合はFALSEを返す。
 
 
-#### wakarana_user::delete_invite_codes()
-ユーザーが発行した全ての招待コードを削除する。  
+#### wakarana_user::disable_invite_code($invite_code, $delete_user_id=FALSE)
+ユーザーが発行した招待コードを無効化する。  
+ユーザーの削除時にはこの関数が自動的に実行され、当該ユーザーが発行した全ての招待コードが無効化される。  
+  
+**$invite_code** : 招待コード文字列。NULLを指定した場合は全ての招待コードを無効化する。  
+**$delete_user_id** : TRUEを指定した場合、招待コードの情報からユーザーIDを消去する(ユーザーの削除時以外には常にFALSEとすることを推奨)  
   
 **返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
