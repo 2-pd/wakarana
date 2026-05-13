@@ -306,14 +306,16 @@ wakarana_userインスタンスを生成する。
 **返り値** : 成功した場合は、wakarana_userインスタンスを配列で返す。失敗した場合はFALSEを返す。
 
 
-#### wakarana::create_user($user_id, $password, $user_name="", $status=WAKARANA_STATUS_NORMAL)
+#### wakarana::create_user($user_id, $password, $user_name="", $status=WAKARANA_STATUS_NORMAL, $used_invite_code=NULL)
 新しいユーザーを追加する。  
 追加したユーザーには自動的にベースロールが割り当てられる。既に存在するユーザーIDを指定した場合はエラーとなる。  
+招待コードを使用してのユーザー追加にはこの関数でなく wakarana::create_user_with_invite_code を使用すべきである。  
   
 **$user_id** : 追加するユーザーのID。半角英数字及びアンダーバーが使用可能。  
 **$password** : 追加するユーザーのパスワード  
 **$user_name** : 追加するユーザーのハンドルネーム  
 **$status** : WAKARANA_STATUS_UNAPPROVEDを指定すると未承認ユーザー(ログイン不可)として作成することができる。  
+**$used_invite_code** : ユーザー追加時に使用した招待コード。この関数を直接呼び出す際は常にNULLとする。  
   
 **返り値** : 成功した場合は追加したユーザーのwakarana_userインスタンスを返す。失敗した場合はFALSEを返す。  
   
@@ -687,7 +689,7 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
   
 **$code_expire** : 有効期限。YYYY-MM-DD hh:mm:ss形式の文字列。NULLを指定した場合は無限とみなす。  
 **$remaining_number** : コードの使用可能回数。NULLを指定した場合は無限とみなす。  
-**$user_id** : コード発行者のユーザーID。通常はNULLとする。  
+**$user_id** : コード発行者のユーザーID。この関数を直接呼び出す際は常にNULLとする。  
   
 **返り値** : 成功した場合は16桁の招待コード文字列、失敗した場合はFALSEを返す。
 
