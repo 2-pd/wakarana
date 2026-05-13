@@ -1113,8 +1113,6 @@ class wakarana extends wakarana_common {
     
     
     function create_invite_code ($code_expire = NULL, $remaining_number = NULL, $user_id = NULL) {
-        $this->disable_expired_invite_codes();
-        
         if (is_null($user_id)) {
             $user_id_q = "NULL";
         } elseif (self::check_id_string($user_id)) {
@@ -1156,7 +1154,7 @@ class wakarana extends wakarana_common {
         $invite_code = self::create_random_code();
         
         try {
-            $this->db_obj->exec('INSERT INTO "wakarana_invite_codes"("invite_code", "user_id", "code_created", "code_expire", "remaining_number") VALUES (\''.$invite_code.'\', '.$user_id_q.', \''.$code_created.'\', '.$code_expire_q.', '.$remaining_number_q.')');
+            $this->db_obj->exec('INSERT INTO "wakarana_invite_codes"("invite_code", "is_active", "user_id", "code_created", "code_expire", "remaining_number", "usage_count") VALUES (\''.$invite_code.'\', 1, '.$user_id_q.', \''.$code_created.'\', '.$code_expire_q.', '.$remaining_number_q.', 0)');
         } catch (PDOException $err) {
             $this->print_error("招待コードの生成に失敗しました。".$err->getMessage());
             return FALSE;
