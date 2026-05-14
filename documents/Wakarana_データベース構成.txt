@@ -16,10 +16,12 @@ _/_/_/_/ データベース _/_/_/_/
   `last_access` timestamp [TEXT] (NOT NULL) そのアカウントの最終利用日時
   `status` smallint [INTEGER] (NOT NULL) アカウントが使用可能か停止されているか(0:停止, 1:有効, -1:未承認)
   `totp_key` varchar(16) [TEXT] TOTPワンタイムパスワード生成キー
+  `used_invite_code` varchar(16) [TEXT] 登録時に使用した招待コード
   
   UNIQUE INDEX `wakarana_idx_u0` LOWER(`user_id`) ※PostgreSQLのみ
   INDEX `wakarana_idx_u1` LOWER(`user_name`) [`user_name`]
   INDEX `wakarana_idx_u3` `user_created`
+  INDEX `wakarana_idx_u4` `used_invite_code`, `user_created`
   
  ※`last_access`については、処理の高速化の観点から、あえてインデックスを指定しない。
 
@@ -190,14 +192,19 @@ _/_/_/_/ データベース _/_/_/_/
 
 テーブル `wakarana_invite_codes`
   `invite_code` varchar(16) [TEXT] (NOT NULL PRIMARY KEY) 招待コード
-  `user_id` varchar(60) [TEXT COLLATE NOCASE] コードを発行したユーザーのユーザーID(ユーザーが発行したコードでない場合はNULL)
+  `is_active` boolean [INTEGER] (NOT NULL) 有効か否か
+  `user_id` varchar(60) [TEXT COLLATE NOCASE] コードを発行したユーザーのユーザーID(現存するユーザーが発行したコードでない場合はNULL)
   `code_created` timestamp [TEXT] (NOT NULL) コードの生成日時
   `code_expire` timestamp [TEXT] コードの有効期限(NULLの場合は無期限)
   `remaining_number` integer [INTEGER] コードの残り使用可能回数(NULLの場合は無限)
+  `usage_count` integer [INTEGER] (NOT NULL) コードが使用された回数
   
-  INDEX `wakarana_idx_i1` `user_id`, `code_created`
-  INDEX `wakarana_idx_i2` `code_expire`
-  INDEX `wakarana_idx_i3` `code_created`
+  INDEX `wakarana_idx_i1` `is_active`, `code_expire`
+  INDEX `wakarana_idx_i2` `code_created`
+  INDEX `wakarana_idx_i3` `is_active`, `code_created`
+  INDEX `wakarana_idx_i4` `user_id`, `code_created`
+  INDEX `wakarana_idx_i5` `user_id`, `is_active`, `code_created`
+  INDEX `wakarana_idx_i6` `usage_count`, `is_active`
 
 
 テーブル `wakarana_password_reset_tokens`

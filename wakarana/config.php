@@ -326,9 +326,9 @@ class wakarana_config extends wakarana_common {
         
         try {
             if ($this->config["use_sqlite"]) {
-                $this->db_obj->exec("CREATE TABLE IF NOT EXISTS `wakarana_users`(`user_id` TEXT COLLATE NOCASE NOT NULL PRIMARY KEY, `password` TEXT NOT NULL, `user_name` TEXT COLLATE NOCASE, `user_created` TEXT NOT NULL, `last_updated` TEXT NOT NULL, `last_access` TEXT NOT NULL, `status` INTEGER NOT NULL, `totp_key` TEXT)");
+                $this->db_obj->exec("CREATE TABLE IF NOT EXISTS `wakarana_users`(`user_id` TEXT COLLATE NOCASE NOT NULL PRIMARY KEY, `password` TEXT NOT NULL, `user_name` TEXT COLLATE NOCASE, `user_created` TEXT NOT NULL, `last_updated` TEXT NOT NULL, `last_access` TEXT NOT NULL, `status` INTEGER NOT NULL, `totp_key` TEXT, `used_invite_code` TEXT)");
             } else {
-                $this->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_users"("user_id" varchar(60) NOT NULL PRIMARY KEY, "password" varchar(128) NOT NULL, "user_name" varchar(240), "user_created" timestamp NOT NULL, "last_updated" timestamp NOT NULL, "last_access" timestamp NOT NULL, "status" smallint NOT NULL, "totp_key" varchar(16))');
+                $this->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_users"("user_id" varchar(60) NOT NULL PRIMARY KEY, "password" varchar(128) NOT NULL, "user_name" varchar(240), "user_created" timestamp NOT NULL, "last_updated" timestamp NOT NULL, "last_access" timestamp NOT NULL, "status" smallint NOT NULL, "totp_key" varchar(16), "used_invite_code" varchar(16))');
             }
         } catch (PDOException $err) {
             $this->print_error("テーブル wakarana_users の作成処理に失敗しました。".$err->getMessage());
@@ -344,6 +344,7 @@ class wakarana_config extends wakarana_common {
             }
             
             $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_u3" ON "wakarana_users"("user_created")');
+            $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_u4" ON "wakarana_users"("used_invite_code", "user_created")');
         } catch (PDOException $err) {
             $this->print_error("テーブル wakarana_users のインデックス作成処理に失敗しました。".$err->getMessage());
             return FALSE;
@@ -660,9 +661,9 @@ class wakarana_config extends wakarana_common {
         
         try {
             if ($this->config["use_sqlite"]) {
-                $this->db_obj->exec("CREATE TABLE IF NOT EXISTS `wakarana_invite_codes`(`invite_code` TEXT NOT NULL PRIMARY KEY, `user_id` TEXT COLLATE NOCASE, `code_created` TEXT NOT NULL, `code_expire` TEXT, `remaining_number` INTEGER)");
+                $this->db_obj->exec("CREATE TABLE IF NOT EXISTS `wakarana_invite_codes`(`invite_code` TEXT NOT NULL PRIMARY KEY, `is_active` INTEGER NOT NULL, `user_id` TEXT COLLATE NOCASE, `code_created` TEXT NOT NULL, `code_expire` TEXT, `remaining_number` INTEGER, `usage_count` INTEGER NOT NULL)");
             } else {
-                $this->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_invite_codes"("invite_code" varchar(16) NOT NULL PRIMARY KEY, "user_id" varchar(60), "code_created" timestamp NOT NULL, "code_expire" timestamp, "remaining_number" integer)');
+                $this->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_invite_codes"("invite_code" varchar(16) NOT NULL PRIMARY KEY, "is_active" boolean NOT NULL, "user_id" varchar(60), "code_created" timestamp NOT NULL, "code_expire" timestamp, "remaining_number" integer, "usage_count" integer NOT NULL)');
             }
         } catch (PDOException $err) {
             $this->print_error("テーブル wakarana_invite_codes の作成処理に失敗しました。".$err->getMessage());
@@ -670,9 +671,12 @@ class wakarana_config extends wakarana_common {
         }
         
         try {
-            $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_i1" ON "wakarana_invite_codes"("user_id", "code_created")');
-            $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_i2" ON "wakarana_invite_codes"("code_expire")');
-            $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_i3" ON "wakarana_invite_codes"("code_created")');
+            $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_i1" ON "wakarana_invite_codes"("is_active", "code_expire")');
+            $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_i2" ON "wakarana_invite_codes"("code_created")');
+            $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_i3" ON "wakarana_invite_codes"("is_active", "code_created")');
+            $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_i4" ON "wakarana_invite_codes"("user_id", "code_created")');
+            $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_i5" ON "wakarana_invite_codes"("user_id", "is_active", "code_created")');
+            $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_i6" ON "wakarana_invite_codes"("usage_count", "is_active")');
         } catch (PDOException $err) {
             $this->print_error("テーブル wakarana_invite_codes のインデックス作成処理に失敗しました。".$err->getMessage());
             return FALSE;
