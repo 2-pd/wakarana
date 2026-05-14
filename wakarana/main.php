@@ -3108,6 +3108,20 @@ class wakarana_user extends wakarana_data_item {
     }
     
     
+    function get_used_invite_code () {
+        try {
+            $stmt = $this->wakarana->db_obj->query('SELECT "wakarana_invite_codes".* FROM "wakarana_users", "wakarana_invite_codes" WHERE "wakarana_users"."user_id" = \''.$this->user_info["user_id"].'\' AND "wakarana_invite_codes"."invite_code" = "wakarana_users"."used_invite_code"');
+        } catch (PDOException $err) {
+            $this->print_error("ユーザーアカウント作成時に使用された招待コードの情報の取得に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        $invite_code_info = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        return empty($invite_code_info) ? NULL : $invite_code_info;
+    }
+    
+    
     function create_invite_code ($code_expire = NULL, $remaining_number = NULL) {
         return $this->wakarana->create_invite_code($code_expire, $remaining_number, $this->user_info["user_id"]);
     }
