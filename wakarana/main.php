@@ -207,14 +207,8 @@ class wakarana extends wakarana_common {
                 return FALSE;
         }
         
-        if ($asc) {
-            $asc_q = "ASC";
-        } else {
-            $asc_q = "DESC";
-        }
-        
         try {
-            $stmt = $this->db_obj->query('SELECT * FROM "wakarana_users" ORDER BY '.$order_by_q.' '.$asc_q.' LIMIT '.$limit.' OFFSET '.$start);
+            $stmt = $this->db_obj->query('SELECT * FROM "wakarana_users" ORDER BY '.$order_by_q.' '.($asc ? 'ASC' : 'DESC').' LIMIT '.$limit.' OFFSET '.$start);
         } catch (PDOException $err) {
             $this->print_error("ユーザー一覧の取得に失敗しました。".$err->getMessage());
             return FALSE;
@@ -1145,6 +1139,29 @@ class wakarana extends wakarana_common {
     }
     
     
+    function get_invite_codes ($is_active = NULL, $start = 0, $limit = 100, $asc = TRUE) {
+        $this->disable_expired_invite_codes();
+        
+        if (is_null($is_active)) {
+            $is_active_q = '';
+        } else {
+            $is_active_q = ' WHERE "is_active" = '.($is_active ? '1' : '0');
+        }
+        
+        $start = intval($start);
+        $limit = intval($limit);
+        
+        try {
+            $stmt = $this->db_obj->query('SELECT * FROM "wakarana_invite_codes"'.$is_active_q.' ORDER BY "code_created" '.($asc ? 'ASC' : 'DESC').' LIMIT '.$limit.' OFFSET '.$start);
+        } catch (PDOException $err) {
+            $this->print_error("招待コード一覧の取得に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+    
+    
     function create_invite_code ($code_expire = NULL, $remaining_number = NULL, $user_id = NULL) {
         if (is_null($user_id)) {
             $user_id_q = "NULL";
@@ -1194,20 +1211,6 @@ class wakarana extends wakarana_common {
         }
         
         return $invite_code;
-    }
-    
-    
-    function get_invite_codes () {
-        $this->disable_expired_invite_codes();
-        
-        try {
-            $stmt = $this->db_obj->query('SELECT * FROM "wakarana_invite_codes" ORDER BY "code_created" ASC');
-        } catch (PDOException $err) {
-            $this->print_error("招待コード一覧の取得に失敗しました。".$err->getMessage());
-            return FALSE;
-        }
-        
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
     
     
