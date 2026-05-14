@@ -1278,6 +1278,20 @@ class wakarana extends wakarana_common {
     }
     
     
+    function delete_disabled_invite_codes ($keep_used_invite_codes = TRUE) {
+        $this->disable_expired_invite_codes();
+        
+        try {
+            $this->db_obj->exec('DELETE FROM "wakarana_invite_codes" WHERE "is_active" = 0'.($keep_used_invite_codes ? ' AND "usage_count" = 0' : ''));
+        } catch (PDOException $err) {
+            $this->print_error("無効な招待コードの削除に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        return TRUE;
+    }
+    
+    
     function reset_password ($token, $new_password) {
         $this->rejection_reason = NULL;
         
