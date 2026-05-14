@@ -3127,11 +3127,17 @@ class wakarana_user extends wakarana_data_item {
     }
     
     
-    function get_invite_codes () {
+    function get_invite_codes ($is_active = NULL) {
         $this->wakarana->disable_expired_invite_codes();
         
+        if (is_null($is_active)) {
+            $is_active_q = '';
+        } else {
+            $is_active_q = ' AND "is_active" = '.($is_active ? '1' : '0');
+        }
+        
         try {
-            $stmt = $this->wakarana->db_obj->query('SELECT * FROM "wakarana_invite_codes" WHERE "user_id" = \''.$this->user_info["user_id"].'\' ORDER BY "code_created" ASC');
+            $stmt = $this->wakarana->db_obj->query('SELECT * FROM "wakarana_invite_codes" WHERE "user_id" = \''.$this->user_info["user_id"].'\''.$is_active_q.' ORDER BY "code_created" ASC');
         } catch (PDOException $err) {
             $this->print_error("ユーザーの招待コード一覧の取得に失敗しました。".$err->getMessage());
             return FALSE;
