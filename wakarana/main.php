@@ -1271,13 +1271,17 @@ class wakarana extends wakarana_common {
             $invite_code = strtoupper($invite_code);
             
             try {
-                $stmt = $this->db_obj->prepare('UPDATE "wakarana_invite_codes" SET "is_active" = 0 WHERE "invite_code" = :invite_code');
+                $stmt = $this->db_obj->prepare('UPDATE "wakarana_invite_codes" SET "is_active" = 0 WHERE "invite_code" = :invite_code AND "is_active" = 1');
                 
                 $stmt->bindValue(":invite_code", $invite_code, PDO::PARAM_STR);
                 
                 $stmt->execute();
             } catch (PDOException $err) {
                 $this->print_error("招待コードの無効化に失敗しました。".$err->getMessage());
+                return FALSE;
+            }
+            
+            if ($stmt->rowCount() === 0) {
                 return FALSE;
             }
         }
@@ -2702,7 +2706,7 @@ class wakarana_user extends wakarana_data_item {
     function delete_all_tokens () {
         $this->wakarana->begin_transaction();
         
-        if ($this->delete_session_tokens() && $this->delete_one_time_tokens() && $this->delete_email_address_verification_code() && $this->delete_invite_codes() && $this->delete_password_reset_token() && $this->delete_2sv_token()) {
+        if ($this->delete_session_tokens() && $this->delete_one_time_tokens() && $this->delete_email_address_verification_code() && $this->disable_invite_code() && $this->delete_password_reset_token() && $this->delete_2sv_token()) {
             $this->wakarana->commit_transaction();
             
             return TRUE;
@@ -3147,14 +3151,33 @@ class wakarana_user extends wakarana_data_item {
     }
     
     
-    function delete_invite_codes () {
-        $this->wakarana->disable_expired_invite_codes();
+    function disable_invite_code ($invite_code = NULL, $delete_user_id = FALSE) {
+        $delete_user_id_q = $delete_user_id ? ', "user_id" = NULL' : '';
         
-        try {
-            $this->wakarana->db_obj->exec('DELETE FROM "wakarana_invite_codes" WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
-        } catch (PDOException $err) {
-            $this->print_error("ユーザーが発行した招待コードの削除に失敗しました。".$err->getMessage());
-            return FALSE;
+        if (is_null($invite_code)) {
+            try {
+                $this->wakarana->db_obj->exec('UPDATE "wakarana_invite_codes" SET "is_active" = 0'.$delete_user_id_q.' WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
+            } catch (PDOException $err) {
+                $this->print_error("招待コードの無効化に失敗しました。".$err->getMessage());
+                return FALSE;
+            }
+        } else {
+            $invite_code = strtoupper($invite_code);
+            
+            try {
+                $stmt = $this->wakarana->db_obj->prepare('UPDATE "wakarana_invite_codes" SET "is_active" = 0'.$delete_user_id_q.' WHERE "invite_code" = :invite_code AND "user_id" = \''.$this->user_info["user_id"].'\' AND "is_active" = 1');
+                
+                $stmt->bindValue(":invite_code", $invite_code, PDO::PARAM_STR);
+                
+                $stmt->execute();
+            } catch (PDOException $err) {
+                $this->print_error("招待コードの無効化に失敗しました。".$err->getMessage());
+                return FALSE;
+            }
+            
+            if ($stmt->rowCount() === 0) {
+                return FALSE;
+            }
         }
         
         return TRUE;

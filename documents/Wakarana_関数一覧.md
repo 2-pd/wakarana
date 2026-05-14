@@ -700,7 +700,7 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
   
 **$invite_code** : 招待コード文字列。NULLを指定した場合は全ての招待コードを無効化する。  
   
-**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUEを返し、指定された招待コードが有効なものでなかった場合や失敗した場合はFALSEを返す。
 
 
 #### wakarana::disable_expired_invite_codes()
@@ -1414,14 +1414,14 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
 **返り値** : 成功した場合は、各招待コードの情報が格納された連想配列("invite_code"(招待コード本体)以外の項目はwakarana::get_invite_code_infoの返り値と同様)を発行日時の古い順に並べた配列(招待コードがない場合は空配列)を返す。失敗した場合はFALSEを返す。
 
 
-#### wakarana_user::disable_invite_code($invite_code, $delete_user_id=FALSE)
+#### wakarana_user::disable_invite_code($invite_code=NULL, $delete_user_id=FALSE)
 ユーザーが発行した招待コードを無効化する。  
 ユーザーの削除時にはこの関数が自動的に実行され、当該ユーザーが発行した全ての招待コードが無効化される。  
   
 **$invite_code** : 招待コード文字列。NULLを指定した場合は全ての招待コードを無効化する。  
 **$delete_user_id** : TRUEを指定した場合、招待コードの情報からユーザーIDを消去する(ユーザーの削除時以外には常にFALSEとすることを推奨)  
   
-**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUEを返し、指定された招待コードが当該ユーザーの発行した有効なものでなかった場合や失敗した場合はFALSEを返す。
 
 
 #### wakarana_user::create_password_reset_token()
