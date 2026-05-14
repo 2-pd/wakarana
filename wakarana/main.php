@@ -1316,6 +1316,29 @@ class wakarana extends wakarana_common {
     }
     
     
+    function get_invited_users ($invite_code) {
+        try {
+            $stmt = $this->db_obj->prepare('SELECT "user_id", "password", "user_name", "user_created", "last_updated", "last_access", "status", "totp_key" FROM "wakarana_users" WHERE "used_invite_code" = :used_invite_code ORDER BY "user_created" ASC');
+            
+            $stmt->bindValue(":used_invite_code", $invite_code, PDO::PARAM_STR);
+            
+            $stmt->execute();
+        } catch (PDOException $err) {
+            $this->print_error("招待コードを使用したユーザーの取得に失敗しました。".$err->getMessage());
+            return -1;
+        }
+        
+        $users_info = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        $users = array();
+        foreach ($users_info as $user_info) {
+            $users[] = $this->new_wakarana_user($user_info);
+        }
+        
+        return $users;
+    }
+    
+    
     function reset_password ($token, $new_password) {
         $this->rejection_reason = NULL;
         

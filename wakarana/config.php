@@ -344,7 +344,7 @@ class wakarana_config extends wakarana_common {
             }
             
             $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_u3" ON "wakarana_users"("user_created")');
-            $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_u4" ON "wakarana_users"("used_invite_code")');
+            $this->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_u4" ON "wakarana_users"("used_invite_code", "user_created")');
         } catch (PDOException $err) {
             $this->print_error("テーブル wakarana_users のインデックス作成処理に失敗しました。".$err->getMessage());
             return FALSE;
