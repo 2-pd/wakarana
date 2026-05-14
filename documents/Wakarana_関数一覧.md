@@ -717,6 +717,14 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
 **返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
+#### wakarana::get_invited_users($invite_code)
+招待コードを使用して登録されたユーザーの一覧を取得する。  
+  
+**$invite_code** : 招待コード文字列。大文字小文字を区別しない。  
+  
+**返り値** : 成功した場合はwakarana_userインスタンスを登録日時(招待コード使用日時と同義)の古い順に配列で返す。失敗した場合はFALSEを返す。
+
+
 #### wakarana::reset_password($token, $new_password)
 パスワードリセット用トークンに紐付けられたアカウントのパスワードを再設定する。使用済みトークンは自動的に削除される。  
   

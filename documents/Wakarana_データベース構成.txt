@@ -21,7 +21,7 @@ _/_/_/_/ データベース _/_/_/_/
   UNIQUE INDEX `wakarana_idx_u0` LOWER(`user_id`) ※PostgreSQLのみ
   INDEX `wakarana_idx_u1` LOWER(`user_name`) [`user_name`]
   INDEX `wakarana_idx_u3` `user_created`
-  INDEX `wakarana_idx_u4` `used_invite_code`
+  INDEX `wakarana_idx_u4` `used_invite_code`, `user_created`
   
  ※`last_access`については、処理の高速化の観点から、あえてインデックスを指定しない。
 
