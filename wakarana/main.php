@@ -1119,6 +1119,31 @@ class wakarana extends wakarana_common {
     }
     
     
+    function get_invite_code_expire ($invite_code) {
+        $invite_code = strtoupper($invite_code);
+        $ts = time();
+        
+        try {
+            $stmt = $this->db_obj->prepare('SELECT "code_expire" FROM "wakarana_invite_codes" WHERE "invite_code" = :invite_code AND "is_active" = 1 AND ("code_expire" IS NULL OR "code_expire" >= \''.date("Y-m-d H:i:s", $ts).'\')');
+            
+            $stmt->bindValue(":invite_code", $invite_code, PDO::PARAM_STR);
+            
+            $stmt->execute();
+        } catch (PDOException $err) {
+            $this->print_error("招待コードの有効期限確認に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        $code_expire = $stmt->fetchColumn();
+        
+        if (empty($code_expire)) {
+            return $code_expire;
+        } else {
+            return strtotime($code_expire) - $ts;
+        }
+    }
+    
+    
     function get_invite_code_info ($invite_code) {
         $this->disable_expired_invite_codes();
         
