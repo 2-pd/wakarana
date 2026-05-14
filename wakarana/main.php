@@ -1164,6 +1164,26 @@ class wakarana extends wakarana_common {
     }
     
     
+    function count_invite_codes ($is_active = NULL) {
+        if (is_null($is_active)) {
+            $is_active_q = '';
+        } else {
+            $this->disable_expired_invite_codes();
+            
+            $is_active_q = ' WHERE "is_active" = '.($is_active ? '1' : '0');
+        }
+        
+        try {
+            $stmt = $this->db_obj->query('SELECT COUNT(*) FROM "wakarana_invite_codes"'.$is_active_q);
+        } catch (PDOException $err) {
+            $this->print_error("招待コード数の取得に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        return $stmt->fetchColumn();
+    }
+    
+    
     function get_invite_codes ($is_active = NULL, $start = 0, $limit = 100, $asc = TRUE) {
         $this->disable_expired_invite_codes();
         
