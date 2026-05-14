@@ -146,9 +146,9 @@ class wakarana extends wakarana_common {
         
         try {
             if ($this->config["use_sqlite"]) {
-                $stmt = $this->db_obj->query("SELECT * FROM `wakarana_users` WHERE `user_id` = '".$user_id."'");
+                $stmt = $this->db_obj->query("SELECT `user_id`, `password`, `user_name`, `user_created`, `last_updated`, `last_access`, `status`, `totp_key` FROM `wakarana_users` WHERE `user_id` = '".$user_id."'");
             } else {
-                $stmt = $this->db_obj->query('SELECT * FROM "wakarana_users" WHERE LOWER("user_id") = \''.strtolower($user_id).'\'');
+                $stmt = $this->db_obj->query('SELECT "user_id", "password", "user_name", "user_created", "last_updated", "last_access", "status", "totp_key" FROM "wakarana_users" WHERE LOWER("user_id") = \''.strtolower($user_id).'\'');
             }
         } catch (PDOException $err) {
             $this->print_error("ユーザー情報の取得に失敗しました。".$err->getMessage());
@@ -208,7 +208,7 @@ class wakarana extends wakarana_common {
         }
         
         try {
-            $stmt = $this->db_obj->query('SELECT * FROM "wakarana_users" ORDER BY '.$order_by_q.' '.($asc ? 'ASC' : 'DESC').' LIMIT '.$limit.' OFFSET '.$start);
+            $stmt = $this->db_obj->query('SELECT "user_id", "password", "user_name", "user_created", "last_updated", "last_access", "status", "totp_key" FROM "wakarana_users" ORDER BY '.$order_by_q.' '.($asc ? 'ASC' : 'DESC').' LIMIT '.$limit.' OFFSET '.$start);
         } catch (PDOException $err) {
             $this->print_error("ユーザー一覧の取得に失敗しました。".$err->getMessage());
             return FALSE;
@@ -920,7 +920,7 @@ class wakarana extends wakarana_common {
     
     function search_users_with_email_address ($email_address) {
         try {
-            $stmt = $this->db_obj->prepare('SELECT "wakarana_users".* FROM "wakarana_users", "wakarana_user_email_addresses" WHERE "wakarana_user_email_addresses"."email_address" = :email_address AND "wakarana_users"."user_id" = "wakarana_user_email_addresses"."user_id"');
+            $stmt = $this->db_obj->prepare('SELECT "u"."user_id", "u"."password", "u"."user_name", "u"."user_created", "u"."last_updated", "u"."last_access", "u"."status", "u"."totp_key" FROM "wakarana_users" AS "u", "wakarana_user_email_addresses" WHERE "wakarana_user_email_addresses"."email_address" = :email_address AND "u"."user_id" = "wakarana_user_email_addresses"."user_id"');
             
             $stmt->bindValue(":email_address", $email_address, PDO::PARAM_STR);
             
@@ -1429,7 +1429,7 @@ class wakarana extends wakarana_common {
         }
         
         try {
-            $stmt = $this->db_obj->prepare('SELECT "wakarana_users".* FROM "wakarana_users", "'.$table_name.'" WHERE "'.$table_name.'"."custom_field_name" = \''.$custom_field_name.'\' AND "'.$table_name.'"."custom_field_value" = :custom_field_value AND "wakarana_users"."user_id" = "'.$table_name.'"."user_id"');
+            $stmt = $this->db_obj->prepare('SELECT "u"."user_id", "u"."password", "u"."user_name", "u"."user_created", "u"."last_updated", "u"."last_access", "u"."status", "u"."totp_key" FROM "wakarana_users" AS "u", "'.$table_name.'" WHERE "'.$table_name.'"."custom_field_name" = \''.$custom_field_name.'\' AND "'.$table_name.'"."custom_field_value" = :custom_field_value AND "u"."user_id" = "'.$table_name.'"."user_id"');
             
             $stmt->bindValue(":custom_field_value", $custom_field_value);
             
@@ -3466,7 +3466,7 @@ class wakarana_role extends wakarana_data_item {
     
     function get_users () {
         try {
-            $stmt = $this->wakarana->db_obj->query('SELECT "wakarana_users".* FROM "wakarana_users", "wakarana_user_roles" WHERE "wakarana_user_roles"."role_id" = \''.$this->role_info["role_id"].'\' AND "wakarana_users"."user_id" = "wakarana_user_roles"."user_id" ORDER BY "wakarana_user_roles"."user_id" ASC');
+            $stmt = $this->wakarana->db_obj->query('SELECT "u"."user_id", "u"."password", "u"."user_name", "u"."user_created", "u"."last_updated", "u"."last_access", "u"."status", "u"."totp_key" FROM "wakarana_users" AS "u", "wakarana_user_roles" WHERE "wakarana_user_roles"."role_id" = \''.$this->role_info["role_id"].'\' AND "u"."user_id" = "wakarana_user_roles"."user_id" ORDER BY "wakarana_user_roles"."user_id" ASC');
         } catch (PDOException $err) {
             $this->print_error("ロールを持つユーザーの一覧取得に失敗しました。".$err->getMessage());
             return FALSE;
@@ -4048,7 +4048,7 @@ class wakarana_permission extends wakarana_data_item {
         $action = strtolower($action);
         
         try {
-            $stmt = $this->wakarana->db_obj->query('SELECT "wakarana_users".* FROM "wakarana_users", "wakarana_user_permission_caches" WHERE "wakarana_user_permission_caches"."resource_id" = \''.$this->permission_info["resource_id"].'\' AND "wakarana_user_permission_caches"."action" = \''.$action.'\' AND "wakarana_users"."user_id" = "wakarana_user_permission_caches"."user_id" ORDER BY "wakarana_user_permission_caches"."user_id" ASC');
+            $stmt = $this->wakarana->db_obj->query('SELECT "u"."user_id", "u"."password", "u"."user_name", "u"."user_created", "u"."last_updated", "u"."last_access", "u"."status", "u"."totp_key" FROM "wakarana_users" AS "u", "wakarana_user_permission_caches" WHERE "wakarana_user_permission_caches"."resource_id" = \''.$this->permission_info["resource_id"].'\' AND "wakarana_user_permission_caches"."action" = \''.$action.'\' AND "u"."user_id" = "wakarana_user_permission_caches"."user_id" ORDER BY "wakarana_user_permission_caches"."user_id" ASC');
         } catch (PDOException $err) {
             $this->print_error("権限を持つユーザーの一覧取得に失敗しました。".$err->getMessage());
             return FALSE;
@@ -4204,7 +4204,7 @@ class wakarana_permitted_value extends wakarana_data_item {
         }
         
         try {
-            $stmt = $this->wakarana->db_obj->query('SELECT "wakarana_users".*, "wakarana_user_permitted_value_caches"."maximum_permitted_value" FROM "wakarana_users", "wakarana_user_permitted_value_caches" WHERE "wakarana_user_permitted_value_caches"."permitted_value_id" = \''.$this->permitted_value_info["permitted_value_id"].'\' '.$min_q.$max_q.'AND "wakarana_user_permitted_value_caches"."user_id" = "wakarana_users"."user_id" ORDER BY "wakarana_user_permitted_value_caches"."maximum_permitted_value" DESC');
+            $stmt = $this->wakarana->db_obj->query('SELECT "u"."user_id", "u"."password", "u"."user_name", "u"."user_created", "u"."last_updated", "u"."last_access", "u"."status", "u"."totp_key", "wakarana_user_permitted_value_caches"."maximum_permitted_value" FROM "wakarana_users" AS "u", "wakarana_user_permitted_value_caches" WHERE "wakarana_user_permitted_value_caches"."permitted_value_id" = \''.$this->permitted_value_info["permitted_value_id"].'\' '.$min_q.$max_q.'AND "wakarana_user_permitted_value_caches"."user_id" = "u"."user_id" ORDER BY "wakarana_user_permitted_value_caches"."maximum_permitted_value" DESC');
         } catch (PDOException $err) {
             $this->print_error("権限値を持つユーザーの一覧取得に失敗しました。".$err->getMessage());
             return FALSE;
