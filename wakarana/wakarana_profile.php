@@ -24,6 +24,7 @@ class wakarana_profile {
         }
         
         $this->load_config($this->base_path."/wakarana_config.ini");
+        $this->load_custom_field_definitions($this->base_path."/wakarana_custom_fields.json");
         
         $this->email_domain_blacklist = NULL;
         $this->transaction_cnt = 0;
@@ -61,7 +62,7 @@ class wakarana_profile {
     }
     
     
-    protected function connect_db () {
+    function connect_db () {
         try {
             if ($this->config["use_sqlite"]) {
                 $this->db_obj = new PDO("sqlite:".$this->base_path."/".$this->config["sqlite_db_file"]);
@@ -129,10 +130,23 @@ class wakarana_profile {
     }
     
     
-    protected function disconnect_db () {
+    function disconnect_db () {
         $this->db_obj = NULL;
         
         return TRUE;
+    }
+    
+    
+    function load_custom_field_definitions ($custom_fields_file_path) {
+        if (file_exists($custom_fields_file_path)) {
+            $this->custom_fields = @json_decode(file_get_contents($custom_fields_file_path), TRUE);
+            
+            if (is_null($this->custom_fields)) {
+                throw new Exception("カスタムフィールド設定ファイル ".$custom_fields_file_path." は破損しています。");
+            }
+        } else {
+            throw new Exception("カスタムフィールド設定ファイル ".$custom_fields_file_path." が存在しません。");
+        }
     }
     
     

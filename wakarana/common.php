@@ -20,20 +20,6 @@ class wakarana_common {
     private $last_error_text = NULL;
     
     
-    function __construct ($base_dir = NULL) {
-        $custom_fields_path = $this->base_path."/wakarana_custom_fields.json";
-        if (file_exists($custom_fields_path)) {
-            $this->custom_fields = json_decode(file_get_contents($custom_fields_path), TRUE);
-            
-            if (is_null($this->custom_fields)) {
-                $this->print_error("カスタムフィールド設定ファイル ".$custom_fields_path." は破損しています。");
-            }
-        } else {
-            $this->print_error("カスタムフィールド設定ファイル ".$custom_fields_path." が存在しません。");
-        }
-    }
-    
-    
     static function check_id_string ($id, $length = 60) {
         if (gettype($id) === "string" && preg_match("/\A[0-9A-Za-z_]{1,".$length."}\z/u", $id)) {
             return TRUE;
