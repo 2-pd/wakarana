@@ -17,15 +17,6 @@
 */
 
 class wakarana_common {
-    protected $base_path;
-    
-    protected $config;
-    protected $db_obj;
-    protected $custom_fields;
-    protected $email_domain_blacklist;
-    
-    private $transaction_cnt;
-    
     private $last_error_text = NULL;
     
     
@@ -51,9 +42,6 @@ class wakarana_common {
         } else {
             $this->print_error("カスタムフィールド設定ファイル ".$custom_fields_path." が存在しません。");
         }
-        
-        $this->email_domain_blacklist = NULL;
-        $this->transaction_cnt = 0;
     }
     
     
@@ -77,100 +65,6 @@ class wakarana_common {
         } else {
             return FALSE;
         }
-    }
-    
-    
-    protected function update_base_path ($base_dir) {
-        if (empty($base_dir)) {
-            $this->base_path = __DIR__;
-        } else {
-            $this->base_path = realpath($base_dir);
-            
-            if (!is_dir($this->base_path)) {
-                $this->print_error("指定されたベースフォルダは存在しません。");
-            }
-        }
-    }
-    
-    
-    protected function connect_db () {
-        try {
-            if ($this->config["use_sqlite"]) {
-                $this->db_obj = new PDO("sqlite:".$this->base_path."/".$this->config["sqlite_db_file"]);
-                
-                $this->db_obj->setAttribute(PDO::ATTR_TIMEOUT, 5);
-            } else {
-                $this->db_obj = new PDO("pgsql:dbname=".$this->config["pg_db"].";host=".$this->config["pg_host"]." options='--client_encoding=UTF8';port=".$this->config["pg_port"].";user=".$this->config["pg_user"].";password=".$this->config["pg_pass"]);
-            }
-            
-            return TRUE;
-        } catch (PDOException $err) {
-            $this->print_error("データベース接続に失敗しました。".$err->getMessage());
-            
-            return FALSE;
-        }
-    }
-    
-    
-    function begin_transaction () {
-        try {
-            if ($this->transaction_cnt === 0) {
-                $this->db_obj->exec("BEGIN");
-            } else {
-                $this->db_obj->exec("SAVEPOINT sp_".($this->transaction_cnt + 1));
-            }
-        } catch (PDOException $err) {
-            $this->print_error("トランザクションの開始に失敗しました。".$err->getMessage());
-            
-            return FALSE;
-        }
-        
-        $this->transaction_cnt++;
-        
-        return TRUE;
-    }
-    
-    
-    function commit_transaction () {
-        try {
-            if ($this->transaction_cnt === 1) {
-                $this->db_obj->exec("COMMIT");
-            } else {
-                $this->db_obj->exec("RELEASE SAVEPOINT sp_".$this->transaction_cnt);
-            }
-        } catch (PDOException $err) {
-            $this->print_error("トランザクションの完了に失敗しました。".$err->getMessage());
-            
-            return FALSE;
-        }
-        
-        $this->transaction_cnt--;
-        
-        return TRUE;
-    }
-    
-    
-    function rollback_transaction () {
-        try {
-            if ($this->transaction_cnt === 1) {
-                $this->db_obj->exec("ROLLBACK");
-            } else {
-                $this->db_obj->exec("ROLLBACK TO SAVEPOINT sp_".$this->transaction_cnt);
-            }
-        } catch (PDOException $err) {
-            $this->print_error("トランザクションの取り消しに失敗しました。".$err->getMessage());
-            
-            return FALSE;
-        }
-        
-        $this->transaction_cnt--;
-        
-        return TRUE;
-    }
-    
-    
-    protected function disconnect_db () {
-        $this->db_obj = NULL;
     }
     
     
@@ -243,23 +137,9 @@ class wakarana_common {
     }
     
     
-    protected function load_email_domain_blacklist () {
-        if (is_null($this->email_domain_blacklist)) {
-            $this->email_domain_blacklist = file($this->base_path."/wakarana_email_domain_blacklist.conf", FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-        }
-    }
-    
-    
     function check_email_domain ($domain_name) {
         $this->load_email_domain_blacklist();
         
         return !in_array(mb_strtolower(trim($domain_name)), $this->email_domain_blacklist);
-    }
-    
-    
-    function get_email_domain_blacklist () {
-        $this->load_email_domain_blacklist();
-        
-        return $this->email_domain_blacklist;
     }
 }

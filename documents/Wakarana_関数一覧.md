@@ -56,32 +56,39 @@ wakarana_config.iniの設定値を変更する場合はこの関数でなく wak
 
 #### wakarana_profile::connect_db()
 wakarana_config.iniの設定に基づき、データベースに接続する。  
+失敗した場合は例外が発生する。  
   
-**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUEを返す。
 
 
 #### wakarana_profile::begin_transaction()
 データベースでトランザクションを開始する。  
 既に別のトランザクションが実行中の場合、内部的には新規のトランザクションではなくセーブポイントを作成する。  
+失敗した場合は例外が発生する。  
   
-**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUEを返す。
 
 
 #### wakarana_profile::commit_transaction()
 データベースで最後に開始したトランザクション(またはセーブポイント)を完了する。  
 まだ解決していないトランザクションが存在する場合、内部的にはセーブポイントを破棄するのみでコミット処理を行わない。  
+失敗した場合は例外が発生する。  
   
-**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUEを返す。
 
 
 #### wakarana_profile::rollback_transaction()
 データベースで最後に開始したトランザクション(またはセーブポイント)での変更内容を取り消す。  
+失敗した場合は例外が発生する。  
   
-**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUEを返す。
 
 
 #### wakarana_profile::disconnect_db()
-データベースとの接続を終了する。
+データベースとの接続を終了する。  
+失敗した場合は例外が発生する。  
+  
+**返り値** : 成功した場合はTRUEを返す。
 
 
 #### wakarana_profile::load_custom_field_definitions($custom_fields_file_path)
@@ -122,6 +129,7 @@ wakarana_custom_fields.jsonを読み込み、その内容をインスタンス�
 メールドメインブラックリストがインスタンス変数に読み込まれていなければ、ファイルから読み込む。  
   
 **返り値** : メールドメインブラックリストのドメインを配列で返す。メールドメインブラックリストの読み込みに失敗した場合はFALSEを返す。
+
 
 #### wakarana_profile::set_email_domain_blacklist($email_domain_blacklist)
 メールドメインブラックリストを一時的に上書きする。  
