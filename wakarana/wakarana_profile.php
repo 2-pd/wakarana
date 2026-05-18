@@ -187,7 +187,7 @@ class wakarana_profile {
     }
     
     
-    function remove_email_domain_from_blacklist($list_index) {
+    function remove_email_domain_from_blacklist ($list_index) {
         $before_processing_blacklist_count = count($this->email_domain_blacklist);
         
         if ($list_index >= $before_processing_blacklist_count) {
@@ -199,6 +199,13 @@ class wakarana_profile {
         if (count($this->email_domain_blacklist) === $before_processing_blacklist_count) {
             return FALSE;
         }
+        
+        return TRUE;
+    }
+    
+    
+    function set_email_domain_blacklist ($email_domain_blacklist) {
+        $this->email_domain_blacklist = $email_domain_blacklist;
         
         return TRUE;
     }
