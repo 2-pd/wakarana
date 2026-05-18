@@ -133,6 +133,26 @@ wakarana_custom_fields.jsonを読み込み、その内容をインスタンス�
 **返り値** : メールドメインブラックリストのドメインを配列で返す。メールドメインブラックリストの読み込みに失敗した場合はFALSEを返す。
 
 
+#### wakarana_profile::add_email_domain_to_blacklist($damain_name)
+ドメインをメールドメインブラックリストへ一時的に追加する。  
+この関数によりストレージ上のwakarana_email_domain_blacklist.confが変更されるわけではない。  
+wakarana_email_domain_blacklist.confの内容を変更する場合はこの関数でなく wakarana_config::add_email_domain_to_blacklist を使用すべきである。  
+  
+**$domain_name** : ブラックリストに追加するドメイン名  
+  
+**返り値** : 成功した場合はTRUEを返す。
+
+
+#### wakarana_profile::remove_email_domain_from_blacklist($damain_name)
+ドメインをメールドメインブラックリストから一時的に除外する。  
+この関数によりストレージ上のwakarana_email_domain_blacklist.confが変更されるわけではない。  
+wakarana_email_domain_blacklist.confの内容を変更する場合はこの関数でなく wakarana_config::remove_email_domain_from_blacklist を使用すべきである。  
+  
+**$domain_name** : ブラックリストから除外するドメイン名  
+  
+**返り値** : 成功した場合はTRUE、もとからブラックリストに登録されていないドメインだった場合や失敗した場合はFALSEを返す。
+
+
 #### wakarana_profile::set_email_domain_blacklist($email_domain_blacklist)
 メールドメインブラックリストを一時的に上書きする。  
 この関数によりストレージ上のwakarana_email_domain_blacklist.confが変更されるわけではない。  
@@ -140,7 +160,7 @@ wakarana_email_domain_blacklist.confの内容を変更する場合はこの関�
   
 **$email_domain_blacklist** : メールドメイン文字列を格納した配列  
   
-**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUEを返す。
 
 
 
@@ -226,12 +246,6 @@ wakarana_config.iniの設定値を取得する。
 **$domain_name** : ドメイン名  
   
 **返り値** : ドメインがメールドメインブラックリストに含まれない場合はTRUE、含まれればFALSEを返す。
-
-
-#### wakarana_common::get_email_domain_blacklist()
-メールドメインブラックリストを配列で取得する。  
-  
-**返り値** : メールドメインブラックリストのドメインを配列で返す。
 
 
 ## class wakarana

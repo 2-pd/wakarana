@@ -178,4 +178,11 @@ class wakarana_profile {
         
         return $this->email_domain_blacklist;
     }
+    
+    
+    function add_email_domain_to_blacklist ($damain_name) {
+        $this->email_domain_blacklist[] = mb_strtolower($damain_name);
+        
+        return TRUE;
+    }
 }
