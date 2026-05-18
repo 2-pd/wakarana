@@ -31,8 +31,11 @@ Wakaranaのバージョン番号文字列
 
 #### wakarana_profile::load_config($config_path)
 wakarana_config.iniを読み込み、その内容をインスタンス変数に保持する。  
+失敗した場合は例外が発生する。  
   
-**$config_path** : wakarana_config.iniのパス
+**$config_path** : wakarana_config.iniのパス  
+  
+**返り値** : 成功した場合はTRUEを返す。
 
 
 #### wakarana_profile::get_config($key)
@@ -86,7 +89,6 @@ wakarana_config.iniの設定に基づき、データベースに接続する。
 
 #### wakarana_profile::disconnect_db()
 データベースとの接続を終了する。  
-失敗した場合は例外が発生する。  
   
 **返り値** : 成功した場合はTRUEを返す。
 

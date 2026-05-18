@@ -23,8 +23,21 @@ class wakarana_profile {
             }
         }
         
+        $this->load_config($this->base_path."/wakarana_config.ini");
+        
         $this->email_domain_blacklist = NULL;
         $this->transaction_cnt = 0;
+    }
+    
+    
+    function load_config ($config_path) {
+        $this->config = @parse_ini_file($config_path, FALSE, INI_SCANNER_TYPED);
+        
+        if (empty($this->config)) {
+            throw new Exception("設定ファイル ".$config_path." の読み込みに失敗しました。");
+        }
+        
+        return TRUE;
     }
     
     
@@ -98,6 +111,8 @@ class wakarana_profile {
     
     protected function disconnect_db () {
         $this->db_obj = NULL;
+        
+        return TRUE;
     }
     
     

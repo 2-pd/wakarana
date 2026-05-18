@@ -21,17 +21,6 @@ class wakarana_common {
     
     
     function __construct ($base_dir = NULL) {
-        if (empty($this->base_path)) {
-            $this->update_base_path($base_dir);
-        }
-        
-        $config_path = $this->base_path."/wakarana_config.ini";
-        $this->config = @parse_ini_file($config_path, FALSE, INI_SCANNER_TYPED);
-        
-        if (empty($this->config)) {
-            $this->print_error("設定ファイル ".$config_path." の読み込みに失敗しました。");
-        }
-        
         $custom_fields_path = $this->base_path."/wakarana_custom_fields.json";
         if (file_exists($custom_fields_path)) {
             $this->custom_fields = json_decode(file_get_contents($custom_fields_path), TRUE);
@@ -41,20 +30,6 @@ class wakarana_common {
             }
         } else {
             $this->print_error("カスタムフィールド設定ファイル ".$custom_fields_path." が存在しません。");
-        }
-    }
-    
-    
-    function __get ($name) {
-        switch ($name) {
-            case "base_path":
-                return $this->base_path;
-            case "config":
-                return $this->config;
-            case "db_obj":
-                return $this->db_obj;
-            case "custom_fields":
-                return $this->custom_fields;
         }
     }
     
