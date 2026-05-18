@@ -292,7 +292,9 @@ wakaranaインスタンスを生成し、データベースに接続する。
 
 
 #### wakarana::__debugInfo()
-wakaranaインスタンスがダンプされたときに実行される。ベースフォルダのパスのみを返す。  
+wakaranaインスタンスがダンプされたときに実行される。  
+  
+**返り値** : ベースフォルダのパスのみを返す。
 
 
 #### wakarana::get_rejection_reason()
@@ -1001,6 +1003,13 @@ wakarana_userクラスとwakarana_roleクラス、wakarana_permissionクラス�
 
 ### 関数
 
+#### ◆ wakarana_data_item::__construct($wakarana_profile)
+コンストラクタ。wakarana_data_itemクラスの派生クラスをインスタンス化した際に呼び出される。  
+◆クラス内呼び出し専用。  
+  
+**$wakarana_profile** : wakarana_profileクラスのインスタンス
+
+
 #### ◆ wakarana_data_item::print_error($error_text)
 エラーメッセージを出力する。  
 ただし、このwakarana_data_item(及びその子孫)クラスのインスタンスを生成したwakaranaインスタンスに読み込まれているwakarana_config.iniにおいてdisplay_errors=trueが設定されていなければ出力しない。  
@@ -1021,11 +1030,17 @@ wakarana_data_itemの派生クラス。ユーザーの情報を読み書きす�
 
 ### 関数
 
-#### wakarana_user::__construct($wakarana, $user_info)
+#### wakarana_user::__construct($wakarana_profile, $user_info)
 コンストラクタ。wakarana::get_user実行時に呼び出されるものであり、直接インスタンス化するべきではない。  
   
-**$wakarana** : 呼び出し元のwakaranaインスタンス  
+**$wakarana_profile** : 呼び出し元のwakaranaインスタンスと共有するwakarana_profileクラスのインスタンス  
 **$user_info** : ユーザー情報("user_id"(ユーザーID)、"user_name"(ユーザー名)、"password"(ハッシュ化されたパスワード)、"user_created"(アカウント作成日時)、"last_updated"(アカウント情報更新日時)、"last_access"(最終アクセス日時)、"status"(アカウントが使用可能か停止されているか)、"totp_key"(TOTPワンタイムパスワード生成キー))を格納した連想配列
+
+
+#### wakarana_user::__debugInfo()
+wakarana_data_itemインスタンスがダンプされたときに実行される。  
+  
+**返り値** : ユーザー情報と呼び出し元wakaranaインスタンスのベースフォルダのみを返す。
 
 
 #### ☆ wakarana_user::free($wakarana_user)
@@ -1597,11 +1612,17 @@ wakarana_data_itemの派生クラス。ロールの情報を読み書きする�
 
 ### 関数
 
-#### wakarana_role::__construct($wakarana, $role_info)
+#### wakarana_role::__construct($wakarana_profile, $role_info)
 コンストラクタ。wakarana::get_roleの実行時に呼び出されるものであり、直接インスタンス化するべきではない。  
   
-**$wakarana** : 呼び出し元のwakaranaインスタンス  
+**$wakarana_profile** : 呼び出し元のwakaranaインスタンスと共有するwakarana_profileクラスのインスタンス  
 **$role_info** : ロール情報("role_id"(ロールID)、"role_name"(ロール名)、"role_description"(ロールの説明文))を格納した連想配列
+
+
+#### wakarana_role::__debugInfo()
+wakarana_data_itemインスタンスがダンプされたときに実行される。  
+  
+**返り値** : ロール情報と呼び出し元wakaranaインスタンスのベースフォルダのみを返す。
 
 
 #### wakarana_role::get_id()
@@ -1728,11 +1749,17 @@ wakarana_data_itemの派生クラス。権限の情報を読み書きするた�
 
 ### 関数
 
-#### wakarana_permission::__construct($wakarana, $permission_info)
+#### wakarana_permission::__construct($wakarana_profile, $permission_info)
 コンストラクタ。wakarana::get_permissionの実行時に呼び出されるものであり、直接インスタンス化するべきではない。  
   
-**$wakarana** : 呼び出し元のwakaranaインスタンス  
+**$wakarana_profile** : 呼び出し元のwakaranaインスタンスと共有するwakarana_profileクラスのインスタンス  
 **$permission_info** : 権限情報("resource_id"(権限対象リソースID)、"permission_name"(権限名)、"permission_description"(権限の説明文))を格納した連想配列
+
+
+#### wakarana_permission::__debugInfo()
+wakarana_data_itemインスタンスがダンプされたときに実行される。  
+  
+**返り値** : 権限情報と呼び出し元wakaranaインスタンスのベースフォルダのみを返す。
 
 
 #### wakarana_permission::get_resource_id()
@@ -1828,11 +1855,17 @@ wakarana_data_itemの派生クラス。権限値の情報を読み書きする�
 
 ### 関数
 
-#### wakarana_permitted_value::__construct($wakarana, $permitted_value_info)
+#### wakarana_permitted_value::__construct($wakarana_profile, $permitted_value_info)
 コンストラクタ。wakarana::get_permitted_valueの実行時に呼び出されるものであり、直接インスタンス化するべきではない。  
   
-**$wakarana** : 呼び出し元のwakaranaインスタンス  
+**$wakarana_profile** : 呼び出し元のwakaranaインスタンスと共有するwakarana_profileクラスのインスタンス  
 **$permitted_value_info** : 権限値情報("permitted_value_id"(権限値ID)、"permitted_value_name"(権限値名)、"permitted_value_description"(権限値の説明文))を格納した連想配列
+
+
+#### wakarana_permitted_value::__debugInfo()
+wakarana_data_itemインスタンスがダンプされたときに実行される。  
+  
+**返り値** : 権限値情報と呼び出し元wakaranaインスタンスのベースフォルダのみを返す。
 
 
 #### wakarana_permitted_value::get_id()
