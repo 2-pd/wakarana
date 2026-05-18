@@ -185,4 +185,21 @@ class wakarana_profile {
         
         return TRUE;
     }
+    
+    
+    function remove_email_domain_from_blacklist($list_index) {
+        $before_processing_blacklist_count = count($this->email_domain_blacklist);
+        
+        if ($list_index >= $before_processing_blacklist_count) {
+            return FALSE;
+        }
+        
+        array_splice($this->email_domain_blacklist, $list_index, 1);
+        
+        if (count($this->email_domain_blacklist) === $before_processing_blacklist_count) {
+            return FALSE;
+        }
+        
+        return TRUE;
+    }
 }

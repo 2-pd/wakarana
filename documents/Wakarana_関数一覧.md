@@ -143,14 +143,14 @@ wakarana_email_domain_blacklist.confの内容を変更する場合はこの関�
 **返り値** : 成功した場合はTRUEを返す。
 
 
-#### wakarana_profile::remove_email_domain_from_blacklist($damain_name)
-ドメインをメールドメインブラックリストから一時的に除外する。  
+#### wakarana_profile::remove_email_domain_from_blacklist($list_index)
+メールドメインブラックリストから指定した行にあるドメインを一時的に除外する。  
 この関数によりストレージ上のwakarana_email_domain_blacklist.confが変更されるわけではない。  
 wakarana_email_domain_blacklist.confの内容を変更する場合はこの関数でなく wakarana_config::remove_email_domain_from_blacklist を使用すべきである。  
   
-**$domain_name** : ブラックリストから除外するドメイン名  
+**$list_index** : ブラックリストから除外する行の番号(0始まり)  
   
-**返り値** : 成功した場合はTRUE、もとからブラックリストに登録されていないドメインだった場合や失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
 #### wakarana_profile::set_email_domain_blacklist($email_domain_blacklist)
