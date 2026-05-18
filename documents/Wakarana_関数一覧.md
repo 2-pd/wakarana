@@ -123,7 +123,7 @@ wakarana_custom_fields.jsonを読み込み、その内容をインスタンス�
 **$custom_field_name** : カスタムフィールド名  
 **$custom_field_definition** : カスタムフィールドの情報を格納した連想配列(キーは、"is_numeric"、"maximum_length"、"records_per_user"、"allow_nonunique_value")  
   
-**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUEを返す。
 
 
 #### wakarana_profile::get_email_domain_blacklist()
