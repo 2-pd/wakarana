@@ -15,7 +15,21 @@
  *    https://www.2pd.jp/license/
  *
 */
-require_once(dirname(__FILE__)."/common.php");
+
+require_once(dirname(__FILE__)."/wakarana_profile.php");
+require_once(dirname(__FILE__)."/wakarana_common.php");
+
+
+spl_autoload_register(function ($class_name) {
+    if (str_starts_with($class_name, "wakarana_")) {
+        $module_path = dirname(__FILE__)."/".$class_name.".php";
+        
+        if (file_exists($module_path)) {
+            require $module_path;
+        }
+    }
+});
+
 
 define("WAKARANA_STATUS_DISABLE", 0);
 define("WAKARANA_STATUS_NORMAL", 1);
