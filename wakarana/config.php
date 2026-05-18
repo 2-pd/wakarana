@@ -45,7 +45,10 @@ define("WAKARANA_CONFIG_ORIGINAL",
     );
 
 
-class wakarana_config extends wakarana_common {
+class wakarana_config {
+    use wakarana_common;
+    
+    
     function __construct ($base_dir = NULL) {
         $this->update_base_path($base_dir);
         
@@ -60,9 +63,8 @@ class wakarana_config extends wakarana_common {
         if (!file_exists($this->base_path."/wakarana_email_domain_blacklist.conf")) {
             touch($this->base_path."/wakarana_email_domain_blacklist.conf");
         }
-        
-        parent::__construct($base_dir);
     }
+    
     
     protected function save () {
         $file_h = @fopen($this->base_path."/wakarana_config.ini","w");

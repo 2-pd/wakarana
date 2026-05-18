@@ -1,5 +1,20 @@
 <?php
-/*Wakarana main.php*/
+/*_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ *
+ *  Wakarana
+*/
+    define("WAKARANA_VERSION", "26.05-1");
+/*
+ *_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ *
+ *  LICENSE
+ *
+ *   このソフトウェアは、無権利創作宣言に基づき著作権放棄されています。
+ *   営利・非営利を問わず、自由にご利用いただくことが可能です。
+ *
+ *    https://www.2pd.jp/license/
+ *
+*/
 require_once(dirname(__FILE__)."/common.php");
 
 define("WAKARANA_STATUS_DISABLE", 0);
@@ -16,7 +31,10 @@ define("WAKARANA_ADMIN_ROLE", "__admin__");
 define("WAKARANA_BASE32_TABLE", array("A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "2", "3", "4", "5", "6", "7"));
 
 
-class wakarana extends wakarana_common {
+class wakarana {
+    use wakarana_common;
+    
+    
     public $user_ids = array();
     public $role_ids = array();
     public $resource_ids = array();
@@ -26,7 +44,6 @@ class wakarana extends wakarana_common {
     
     
     function __construct ($base_dir = NULL) {
-        parent::__construct($base_dir);
         $this->connect_db();
     }
     
