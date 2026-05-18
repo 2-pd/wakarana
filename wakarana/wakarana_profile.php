@@ -41,6 +41,15 @@ class wakarana_profile {
     }
     
     
+    function get_config ($key) {
+        if (isset($this->config[$key])) {
+            return $this->config[$key];
+        } else {
+            return NULL;
+        }
+    }
+    
+    
     protected function connect_db () {
         try {
             if ($this->config["use_sqlite"]) {

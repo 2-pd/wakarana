@@ -174,12 +174,6 @@ wakarana_common::print_errorにて直近に入力されたエラーメッセー�
 **返り値** : 識別名として使用可能な文字列ならTRUEを、それ以外の場合はFALSEを返す。
 
 
-#### wakarana_common::get_config_keys()
-wakarana_config.iniの項目名一覧を取得する。  
-  
-**返り値** : wakarana_config.iniの項目名一覧を配列で返す。
-
-
 #### wakarana_common::get_config_value($key)
 wakarana_config.iniの設定値を取得する。  
   
