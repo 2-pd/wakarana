@@ -150,6 +150,11 @@ class wakarana_profile {
     }
     
     
+    function get_custom_field_names () {
+        return array_keys($this->custom_fields);
+    }
+    
+    
     function get_email_domain_blacklist () {
         if (is_null($this->email_domain_blacklist)) {
             $this->email_domain_blacklist = @file($this->base_path."/wakarana_email_domain_blacklist.conf", FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
