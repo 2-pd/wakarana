@@ -54,7 +54,7 @@ wakarana_config.iniの設定値を変更する場合はこの関数でなく wak
 **$key** : wakarana_config.iniの項目名  
 **$value** : 設定する値  
   
-**返り値** : wakarana_config.iniの設定値を返す。存在しない項目名が指定された場合はFALSEを返す。
+**返り値** : 成功した場合はTRUEを返し、存在しない項目名が指定された場合はFALSEを返す。
 
 
 #### wakarana_profile::connect_db()
