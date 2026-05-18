@@ -7,7 +7,7 @@ class wakarana_data_item {
     private $last_error_text = NULL;
     
     
-    function __construct ($wakarana_profile) {
+    protected function __construct ($wakarana_profile) {
         $this->profile = $wakarana_profile;
     }
     

@@ -1030,10 +1030,10 @@ wakarana_data_itemの派生クラス。ユーザーの情報を読み書きす�
 
 ### 関数
 
-#### wakarana_user::__construct($wakarana_profile, $user_info)
+#### wakarana_user::__construct($wakarana, $user_info)
 コンストラクタ。wakarana::get_user実行時に呼び出されるものであり、直接インスタンス化するべきではない。  
   
-**$wakarana_profile** : 呼び出し元のwakaranaインスタンスと共有するwakarana_profileクラスのインスタンス  
+**$wakarana** : 呼び出し元のwakaranaインスタンス  
 **$user_info** : ユーザー情報("user_id"(ユーザーID)、"user_name"(ユーザー名)、"password"(ハッシュ化されたパスワード)、"user_created"(アカウント作成日時)、"last_updated"(アカウント情報更新日時)、"last_access"(最終アクセス日時)、"status"(アカウントが使用可能か停止されているか)、"totp_key"(TOTPワンタイムパスワード生成キー))を格納した連想配列
 
 
