@@ -17,7 +17,7 @@ class wakarana_user extends wakarana_data_item {
     
     
     function __debugInfo () {
-        return array("base_path" => $this->profile->base_path, "user_info" => $this->user_info);
+        return array("base_path" => $this->profile->get_base_path(), "user_info" => $this->user_info);
     }
     
     

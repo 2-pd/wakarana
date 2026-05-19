@@ -2,10 +2,10 @@
 /*Wakarana wakarana_profile.php*/
 
 class wakarana_profile {
-    protected $base_path;
+    private $base_path;
     
     private $config;
-    protected $db_obj;
+    public $db_obj;
     private $custom_fields;
     private $email_domain_blacklist;
     
@@ -28,6 +28,11 @@ class wakarana_profile {
         
         $this->email_domain_blacklist = NULL;
         $this->transaction_cnt = 0;
+    }
+    
+    
+    function get_base_path () {
+        return $this->$base_path;
     }
     
     

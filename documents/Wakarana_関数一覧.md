@@ -29,6 +29,12 @@ Wakaranaのバージョン番号文字列
 **$base_dir** : wakarana_config.iniのあるフォルダのパス。省略時はwakarana_profile.phpのあるフォルダを使用する。
 
 
+#### wakarana_profile::get_base_path()
+インスタンス生成時に指定されたベースフォルダのパスを取得する。  
+  
+**返り値** : インスタンスが参照しているwakarana_config.iniがあるフォルダの絶対パスを返す。
+
+
 #### wakarana_profile::load_config($config_path)
 wakarana_config.iniを読み込み、その内容をインスタンス変数に保持する。  
 失敗した場合は例外が発生する。  
