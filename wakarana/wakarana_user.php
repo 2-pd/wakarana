@@ -1,19 +1,17 @@
 <?php
-/*Wakarana wakarana_profile.php*/
-require_once(dirname(__FILE__)."wakarana_data_item.php");
+/*Wakarana wakarana_user.php*/
+
+require_once(dirname(__FILE__)."/wakarana_data_item.php");
 
 
 class wakarana_user extends wakarana_data_item {
-    private $wakarana;
-    
     protected $user_info;
     protected $rejection_reason = NULL;
     
     
     function __construct ($wakarana, $user_info) {
-        parent::__construct($wakarana->profile);
+        parent::__construct($wakarana);
         
-        $this->wakarana = $wakarana;
         $this->user_info = $user_info;
     }
     

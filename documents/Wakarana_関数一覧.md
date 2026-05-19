@@ -1003,11 +1003,11 @@ wakarana_userクラスとwakarana_roleクラス、wakarana_permissionクラス�
 
 ### 関数
 
-#### ◆ wakarana_data_item::__construct($wakarana_profile)
+#### ◆ wakarana_data_item::__construct($wakarana)
 コンストラクタ。wakarana_data_itemクラスの派生クラスをインスタンス化した際に呼び出される。  
 ◆クラス内呼び出し専用。  
   
-**$wakarana_profile** : wakarana_profileクラスのインスタンス
+**$wakarana** : wakaranaクラスのインスタンス
 
 
 #### ◆ wakarana_data_item::print_error($error_text)
@@ -1612,10 +1612,10 @@ wakarana_data_itemの派生クラス。ロールの情報を読み書きする�
 
 ### 関数
 
-#### wakarana_role::__construct($wakarana_profile, $role_info)
+#### wakarana_role::__construct($wakarana, $role_info)
 コンストラクタ。wakarana::get_roleの実行時に呼び出されるものであり、直接インスタンス化するべきではない。  
   
-**$wakarana_profile** : 呼び出し元のwakaranaインスタンスと共有するwakarana_profileクラスのインスタンス  
+**$wakarana** : 呼び出し元のwakaranaインスタンス  
 **$role_info** : ロール情報("role_id"(ロールID)、"role_name"(ロール名)、"role_description"(ロールの説明文))を格納した連想配列
 
 
@@ -1749,10 +1749,10 @@ wakarana_data_itemの派生クラス。権限の情報を読み書きするた�
 
 ### 関数
 
-#### wakarana_permission::__construct($wakarana_profile, $permission_info)
+#### wakarana_permission::__construct($wakarana, $permission_info)
 コンストラクタ。wakarana::get_permissionの実行時に呼び出されるものであり、直接インスタンス化するべきではない。  
   
-**$wakarana_profile** : 呼び出し元のwakaranaインスタンスと共有するwakarana_profileクラスのインスタンス  
+**$wakarana** : 呼び出し元のwakaranaインスタンス  
 **$permission_info** : 権限情報("resource_id"(権限対象リソースID)、"permission_name"(権限名)、"permission_description"(権限の説明文))を格納した連想配列
 
 
@@ -1855,10 +1855,10 @@ wakarana_data_itemの派生クラス。権限値の情報を読み書きする�
 
 ### 関数
 
-#### wakarana_permitted_value::__construct($wakarana_profile, $permitted_value_info)
+#### wakarana_permitted_value::__construct($wakarana, $permitted_value_info)
 コンストラクタ。wakarana::get_permitted_valueの実行時に呼び出されるものであり、直接インスタンス化するべきではない。  
   
-**$wakarana_profile** : 呼び出し元のwakaranaインスタンスと共有するwakarana_profileクラスのインスタンス  
+**$wakarana** : 呼び出し元のwakaranaインスタンス  
 **$permitted_value_info** : 権限値情報("permitted_value_id"(権限値ID)、"permitted_value_name"(権限値名)、"permitted_value_description"(権限値の説明文))を格納した連想配列
 
 

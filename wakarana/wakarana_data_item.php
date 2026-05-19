@@ -3,12 +3,14 @@
 
 class wakarana_data_item {
     protected $profile;
+    protected $wakarana;
     
     private $last_error_text = NULL;
     
     
-    protected function __construct ($wakarana_profile) {
-        $this->profile = $wakarana_profile;
+    protected function __construct ($wakarana) {
+        $this->profile = $wakarana->profile;
+        $this->wakarana = $wakarana;
     }
     
     
