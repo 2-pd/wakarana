@@ -2,6 +2,8 @@
 /*Wakarana wakarana_profile.php*/
 
 class wakarana_profile {
+    private static $instances = array();
+    
     private $base_path;
     
     private $config;
@@ -12,22 +14,33 @@ class wakarana_profile {
     private $transaction_cnt;
     
     
-    function __construct ($base_dir = NULL) {
-        if (empty($base_dir)) {
-            $this->base_path = __DIR__;
-        } else {
-            $this->base_path = realpath($base_dir);
-            
-            if (!is_dir($this->base_path)) {
-                throw new Exception("指定されたベースフォルダは存在しません。");
-            }
-        }
+    private function __construct ($base_dir) {
+        $this->base_path = $base_dir;
         
         $this->load_config($this->base_path."/wakarana_config.ini");
         $this->load_custom_field_definitions($this->base_path."/wakarana_custom_fields.json");
         
         $this->email_domain_blacklist = NULL;
         $this->transaction_cnt = 0;
+    }
+    
+    
+    static function of ($base_dir = NULL) {
+        if (empty($base_dir)) {
+            $base_path = __DIR__;
+        } else {
+            $base_path = realpath($base_dir);
+            
+            if (!is_dir($base_path)) {
+                throw new Exception("指定されたベースフォルダは存在しません。");
+            }
+        }
+        
+        if (!array_key_exists($base_path, self::$instances)) {
+            self::$instances[$base_path] = new self($base_path);
+        }
+        
+        return self::$instances[$base_path];
     }
     
     

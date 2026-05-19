@@ -22,11 +22,23 @@ Wakaranaのバージョン番号文字列
 
 ### 関数
 
-#### wakarana_profile::__construct($base_dir=NULL)
+#### ◆ wakarana_profile::__construct($base_dir)
 指定したフォルダにある設定ファイル類をロードし、wakarana_profileインスタンスを生成する。  
 設定ファイルがロードできなかった場合は例外が発生する。  
+◆クラス内呼び出し専用。  
   
-**$base_dir** : wakarana_config.iniのあるフォルダのパス。省略時はwakarana_profile.phpのあるフォルダを使用する。
+**$base_dir** : wakarana_config.iniのあるフォルダの絶対パス。
+
+
+#### ☆ wakarana_profile::of($base_dir=NULL)
+指定したフォルダにある設定ファイル類をロードし、wakarana_profileインスタンスを生成して返す。  
+既に同じフォルダを指定して生成されたインスタンスが存在する場合は、新しいインスタンスを生成せずに既存のものを返す。  
+設定ファイルがロードできなかった場合は例外が発生する。  
+☆staticメソッド。  
+  
+**$base_dir** : wakarana_config.iniのあるフォルダの相対パスまたは絶対パス。省略時はwakarana_profile.phpのあるフォルダを使用する。  
+  
+**返り値** : 成功した場合はwakarana_profileインスタンスを返す。
 
 
 #### wakarana_profile::get_base_path()
