@@ -173,8 +173,10 @@ class wakarana_profile {
     }
     
     
-    function get_custom_field_definition ($custom_field_name) {
-        if (isset($this->custom_fields[$custom_field_name])) {
+    function get_custom_field_definition ($custom_field_name = NULL) {
+        if (is_null($custom_field_name)) {
+            return $this->custom_fields;
+        } elseif (isset($this->custom_fields[$custom_field_name])) {
             return $this->custom_fields[$custom_field_name];
         } else {
             return NULL;
@@ -183,7 +185,13 @@ class wakarana_profile {
     
     
     function set_custom_field_definition ($custom_field_name, $custom_field_definition) {
-        $this->custom_fields[$custom_field_name] = $custom_field_definition;
+        if (!is_null($custom_field_definition)) {
+            $this->custom_fields[$custom_field_name] = $custom_field_definition;
+        } elseif (isset($this->custom_fields[$custom_field_name])) {
+            unset($this->custom_fields[$custom_field_name]);
+        } else {
+            return NULL;
+        }
         
         return TRUE;
     }

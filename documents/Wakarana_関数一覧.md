@@ -125,10 +125,10 @@ wakarana_custom_fields.jsonを読み込み、その内容をインスタンス�
 **返り値** : wakarana_custom_fields.jsonのキー一覧を配列で返す。
 
 
-#### wakarana_profile::get_custom_field_definition($custom_field_name)
+#### wakarana_profile::get_custom_field_definition($custom_field_name=NULL)
 指定したカスタムフィールドの設定を連想配列で取得する。  
   
-**$custom_field_name** : カスタムフィールド名  
+**$custom_field_name** : カスタムフィールド名。NULLを指定した場合は全てのカスタムフィールドの設定をカスタムフィールド名をキーとする連想配列にまとめて返す。  
   
 **返り値** : 指定したカスタムフィールド名に対応する設定がwakarana_custom_fields.jsonに存在する場合、その内容を連想配列(キーは、"is_numeric"、"maximum_length"、"records_per_user"、"allow_nonunique_value")で返す。カスタムフィールド名が存在しなければNULLを返す。
 
@@ -136,12 +136,12 @@ wakarana_custom_fields.jsonを読み込み、その内容をインスタンス�
 #### wakarana_profile::set_custom_field_definition($custom_field_name, $custom_field_definition)
 指定したカスタムフィールドの設定を一時的に上書きする。  
 この関数によりストレージ上のwakarana_custom_fields.jsonが変更されるわけではない。  
-カスタムフィールドの設定を変更する場合は、この関数でなく wakarana_config::add_custom_field または wakarana_config::add_custom_numerical_field を使用すべきである。  
+カスタムフィールドの設定を変更する場合は、この関数でなく wakarana_config::create_custom_field または wakarana_config::create_custom_numerical_field を使用すべきである。  
   
 **$custom_field_name** : カスタムフィールド名  
-**$custom_field_definition** : カスタムフィールドの情報を格納した連想配列(キーは、"is_numeric"、"maximum_length"、"records_per_user"、"allow_nonunique_value")  
+**$custom_field_definition** : カスタムフィールドの情報を格納した連想配列(キーは、"is_numeric"、"maximum_length"、"records_per_user"、"allow_nonunique_value")。NULLを指定した場合は当該のカスタムフィールドを削除する。  
   
-**返り値** : 成功した場合はTRUEを返す。
+**返り値** : 成功した場合はTRUEを返す。存在しないカスタムフィールドを削除しようとしたときはNULLを返す。
 
 
 #### wakarana_profile::get_email_domain_blacklist()
@@ -1995,7 +1995,7 @@ wakarana_config.iniの設定値を全て既定値に戻す。
 **返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
-#### wakarana_config::add_custom_field($custom_field_name, $maximum_length=500, $records_per_user=1, $allow_nonunique_value=TRUE, $save_now=TRUE)
+#### wakarana_config::create_custom_field($custom_field_name, $maximum_length=500, $records_per_user=1, $allow_nonunique_value=TRUE, $save_now=TRUE)
 文字列型カスタムフィールドを追加する。  
 既に存在するカスタムフィールド名を指定した場合はその設定を上書きする。  
   
@@ -2008,7 +2008,7 @@ wakarana_config.iniの設定値を全て既定値に戻す。
 **返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
-#### wakarana_config::add_custom_numerical_field($custom_field_name, $records_per_user=1, $allow_nonunique_value=TRUE, $save_now=TRUE)
+#### wakarana_config::create_custom_numerical_field($custom_field_name, $records_per_user=1, $allow_nonunique_value=TRUE, $save_now=TRUE)
 数値型カスタムフィールドを追加する。  
 既に存在するカスタムフィールド名を指定した場合はその設定を上書きする。  
   
