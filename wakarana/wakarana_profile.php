@@ -14,11 +14,11 @@ class wakarana_profile {
     private $transaction_cnt;
     
     
-    private function __construct ($base_dir) {
-        $this->base_path = $base_dir;
+    private function __construct ($base_path) {
+        $this->base_path = $base_path;
         
-        $this->load_config($this->base_path."/wakarana_config.ini");
-        $this->load_custom_field_definitions($this->base_path."/wakarana_custom_fields.json");
+        $this->load_config($base_path."/wakarana_config.ini");
+        $this->load_custom_field_definitions($base_path."/wakarana_custom_fields.json");
         
         $this->email_domain_blacklist = NULL;
         $this->transaction_cnt = 0;
@@ -45,7 +45,7 @@ class wakarana_profile {
     
     
     function get_base_path () {
-        return $this->$base_path;
+        return $this->base_path;
     }
     
     

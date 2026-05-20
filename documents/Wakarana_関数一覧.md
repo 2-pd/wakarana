@@ -22,12 +22,12 @@ Wakaranaのバージョン番号文字列
 
 ### 関数
 
-#### ◆ wakarana_profile::__construct($base_dir)
+#### ◆ wakarana_profile::__construct($base_path)
 指定したフォルダにある設定ファイル類をロードし、wakarana_profileインスタンスを生成する。  
 設定ファイルがロードできなかった場合は例外が発生する。  
 ◆クラス内呼び出し専用。  
   
-**$base_dir** : wakarana_config.iniのあるフォルダの絶対パス。
+**$base_path** : wakarana_config.iniのあるフォルダの絶対パス。
 
 
 #### ☆ wakarana_profile::of($base_dir=NULL)
@@ -1950,9 +1950,10 @@ wakarana_config.iniの既定値一覧。
 ### 関数
 
 #### wakarana_config::__construct($base_dir=NULL)
-ベースフォルダに各種設定ファイル(wakarana_config.ini、wakarana_custom_fields.json、wakarana_email_domain_blacklist.conf)がなければ作成し、wakarana_common::__constructを実行する。  
+ベースフォルダに各種設定ファイル(wakarana_config.ini、wakarana_custom_fields.json、wakarana_email_domain_blacklist.conf)がなければ作成し、wakarana_configインスタンスを生成する。  
+ベースフォルダが存在しなかった場合や設定ファイルが破損していた場合は例外が発生する。  
   
-**$base_dir** : wakarana_config.iniのある(または作成する)フォルダのパス。省略時はcommon.phpのあるフォルダを使用する。
+**$base_dir** : wakarana_config.iniのある(または作成する)フォルダの相対パスまたは絶対パス。省略時はwakarana_config.phpのあるフォルダを使用する。
 
 
 #### ◆ wakarana_config::save()
@@ -1968,6 +1969,15 @@ wakarana_config.iniの設定値を変更する。
 **$key** : wakarana_config.iniの項目名  
 **$value** : 設定する値  
 **$save_now** : FALSEならwakarana_config.iniへの上書きは保留する。  
+  
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
+#### ◆ wakarana_config::initialize_config($config_file_path)
+指定されたファイルをwakarana_config.iniの既定値で上書きする。  
+◆クラス内呼び出し専用。  
+  
+**$config_file_path** : 保存先設定ファイルのパス  
   
 **返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
