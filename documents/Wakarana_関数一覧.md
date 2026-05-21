@@ -1065,11 +1065,11 @@ wakarana::get_user実行時に呼び出されるものであり、直接呼び�
 
 
 #### ☆ wakarana_user::free($wakarana_user)
-wakarana_userインスタンスをメモリから解放する。  
-wakarana_userインスタンスはこの関数以外の方法(unsetや変数の上書き)では解放されない。  
+wakarana_userインスタンスを破棄してメモリを解放する。  
+wakarana_userインスタンスはこの関数以外の方法(unsetや変数の上書き)では破棄されない。  
 ☆staticメソッド。  
   
-**$wakarana_user** : メモリから解放するwakarana_userインスタンス
+**$wakarana_user** : メモリ上から破棄するwakarana_userインスタンス
 
 
 #### wakarana_user::get_rejection_reason()
@@ -1659,6 +1659,14 @@ wakarana::get_role実行時に呼び出されるものであり、直接呼び�
 **$role_info** : ロール情報("role_id"(ロールID)、"role_name"(ロール名)、"role_description"(ロールの説明文))を格納した連想配列
   
 **返り値** : 成功した場合はwakarana_roleインスタンスを返す。
+
+
+#### ☆ wakarana_role::free($wakarana_role)
+wakarana_roleインスタンスを破棄してメモリを解放する。  
+wakarana_roleインスタンスはこの関数以外の方法(unsetや変数の上書き)では破棄されない。  
+☆staticメソッド。  
+  
+**$wakarana_role** : メモリ上から破棄するwakarana_roleインスタンス
 
 
 #### wakarana_role::get_id()

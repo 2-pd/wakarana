@@ -38,6 +38,12 @@ class wakarana_role extends wakarana_data_item {
     }
     
     
+    static function free (&$wakarana_role) {
+        unset(self::$instances[$wakarana_role->profile->get_base_path()][$wakarana_role->role_info["role_id"]]);
+        $wakarana_role = NULL;
+    }
+    
+    
     function get_id () {
         return $this->role_info["role_id"];
     }
