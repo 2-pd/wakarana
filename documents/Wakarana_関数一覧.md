@@ -1814,6 +1814,14 @@ wakarana::get_permission実行時に呼び出されるものであり、直接�
 **返り値** : 成功した場合はwakarana_permissionインスタンスを返す。
 
 
+#### ☆ wakarana_permission::free($wakarana_permission)
+wakarana_permissionインスタンスを破棄してメモリを解放する。  
+wakarana_permissionインスタンスはこの関数以外の方法(unsetや変数の上書き)では破棄されない。  
+☆staticメソッド。  
+  
+**$wakarana_permission** : メモリ上から破棄するwakarana_permissionインスタンス
+
+
 #### wakarana_permission::get_resource_id()
 権限の対象リソースIDを取得する。  
   

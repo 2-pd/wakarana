@@ -38,6 +38,12 @@ class wakarana_permission extends wakarana_data_item {
     }
     
     
+    static function free (&$wakarana_permission) {
+        unset(self::$instances[$wakarana_permission->profile->get_base_path()][$wakarana_permission->permission_info["resource_id"]]);
+        $wakarana_permission = NULL;
+    }
+    
+    
     function get_resource_id () {
         return $this->permission_info["resource_id"];
     }
