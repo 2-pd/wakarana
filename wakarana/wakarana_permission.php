@@ -5,13 +5,36 @@ require_once(__DIR__."/wakarana_data_item.php");
 
 
 class wakarana_permission extends wakarana_data_item {
+    private static $instances = array();
+    
+    
     protected $permission_info;
     
     
-    function __construct ($wakarana_profile, $wakarana, $permission_info) {
+    protected function __construct ($wakarana_profile, $wakarana, $permission_info) {
         parent::__construct($wakarana_profile, $wakarana);
         
         $this->permission_info = $permission_info;
+    }
+    
+    
+    function __debugInfo () {
+        return array("base_path" => $this->profile->get_base_path(), "resource_id" => $this->permission_info["resource_id"], "permission_name" => $this->permission_info["permission_name"]);
+    }
+    
+    
+    static function of ($wakarana_profile, $wakarana, $permission_info) {
+        $base_path = $wakarana_profile->get_base_path();
+        
+        if (!isset(self::$instances[$base_path])) {
+            self::$instances[$base_path] = array();
+        }
+        
+        if (!isset(self::$instances[$base_path][$permission_info["resource_id"]])) {
+            self::$instances[$base_path][$permission_info["resource_id"]] = new self($wakarana_profile, $wakarana, $permission_info);
+        }
+        
+        return self::$instances[$base_path][$permission_info["resource_id"]];
     }
     
     

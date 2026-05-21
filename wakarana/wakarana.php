@@ -19,7 +19,6 @@ class wakarana {
     protected const BASE32_TABLE = array("A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "2", "3", "4", "5", "6", "7");
     
     
-    public $resource_ids = array();
     public $permitted_value_ids = array();
     
     protected $rejection_reason = NULL;
@@ -443,15 +442,6 @@ class wakarana {
     }
     
     
-    function new_wakarana_permission ($permission_info) {
-        if (!isset($this->resource_ids[$permission_info["resource_id"]])) {
-            $this->resource_ids[$permission_info["resource_id"]] = new wakarana_permission($this->profile, $this, $permission_info);
-        }
-        
-        return $this->resource_ids[$permission_info["resource_id"]];
-    }
-    
-    
     function get_permission ($resource_id) {
         if (!self::check_resource_id_string($resource_id)) {
             return FALSE;
@@ -469,7 +459,7 @@ class wakarana {
         $permission_info = $stmt->fetch(PDO::FETCH_ASSOC);
         
         if (!empty($permission_info)) {
-            return $this->new_wakarana_permission($permission_info);
+            return wakarana_permission::of($this->profile, $this, $permission_info);
         } else {
             return FALSE;
         }
@@ -488,7 +478,7 @@ class wakarana {
         
         $permissions = array();
         foreach ($permissions_info as $permission_info) {
-            $permissions[] = $this->new_wakarana_permission($permission_info);
+            $permissions[] = wakarana_permission::of($this->profile, $this, $permission_info);
         }
         
         return $permissions;
