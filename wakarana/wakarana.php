@@ -172,7 +172,7 @@ class wakarana {
     }
     
     
-    function count_user () {
+    function count_users () {
         try {
             $stmt = $this->profile->db_obj->query('SELECT COUNT(*) FROM "wakarana_users"');
         } catch (PDOException $err) {
@@ -933,7 +933,7 @@ class wakarana {
             
             $stmt->execute();
         } catch (PDOException $err) {
-            $this->print_error("メールアドレスの確認に失敗しました。".$err->getMessage());
+            $this->print_error("ユーザーの検索に失敗しました。".$err->getMessage());
             return -1;
         }
         
@@ -1465,7 +1465,7 @@ class wakarana {
             
             $stmt->execute();
         } catch (PDOException $err) {
-            $this->print_error("カスタムフィールド値の確認に失敗しました。".$err->getMessage());
+            $this->print_error("ユーザーの検索に失敗しました。".$err->getMessage());
             return -1;
         }
         
@@ -1810,6 +1810,10 @@ class wakarana {
     
     function add_permitted_value ($permitted_value_id, $permitted_value_name, $permitted_value_description = "") { //2027年5月以降のバージョンで削除
         return $this->create_permitted_value($permitted_value_id, $permitted_value_name, $permitted_value_description);
+    }
+    
+    function count_user () {
+        return $this->count_users();
     }
     
     function delete_login_tokens ($expire = -1) { //2027年6月以降のバージョンで削除
