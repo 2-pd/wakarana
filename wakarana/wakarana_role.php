@@ -5,13 +5,36 @@ require_once(__DIR__."/wakarana_data_item.php");
 
 
 class wakarana_role extends wakarana_data_item {
+    private static $instances = array();
+    
+    
     protected $role_info;
     
     
-    function __construct ($wakarana_profile, $wakarana, $role_info) {
+    protected function __construct ($wakarana_profile, $wakarana, $role_info) {
         parent::__construct($wakarana_profile, $wakarana);
         
         $this->role_info = $role_info;
+    }
+    
+    
+    function __debugInfo () {
+        return array("base_path" => $this->profile->get_base_path(), "role_id" => $this->role_info["role_id"], "role_name" => $this->role_info["role_name"]);
+    }
+    
+    
+    static function of ($wakarana_profile, $wakarana, $role_info) {
+        $base_path = $wakarana_profile->get_base_path();
+        
+        if (!isset(self::$instances[$base_path])) {
+            self::$instances[$base_path] = array();
+        }
+        
+        if (!isset(self::$instances[$base_path][$role_info["role_id"]])) {
+            self::$instances[$base_path][$role_info["role_id"]] = new self($wakarana_profile, $wakarana, $role_info);
+        }
+        
+        return self::$instances[$base_path][$role_info["role_id"]];
     }
     
     

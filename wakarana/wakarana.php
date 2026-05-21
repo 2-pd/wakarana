@@ -19,7 +19,6 @@ class wakarana {
     protected const BASE32_TABLE = array("A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "2", "3", "4", "5", "6", "7");
     
     
-    public $role_ids = array();
     public $resource_ids = array();
     public $permitted_value_ids = array();
     
@@ -343,15 +342,6 @@ class wakarana {
     }
     
     
-    function new_wakarana_role ($role_info) {
-        if (!isset($this->role_ids[$role_info["role_id"]])) {
-            $this->role_ids[$role_info["role_id"]] = new wakarana_role($this->profile, $this, $role_info);
-        }
-        
-        return $this->role_ids[$role_info["role_id"]];
-    }
-    
-    
     function get_role ($role_id) {
         if (!self::check_id_string($role_id)) {
             return FALSE;
@@ -369,7 +359,7 @@ class wakarana {
         $role_info = $stmt->fetch(PDO::FETCH_ASSOC);
         
         if (!empty($role_info)) {
-            return $this->new_wakarana_role($role_info);
+            return wakarana_role::of($this->profile, $this, $role_info);
         } else {
             return FALSE;
         }
@@ -388,7 +378,7 @@ class wakarana {
         
         $roles = array();
         foreach ($roles_info as $role_info) {
-            $roles[] = $this->new_wakarana_role($role_info);
+            $roles[] = wakarana_role::of($this->profile, $this, $role_info);
         }
         
         return $roles;

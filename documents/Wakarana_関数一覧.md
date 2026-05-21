@@ -438,13 +438,6 @@ Base32方式でエンコードされた文字列をバイナリにデコード�
 **拒絶理由文字列** : "invalid_invite_code"(有効な招待コードではない)、"invalid_user_id"(ユーザーIDに使用できない文字が含まれる)、"user_already_exists"(ユーザーアカウントが既に存在している)、"weak_password"(弱いパスワードである)
 
 
-#### wakarana::new_wakarana_role($role_info)
-wakarana_roleインスタンスを生成する。  
-この関数はクラス外から直接呼び出すべきではない。  
-  
-**$role_info** : ロール情報("role_id"(ロールID)、"role_name"(ロール名)、"role_description"(ロールの説明文))を格納した連想配列。
-
-
 #### wakarana::get_role($role_id)
 ロールのwakarana_roleインスタンスを生成する。  
   
@@ -1640,8 +1633,9 @@ wakarana_data_itemの派生クラス。ロールの情報を読み書きする�
 
 ### 関数
 
-#### wakarana_role::__construct($wakarana_profile, $wakarana, $role_info)
-コンストラクタ。wakarana::get_roleの実行時に呼び出されるものであり、直接インスタンス化するべきではない。  
+#### ◆ wakarana_role::__construct($wakarana_profile, $wakarana, $role_info)
+コンストラクタ。wakarana_data_item::__constructを実行し、ロール情報もインスタンス変数に保持する。  
+◆クラス内呼び出し専用。  
   
 **$wakarana_profile** : ロールの情報が格納されたデータベースへの接続を持つwakarana_profileインスタンス  
 **$wakarana** : 呼び出し元のwakaranaインスタンス  
@@ -1651,7 +1645,20 @@ wakarana_data_itemの派生クラス。ロールの情報を読み書きする�
 #### wakarana_role::__debugInfo()
 wakarana_data_itemインスタンスがダンプされたときに実行される。  
   
-**返り値** : ロール情報と呼び出し元wakaranaインスタンスのベースフォルダのみを返す。
+**返り値** : ロールIDとロール名、呼び出し元wakaranaインスタンスのベースフォルダのみを返す。
+
+
+#### ☆ wakarana_role::of($wakarana_profile, $wakarana, $role_info)
+ロール情報を受け取り、wakarana_roleインスタンスを生成して返す。  
+wakarana::get_role実行時に呼び出されるものであり、直接呼び出すべきではない。  
+既に同じロールに対応するインスタンスが存在する場合は、新しいインスタンスを生成せずに既存のものを返す。  
+☆staticメソッド。  
+  
+**$wakarana_profile** : ロールの情報が格納されたデータベースへの接続を持つwakarana_profileインスタンス  
+**$wakarana** : 呼び出し元のwakaranaインスタンス  
+**$role_info** : ロール情報("role_id"(ロールID)、"role_name"(ロール名)、"role_description"(ロールの説明文))を格納した連想配列
+  
+**返り値** : 成功した場合はwakarana_roleインスタンスを返す。
 
 
 #### wakarana_role::get_id()

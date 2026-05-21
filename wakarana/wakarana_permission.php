@@ -216,7 +216,7 @@ class wakarana_permission extends wakarana_data_item {
         
         $roles = array();
         foreach ($roles_info as $role_info) {
-            $roles[] = $this->wakarana->new_wakarana_role($role_info);
+            $roles[] = wakarana_role::of($this->profile, $this->wakarana, $role_info);
         }
         
         return $roles;

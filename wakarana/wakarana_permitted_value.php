@@ -93,7 +93,7 @@ class wakarana_permitted_value extends wakarana_data_item {
             $role_data = array("permitted_value" => $role_info["permitted_value"]);
             
             unset($role_info["permitted_value"]);
-            $role_data["role"] = $this->wakarana->new_wakarana_role($role_info);
+            $role_data["role"] = wakarana_role::of($this->profile, $this->wakarana, $role_info);
             
             $roles[] = $role_data;
         }
