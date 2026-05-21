@@ -511,13 +511,6 @@ Base32方式でエンコードされた文字列をバイナリにデコード�
 **拒絶理由文字列** : "invalid_resource_id"(リソースIDに使用できない文字が含まれる)、"resource_already_exists"(権限対象リソースが既に存在している)、"parent_resource_not_exists"(親となる権限対象リソースが存在しない)
 
 
-#### ◆ wakarana::new_wakarana_permitted_value($permitted_value_info)
-wakarana_permitted_valueインスタンスを生成する。  
-◆クラス内呼び出し専用。  
-  
-**$permitted_value_info** : 権限値情報("permitted_value_id"(権限値ID)、"permitted_value_name"(権限値名)、"permitted_value_description"(権限値の説明文))を格納した連想配列。
-
-
 #### wakarana::get_permitted_value($permitted_value_id)
 権限値のwakarana_permitted_valueインスタンスを生成する。  
   
@@ -1915,8 +1908,9 @@ wakarana_data_itemの派生クラス。権限値の情報を読み書きする�
 
 ### 関数
 
-#### wakarana_permitted_value::__construct($wakarana_profile, $wakarana, $permitted_value_info)
-コンストラクタ。wakarana::get_permitted_valueの実行時に呼び出されるものであり、直接インスタンス化するべきではない。  
+#### ◆ wakarana_permitted_value::__construct($wakarana_profile, $wakarana, $permitted_value_info)
+コンストラクタ。wakarana_data_item::__constructを実行し、権限値情報もインスタンス変数に保持する。  
+◆クラス内呼び出し専用。  
   
 **$wakarana_profile** : 権限値の情報が格納されたデータベースへの接続を持つwakarana_profileインスタンス  
 **$wakarana** : 呼び出し元のwakaranaインスタンス  
@@ -1924,9 +1918,22 @@ wakarana_data_itemの派生クラス。権限値の情報を読み書きする�
 
 
 #### wakarana_permitted_value::__debugInfo()
-wakarana_data_itemインスタンスがダンプされたときに実行される。  
+wakarana_permitted_valueインスタンスがダンプされたときに実行される。  
   
-**返り値** : 権限値情報と呼び出し元wakaranaインスタンスのベースフォルダのみを返す。
+**返り値** : 権限値IDと権限値名、呼び出し元wakaranaインスタンスのベースフォルダのみを返す。
+
+
+#### ☆ wakarana_permitted_value::of($wakarana_profile, $wakarana, $permitted_value_info)
+権限値情報を受け取り、wakarana_permitted_valueインスタンスを生成して返す。  
+wakarana::get_permitted_value実行時に呼び出されるものであり、直接呼び出すべきではない。  
+既に同じ権限値に対応するインスタンスが存在する場合は、新しいインスタンスを生成せずに既存のものを返す。  
+☆staticメソッド。  
+  
+**$wakarana_profile** : 権限値の情報が格納されたデータベースへの接続を持つwakarana_profileインスタンス  
+**$wakarana** : 呼び出し元のwakaranaインスタンス  
+**$permitted_value_info** : 権限値情報("permitted_value_id"(権限値ID)、"permitted_value_name"(権限値名)、"permitted_value_description"(権限値の説明文))を格納した連想配列  
+  
+**返り値** : 成功した場合はwakarana_permitted_valueインスタンスを返す。
 
 
 #### wakarana_permitted_value::get_id()

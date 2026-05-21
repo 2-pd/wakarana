@@ -219,7 +219,7 @@ class wakarana_permission extends wakarana_data_item {
         
         $permissions = array();
         foreach ($permissions_info as $permission_info) {
-            $permissions[] = $this->wakarana->new_wakarana_permission($permission_info);
+            $permissions[] = self::of($this->profile, $this->wakarana, $permission_info);
         }
         
         return $permissions;

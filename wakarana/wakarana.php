@@ -19,8 +19,6 @@ class wakarana {
     protected const BASE32_TABLE = array("A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "2", "3", "4", "5", "6", "7");
     
     
-    public $permitted_value_ids = array();
-    
     protected $rejection_reason = NULL;
     
     
@@ -563,15 +561,6 @@ class wakarana {
     }
     
     
-    protected function new_wakarana_permitted_value ($permitted_value_info) {
-        if (!isset($this->permitted_value_ids[$permitted_value_info["permitted_value_id"]])) {
-            $this->permitted_value_ids[$permitted_value_info["permitted_value_id"]] = new wakarana_permitted_value($this->profile, $this, $permitted_value_info);
-        }
-        
-        return $this->permitted_value_ids[$permitted_value_info["permitted_value_id"]];
-    }
-    
-    
     function get_permitted_value ($permitted_value_id) {
         if (!self::check_id_string($permitted_value_id)) {
             return FALSE;
@@ -589,7 +578,7 @@ class wakarana {
         $permitted_value_info = $stmt->fetch(PDO::FETCH_ASSOC);
         
         if (!empty($permitted_value_info)) {
-            return $this->new_wakarana_permitted_value($permitted_value_info);
+            return wakarana_permitted_value::of($this->profile, $this, $permitted_value_info);
         } else {
             return FALSE;
         }
@@ -608,7 +597,7 @@ class wakarana {
         
         $permitted_values = array();
         foreach ($permitted_values_info as $permitted_value_info) {
-            $permitted_values[] = $this->new_wakarana_permitted_value($permitted_value_info);
+            $permitted_values[] = wakarana_permitted_value::of($this->profile, $this, $permitted_value_info);
         }
         
         return $permitted_values;

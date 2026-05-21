@@ -5,13 +5,36 @@ require_once(__DIR__."/wakarana_data_item.php");
 
 
 class wakarana_permitted_value extends wakarana_data_item {
+    private static $instances = array();
+    
+    
     protected $permitted_value_info;
     
     
-    function __construct ($wakarana_profile, $wakarana, $permitted_value_info) {
+    protected function __construct ($wakarana_profile, $wakarana, $permitted_value_info) {
         parent::__construct($wakarana_profile, $wakarana);
         
         $this->permitted_value_info = $permitted_value_info;
+    }
+    
+    
+    function __debugInfo () {
+        return array("base_path" => $this->profile->get_base_path(), "permitted_value_id" => $this->permitted_value_info["permitted_value_id"], "permitted_value_name" => $this->permitted_value_info["permitted_value_name"]);
+    }
+    
+    
+    static function of ($wakarana_profile, $wakarana, $permitted_value_info) {
+        $base_path = $wakarana_profile->get_base_path();
+        
+        if (!isset(self::$instances[$base_path])) {
+            self::$instances[$base_path] = array();
+        }
+        
+        if (!isset(self::$instances[$base_path][$permitted_value_info["permitted_value_id"]])) {
+            self::$instances[$base_path][$permitted_value_info["permitted_value_id"]] = new self($wakarana_profile, $wakarana, $permitted_value_info);
+        }
+        
+        return self::$instances[$base_path][$permitted_value_info["permitted_value_id"]];
     }
     
     
