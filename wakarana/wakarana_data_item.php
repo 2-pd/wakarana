@@ -8,8 +8,8 @@ class wakarana_data_item {
     private $last_error_text = NULL;
     
     
-    protected function __construct ($wakarana) {
-        $this->profile = $wakarana->profile;
+    protected function __construct ($wakarana_profile, $wakarana) {
+        $this->profile = $wakarana_profile;
         $this->wakarana = $wakarana;
     }
     

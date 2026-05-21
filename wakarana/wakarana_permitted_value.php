@@ -8,8 +8,8 @@ class wakarana_permitted_value extends wakarana_data_item {
     protected $permitted_value_info;
     
     
-    function __construct ($wakarana, $permitted_value_info) {
-        parent::__construct($wakarana);
+    function __construct ($wakarana_profile, $wakarana, $permitted_value_info) {
+        parent::__construct($wakarana_profile, $wakarana);
         
         $this->permitted_value_info = $permitted_value_info;
     }
@@ -129,7 +129,7 @@ class wakarana_permitted_value extends wakarana_data_item {
             $user_data = array("permitted_value" => $user_info["maximum_permitted_value"]);
             
             unset($user_info["maximum_permitted_value"]);
-            $user_data["user"] = wakarana_user::of($this->wakarana, $user_info);
+            $user_data["user"] = wakarana_user::of($this->profile, $this->wakarana, $user_info);
             $users[] = $user_data;
         }
         

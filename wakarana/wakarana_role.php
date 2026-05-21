@@ -8,8 +8,8 @@ class wakarana_role extends wakarana_data_item {
     protected $role_info;
     
     
-    function __construct ($wakarana, $role_info) {
-        parent::__construct($wakarana);
+    function __construct ($wakarana_profile, $wakarana, $role_info) {
+        parent::__construct($wakarana_profile, $wakarana);
         
         $this->role_info = $role_info;
     }
@@ -78,7 +78,7 @@ class wakarana_role extends wakarana_data_item {
         
         $users = array();
         foreach ($users_info as $user_info) {
-            $users[] = wakarana_user::of($this->wakarana, $user_info);
+            $users[] = wakarana_user::of($this->profile, $this->wakarana, $user_info);
         }
         
         return $users;

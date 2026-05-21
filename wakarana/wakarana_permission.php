@@ -8,8 +8,8 @@ class wakarana_permission extends wakarana_data_item {
     protected $permission_info;
     
     
-    function __construct ($wakarana, $permission_info) {
-        parent::__construct($wakarana);
+    function __construct ($wakarana_profile, $wakarana, $permission_info) {
+        parent::__construct($wakarana_profile, $wakarana);
         
         $this->permission_info = $permission_info;
     }
@@ -242,7 +242,7 @@ class wakarana_permission extends wakarana_data_item {
         
         $users = array();
         foreach ($users_info as $user_info) {
-            $users[] = wakarana_user::of($this->wakarana, $user_info);
+            $users[] = wakarana_user::of($this->profile, $this->wakarana, $user_info);
         }
         
         return $users;

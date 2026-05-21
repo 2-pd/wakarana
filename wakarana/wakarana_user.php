@@ -12,8 +12,8 @@ class wakarana_user extends wakarana_data_item {
     protected $rejection_reason = NULL;
     
     
-    protected function __construct ($wakarana, $user_info) {
-        parent::__construct($wakarana);
+    protected function __construct ($wakarana_profile, $wakarana, $user_info) {
+        parent::__construct($wakarana_profile, $wakarana);
         
         $this->user_info = $user_info;
     }
@@ -24,15 +24,15 @@ class wakarana_user extends wakarana_data_item {
     }
     
     
-    static function of ($wakarana, $user_info) {
-        $base_path = $wakarana->profile->get_base_path();
+    static function of ($wakarana_profile, $wakarana, $user_info) {
+        $base_path = $wakarana_profile->get_base_path();
         
         if (!isset(self::$instances[$base_path])) {
             self::$instances[$base_path] = array();
         }
         
         if (!isset(self::$instances[$base_path][$user_info["user_id"]])) {
-            self::$instances[$base_path][$user_info["user_id"]] = new self($wakarana, $user_info);
+            self::$instances[$base_path][$user_info["user_id"]] = new self($wakarana_profile, $wakarana, $user_info);
         }
         
         return self::$instances[$base_path][$user_info["user_id"]];

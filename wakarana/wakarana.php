@@ -155,7 +155,7 @@ class wakarana {
         $user_info = $stmt->fetch(PDO::FETCH_ASSOC);
         
         if (!empty($user_info)) {
-            return wakarana_user::of($this, $user_info);
+            return wakarana_user::of($this->profile, $this, $user_info);
         } else {
             return FALSE;
         }
@@ -215,7 +215,7 @@ class wakarana {
         
         $users = array();
         foreach ($users_info as $user_info) {
-            $users[] = wakarana_user::of($this, $user_info);
+            $users[] = wakarana_user::of($this->profile, $this, $user_info);
         }
         
         return $users;
@@ -345,7 +345,7 @@ class wakarana {
     
     function new_wakarana_role ($role_info) {
         if (!isset($this->role_ids[$role_info["role_id"]])) {
-            $this->role_ids[$role_info["role_id"]] = new wakarana_role($this, $role_info);
+            $this->role_ids[$role_info["role_id"]] = new wakarana_role($this->profile, $this, $role_info);
         }
         
         return $this->role_ids[$role_info["role_id"]];
@@ -455,7 +455,7 @@ class wakarana {
     
     function new_wakarana_permission ($permission_info) {
         if (!isset($this->resource_ids[$permission_info["resource_id"]])) {
-            $this->resource_ids[$permission_info["resource_id"]] = new wakarana_permission($this, $permission_info);
+            $this->resource_ids[$permission_info["resource_id"]] = new wakarana_permission($this->profile, $this, $permission_info);
         }
         
         return $this->resource_ids[$permission_info["resource_id"]];
@@ -585,7 +585,7 @@ class wakarana {
     
     protected function new_wakarana_permitted_value ($permitted_value_info) {
         if (!isset($this->permitted_value_ids[$permitted_value_info["permitted_value_id"]])) {
-            $this->permitted_value_ids[$permitted_value_info["permitted_value_id"]] = new wakarana_permitted_value($this, $permitted_value_info);
+            $this->permitted_value_ids[$permitted_value_info["permitted_value_id"]] = new wakarana_permitted_value($this->profile, $this, $permitted_value_info);
         }
         
         return $this->permitted_value_ids[$permitted_value_info["permitted_value_id"]];
@@ -931,7 +931,7 @@ class wakarana {
         
         $users = array();
         foreach ($users_info as $user_info) {
-            $users[] = wakarana_user::of($this, $user_info);
+            $users[] = wakarana_user::of($this->profile, $this, $user_info);
         }
         
         return $users;
@@ -1329,7 +1329,7 @@ class wakarana {
         
         $users = array();
         foreach ($users_info as $user_info) {
-            $users[] = wakarana_user::of($this, $user_info);
+            $users[] = wakarana_user::of($this->profile, $this, $user_info);
         }
         
         return $users;
@@ -1463,7 +1463,7 @@ class wakarana {
         
         $users = array();
         foreach ($users_info as $user_info) {
-            $users[] = wakarana_user::of($this, $user_info);
+            $users[] = wakarana_user::of($this->profile, $this, $user_info);
         }
         
         return $users;
