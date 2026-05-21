@@ -1,15 +1,18 @@
 <?php
 /*Wakarana wakarana_user.php*/
 
-require_once(dirname(__FILE__)."/wakarana_data_item.php");
+require_once(__DIR__."/wakarana_data_item.php");
 
 
 class wakarana_user extends wakarana_data_item {
+    private static $instances = array();
+    
+    
     protected $user_info;
     protected $rejection_reason = NULL;
     
     
-    function __construct ($wakarana, $user_info) {
+    protected function __construct ($wakarana, $user_info) {
         parent::__construct($wakarana);
         
         $this->user_info = $user_info;
@@ -17,13 +20,33 @@ class wakarana_user extends wakarana_data_item {
     
     
     function __debugInfo () {
-        return array("base_path" => $this->profile->get_base_path(), "user_info" => $this->user_info);
+        return array("base_path" => $this->profile->get_base_path(), "user_id" => $this->user_info["user_id"], "user_name" => $this->user_info["user_name"]);
+    }
+    
+    
+    static function of ($wakarana, $user_info) {
+        $base_path = $wakarana->profile->get_base_path();
+        
+        if (!isset(self::$instances[$base_path])) {
+            self::$instances[$base_path] = array();
+        }
+        
+        if (!isset(self::$instances[$base_path][$user_info["user_id"]])) {
+            self::$instances[$base_path][$user_info["user_id"]] = new self($wakarana, $user_info);
+        }
+        
+        return self::$instances[$base_path][$user_info["user_id"]];
     }
     
     
     static function free (&$wakarana_user) {
-        unset($wakarana_user->wakarana->user_ids[$wakarana_user->user_info["user_id"]]);
-        unset($wakarana_user);
+        unset(self::$instances[$wakarana_user->profile->get_base_path()][$wakarana_user->user_info["user_id"]]);
+        $wakarana_user = NULL;
+    }
+    
+    
+    function get_wakarana_profile () {
+        return $this->profile;
     }
     
     
@@ -354,7 +377,7 @@ class wakarana_user extends wakarana_data_item {
         
         $this->profile->begin_transaction();
         
-        if ($status !== WAKARANA_STATUS_NORMAL) {
+        if ($status !== wakarana::STATUS_NORMAL) {
             $this->delete_session_tokens();
         }
         
@@ -824,14 +847,14 @@ class wakarana_user extends wakarana_data_item {
             
             $role_id = strtolower($role_id);
             
-            if ($role_id === WAKARANA_BASE_ROLE) {
+            if ($role_id === wakarana::BASE_ROLE) {
                 $this->print_error("ベースロールを剥奪することはできません。");
                 return FALSE;
             }
             
             $role_id_q = '"role_id" = \''.$role_id.'\'';
         } else {
-            $role_id_q = '"role_id" != \''.WAKARANA_BASE_ROLE.'\'';
+            $role_id_q = '"role_id" != \''.wakarana::BASE_ROLE.'\'';
         }
         
         $this->profile->begin_transaction();
@@ -1189,7 +1212,7 @@ class wakarana_user extends wakarana_data_item {
         }
         
         if ($this->check_password($password)) {
-            if ($this->get_status() !== WAKARANA_STATUS_NORMAL) {
+            if ($this->get_status() !== wakarana::STATUS_NORMAL) {
                 $this->rejection_reason = "unavailable_user";
                 $this->add_auth_log(FALSE);
                 return FALSE;

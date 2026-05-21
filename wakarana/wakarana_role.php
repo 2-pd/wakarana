@@ -1,7 +1,7 @@
 <?php
 /*Wakarana wakarana_role.php*/
 
-require_once(dirname(__FILE__)."/wakarana_data_item.php");
+require_once(__DIR__."/wakarana_data_item.php");
 
 
 class wakarana_role extends wakarana_data_item {
@@ -78,7 +78,7 @@ class wakarana_role extends wakarana_data_item {
         
         $users = array();
         foreach ($users_info as $user_info) {
-            $users[] = $this->wakarana->new_wakarana_user($user_info);
+            $users[] = wakarana_user::of($this->wakarana, $user_info);
         }
         
         return $users;

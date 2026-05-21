@@ -382,13 +382,6 @@ Base32方式でエンコードされた文字列をバイナリにデコード�
 **返り値** : パスワードが指定した文字数以上かつ大文字・小文字・数字の全てを含むならTRUE、そうでないならFALSEを返す。
 
 
-#### wakarana::new_wakarana_user($user_info)
-wakarana_userインスタンスを生成する。  
-この関数はクラス外から直接呼び出すべきではない。  
-  
-**$user_info** : ユーザー情報("user_id"(ユーザーID)、"user_name"(ユーザー名)、"password"(ハッシュ化されたパスワード)、"user_created"(アカウント作成日時)、"last_updated"(アカウント情報更新日時)、"last_access"(最終アクセス日時)、"status"(アカウントが使用可能か停止されているか)、"totp_key"(TOTPワンタイムパスワード生成キー))を格納した連想配列。
-
-
 #### wakarana::get_user($user_id)
 ユーザーIDで指定したユーザーのwakarana_userインスタンスを生成する。  
   
@@ -1049,8 +1042,9 @@ wakarana_data_itemの派生クラス。ユーザーの情報を読み書きす�
 
 ### 関数
 
-#### wakarana_user::__construct($wakarana, $user_info)
-コンストラクタ。wakarana::get_user実行時に呼び出されるものであり、直接インスタンス化するべきではない。  
+#### ◆ wakarana_user::__construct($wakarana, $user_info)
+コンストラクタ。wakarana_data_item::__constructを実行し、ユーザー情報もインスタンス変数に保持する。  
+◆クラス内呼び出し専用。  
   
 **$wakarana** : 呼び出し元のwakaranaインスタンス  
 **$user_info** : ユーザー情報("user_id"(ユーザーID)、"user_name"(ユーザー名)、"password"(ハッシュ化されたパスワード)、"user_created"(アカウント作成日時)、"last_updated"(アカウント情報更新日時)、"last_access"(最終アクセス日時)、"status"(アカウントが使用可能か停止されているか)、"totp_key"(TOTPワンタイムパスワード生成キー))を格納した連想配列
@@ -1059,7 +1053,19 @@ wakarana_data_itemの派生クラス。ユーザーの情報を読み書きす�
 #### wakarana_user::__debugInfo()
 wakarana_data_itemインスタンスがダンプされたときに実行される。  
   
-**返り値** : ユーザー情報と呼び出し元wakaranaインスタンスのベースフォルダのみを返す。
+**返り値** : ユーザーIDとユーザー名、呼び出し元wakaranaインスタンスのベースフォルダのみを返す。
+
+
+#### ☆ wakarana_user::of($wakarana, $user_info)
+ユーザー情報を受け取り、wakarana_userインスタンスを生成して返す。  
+wakarana::get_user実行時に呼び出されるものであり、直接呼び出すべきではない。  
+既に同じユーザーアカウントに対応するインスタンスが存在する場合は、新しいインスタンスを生成せずに既存のものを返す。  
+☆staticメソッド。  
+  
+**$wakarana** : 呼び出し元のwakaranaインスタンス  
+**$user_info** : ユーザー情報("user_id"(ユーザーID)、"user_name"(ユーザー名)、"password"(ハッシュ化されたパスワード)、"user_created"(アカウント作成日時)、"last_updated"(アカウント情報更新日時)、"last_access"(最終アクセス日時)、"status"(アカウントが使用可能か停止されているか)、"totp_key"(TOTPワンタイムパスワード生成キー))を格納した連想配列
+  
+**返り値** : 成功した場合はwakarana_userインスタンスを返す。
 
 
 #### ☆ wakarana_user::free($wakarana_user)

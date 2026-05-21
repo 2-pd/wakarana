@@ -19,7 +19,6 @@ class wakarana {
     protected const BASE32_TABLE = array("A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "2", "3", "4", "5", "6", "7");
     
     
-    public $user_ids = array();
     public $role_ids = array();
     public $resource_ids = array();
     public $permitted_value_ids = array();
@@ -137,15 +136,6 @@ class wakarana {
     }
     
     
-    function new_wakarana_user ($user_info) {
-        if (!isset($this->user_ids[$user_info["user_id"]])) {
-            $this->user_ids[$user_info["user_id"]] = new wakarana_user($this, $user_info);
-        }
-        
-        return $this->user_ids[$user_info["user_id"]];
-    }
-    
-    
     function get_user ($user_id) {
         if (!self::check_id_string($user_id)) {
             return FALSE;
@@ -165,7 +155,7 @@ class wakarana {
         $user_info = $stmt->fetch(PDO::FETCH_ASSOC);
         
         if (!empty($user_info)) {
-            return $this->new_wakarana_user($user_info);
+            return wakarana_user::of($this, $user_info);
         } else {
             return FALSE;
         }
@@ -225,7 +215,7 @@ class wakarana {
         
         $users = array();
         foreach ($users_info as $user_info) {
-            $users[] = $this->new_wakarana_user($user_info);
+            $users[] = wakarana_user::of($this, $user_info);
         }
         
         return $users;
@@ -941,7 +931,7 @@ class wakarana {
         
         $users = array();
         foreach ($users_info as $user_info) {
-            $users[] = $this->new_wakarana_user($user_info);
+            $users[] = wakarana_user::of($this, $user_info);
         }
         
         return $users;
@@ -1339,7 +1329,7 @@ class wakarana {
         
         $users = array();
         foreach ($users_info as $user_info) {
-            $users[] = $this->new_wakarana_user($user_info);
+            $users[] = wakarana_user::of($this, $user_info);
         }
         
         return $users;
@@ -1473,7 +1463,7 @@ class wakarana {
         
         $users = array();
         foreach ($users_info as $user_info) {
-            $users[] = $this->new_wakarana_user($user_info);
+            $users[] = wakarana_user::of($this, $user_info);
         }
         
         return $users;
@@ -1812,7 +1802,7 @@ class wakarana {
         return $this->create_permitted_value($permitted_value_id, $permitted_value_name, $permitted_value_description);
     }
     
-    function count_user () {
+    function count_user () { //2027年6月以降のバージョンで削除
         return $this->count_users();
     }
     

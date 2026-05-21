@@ -1,7 +1,7 @@
 <?php
 /*Wakarana wakarana_permitted_value.php*/
 
-require_once(dirname(__FILE__)."/wakarana_data_item.php");
+require_once(__DIR__."/wakarana_data_item.php");
 
 
 class wakarana_permitted_value extends wakarana_data_item {
@@ -129,7 +129,7 @@ class wakarana_permitted_value extends wakarana_data_item {
             $user_data = array("permitted_value" => $user_info["maximum_permitted_value"]);
             
             unset($user_info["maximum_permitted_value"]);
-            $user_data["user"] = $this->wakarana->new_wakarana_user($user_info);
+            $user_data["user"] = wakarana_user::of($this->wakarana, $user_info);
             $users[] = $user_data;
         }
         
