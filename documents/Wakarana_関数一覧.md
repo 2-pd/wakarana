@@ -296,8 +296,9 @@ Wakaranaの主要機能を提供し、wakarana_data_itemの子孫クラスのイ
 #### wakarana::ADMIN_ROLE
 「**\_\_admin\_\_**」。特権管理者ロールの識別名。
 
-#### wakarana::BASE32_TABLE
-Base32エンコード用の変換対応表。
+#### ◆ wakarana::BASE32_TABLE
+Base32エンコード用の変換対応表。  
+◆クラス内呼び出し専用。
 
 
 ### 関数
@@ -402,18 +403,18 @@ wakarana_userインスタンスを生成する。
 **返り値** : 登録されているユーザーの総数を返す。
 
 
-#### wakarana::get_all_users($start=0, $limit=100, $order_by=WAKARANA_ORDER_USER_CREATED, $asc=TRUE)
+#### wakarana::get_all_users($start=0, $limit=100, $order_by=wakarana::ORDER_USER_CREATED, $asc=TRUE)
 全ユーザーの一覧を順に返す。  
   
 **$start** : 何番目のユーザーから取得するか(1番目なら「0」)  
 **$limit** : 何件まで取得するか  
-**$order_by** : 並び替え基準。WAKARANA_ORDER_USER_CREATEDまたはWAKARANA_ORDER_USER_IDまたはWAKARANA_ORDER_USER_NAMEのいずれか。  
+**$order_by** : 並び替え基準。wakarana::ORDER_USER_CREATEDまたはwakarana::ORDER_USER_IDまたはwakarana::ORDER_USER_NAMEのいずれか。  
 **$asc** : 昇順で取得する場合はTRUE、降順ならFALSE。  
   
 **返り値** : 成功した場合は、wakarana_userインスタンスを配列で返す。失敗した場合はFALSEを返す。
 
 
-#### wakarana::create_user($user_id, $password, $user_name="", $status=WAKARANA_STATUS_NORMAL, $used_invite_code=NULL)
+#### wakarana::create_user($user_id, $password, $user_name="", $status=wakarana::STATUS_NORMAL, $used_invite_code=NULL)
 新しいユーザーを追加する。  
 追加したユーザーには自動的にベースロールが割り当てられる。既に存在するユーザーIDを指定した場合はエラーとなる。  
 招待コードを使用してのユーザー追加にはこの関数でなく wakarana::create_user_with_invite_code を使用すべきである。  
@@ -421,7 +422,7 @@ wakarana_userインスタンスを生成する。
 **$user_id** : 追加するユーザーのID。半角英数字及びアンダーバーが使用可能。  
 **$password** : 追加するユーザーのパスワード  
 **$user_name** : 追加するユーザーのハンドルネーム  
-**$status** : WAKARANA_STATUS_UNAPPROVEDを指定すると未承認ユーザー(ログイン不可)として作成することができる。  
+**$status** : wakarana::STATUS_UNAPPROVEDを指定すると未承認ユーザー(ログイン不可)として作成することができる。  
 **$used_invite_code** : ユーザー追加時に使用した招待コード。この関数を直接呼び出す際は常にNULLとする。  
   
 **返り値** : 成功した場合は追加したユーザーのwakarana_userインスタンスを返す。失敗した場合はFALSEを返す。  
@@ -429,7 +430,7 @@ wakarana_userインスタンスを生成する。
 **拒絶理由文字列** : "invalid_user_id"(ユーザーIDに使用できない文字が含まれる)、"user_already_exists"(ユーザーアカウントが既に存在している)、"weak_password"(弱いパスワードである)
 
 
-#### wakarana::create_user_with_invite_code($invite_code, $user_id, $password, $user_name="", $status=WAKARANA_STATUS_NORMAL)
+#### wakarana::create_user_with_invite_code($invite_code, $user_id, $password, $user_name="", $status=wakarana::STATUS_NORMAL)
 招待コードを検証し、有効であれば新しいユーザーを追加する。  
 追加したユーザーには自動的にベースロールが割り当てられる。既に存在するユーザーIDを指定した場合はエラーとなる。  
   
@@ -437,7 +438,7 @@ wakarana_userインスタンスを生成する。
 **$user_id** : 追加するユーザーのID。半角英数字及びアンダーバーが使用可能。  
 **$password** : 追加するユーザーのパスワード  
 **$user_name** : 追加するユーザーのハンドルネーム  
-**$status** : WAKARANA_STATUS_UNAPPROVEDを指定すると未承認ユーザー(ログイン不可)として作成することができる。  
+**$status** : wakarana::STATUS_UNAPPROVEDを指定すると未承認ユーザー(ログイン不可)として作成することができる。  
   
 **返り値** : 成功した場合は追加したユーザーのwakarana_userインスタンスを返す。失敗した場合はFALSEを返す。  
   
@@ -634,7 +635,7 @@ wakarana_permitted_valueインスタンスを生成する。
 **$password** : パスワード  
 **$ip_address** : IPアドレス。NULLの場合はクライアント端末のIPアドレスを参照する。  
   
-**返り値** : 認証された場合はユーザーのwakarana_userインスタンス、ユーザーアカウントが停止中の場合はその状態値(WAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_UNAPPROVED)、ユーザーIDが2段階認証の対象ユーザーのものだった場合は仮トークン、それ以外の場合はFALSEを返す。  
+**返り値** : 認証された場合はユーザーのwakarana_userインスタンス、ユーザーアカウントが停止中の場合はその状態値(wakarana::STATUS_DISABLEまたはwakarana::STATUS_UNAPPROVED)、ユーザーIDが2段階認証の対象ユーザーのものだった場合は仮トークン、それ以外の場合はFALSEを返す。  
   
 **拒絶理由文字列** : "parameters_not_matched"(ユーザーIDまたはパスワードが誤っている)、"unavailable_user"(ユーザーアカウントが停止中である)、"currently_locked_out"(ロックアウト中のためログインを試行できない)
 
@@ -647,7 +648,7 @@ wakarana_permitted_valueインスタンスを生成する。
 **$user_id** : ユーザーID  
 **$password** : パスワード  
   
-**返り値** : ログインが完了した場合はwakarana_userインスタンス、ユーザーアカウントが停止中の場合はその状態値(WAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_UNAPPROVED)、ユーザーIDが2要素認証の対象ユーザーのものだった場合は仮トークン、それ以外の場合はFALSEを返す。  
+**返り値** : ログインが完了した場合はwakarana_userインスタンス、ユーザーアカウントが停止中の場合はその状態値(wakarana::STATUS_DISABLEまたはwakarana::STATUS_UNAPPROVED)、ユーザーIDが2要素認証の対象ユーザーのものだった場合は仮トークン、それ以外の場合はFALSEを返す。  
   
 **拒絶理由文字列** : "parameters_not_matched"(ユーザーIDまたはパスワード、TOTPコードのいずれかが誤っている)、"unavailable_user"(ユーザーアカウントが停止中である)、"currently_locked_out"(ロックアウト中のためログインを試行できない)
 
@@ -662,7 +663,7 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
 **$password** : パスワード  
 **$ip_address** : IPアドレス。NULLの場合はクライアント端末のIPアドレスを参照する。  
   
-**返り値** : 認証された場合はユーザーのwakarana_userインスタンス、ユーザーアカウントが停止中の場合はその状態値(WAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_UNAPPROVED)、メールアドレスが2要素認証の対象ユーザーのものだった場合は仮トークン、それ以外の場合はFALSEを返す。  
+**返り値** : 認証された場合はユーザーのwakarana_userインスタンス、ユーザーアカウントが停止中の場合はその状態値(wakarana::STATUS_DISABLEまたはwakarana::STATUS_UNAPPROVED)、メールアドレスが2要素認証の対象ユーザーのものだった場合は仮トークン、それ以外の場合はFALSEを返す。  
   
 **拒絶理由文字列** : "parameters_not_matched"(メールアドレスまたはパスワードが誤っている)、"unavailable_user"(ユーザーアカウントが停止中である)、"currently_locked_out"(ロックアウト中のためログインを試行できない)
 
@@ -676,7 +677,7 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
 **$email_address** : メールアドレス  
 **$password** : パスワード  
   
-**返り値** : ログインが完了した場合はwakarana_userインスタンス、ユーザーアカウントが停止中の場合はその状態値(WAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_UNAPPROVED)、メールアドレスが2要素認証の対象ユーザーのものだった場合は仮トークン、それ以外の場合はFALSEを返す。  
+**返り値** : ログインが完了した場合はwakarana_userインスタンス、ユーザーアカウントが停止中の場合はその状態値(wakarana::STATUS_DISABLEまたはwakarana::STATUS_UNAPPROVED)、メールアドレスが2要素認証の対象ユーザーのものだった場合は仮トークン、それ以外の場合はFALSEを返す。  
   
 **拒絶理由文字列** : "parameters_not_matched"(メールアドレスまたはパスワードが誤っている)、"unavailable_user"(ユーザーアカウントが停止中である)、"currently_locked_out"(ロックアウト中のためログインを試行できない)
 
@@ -1129,7 +1130,7 @@ wakarana_userインスタンスで直前に行われた各種認証・登録処�
 #### wakarana_user::get_status()
 ユーザーの状態(アカウントが有効か停止されているか、等)を取得する。  
   
-**返り値** : WAKARANA_STATUS_NORMALまたはWAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_UNAPPROVED。
+**返り値** : wakarana::STATUS_NORMALまたはwakarana::STATUS_DISABLEまたはwakarana::STATUS_UNAPPROVED。
 
 
 #### wakarana_user::get_totp_enabled()
@@ -1222,7 +1223,7 @@ wakarana_userインスタンスで直前に行われた各種認証・登録処�
 ユーザーアカウントの状態(有効、停止、等)を切り替える。  
 有効以外の状態を指定した場合、そのユーザーは自動的にログアウト状態となる。  
   
-**$status** : WAKARANA_STATUS_NORMAL(有効)またはWAKARANA_STATUS_DISABLE(無効)またはWAKARANA_STATUS_UNAPPROVED(未承認)。  
+**$status** : wakarana::STATUS_NORMAL(有効)またはwakarana::STATUS_DISABLE(無効)またはwakarana::STATUS_UNAPPROVED(未承認)。  
   
 **返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
