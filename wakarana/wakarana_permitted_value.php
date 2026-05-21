@@ -38,6 +38,12 @@ class wakarana_permitted_value extends wakarana_data_item {
     }
     
     
+    static function free (&$wakarana_permitted_value) {
+        unset(self::$instances[$wakarana_permitted_value->profile->get_base_path()][$wakarana_permitted_value->permitted_value_info["permitted_value_id"]]);
+        $wakarana_permitted_value = NULL;
+    }
+    
+    
     function get_id () {
         return $this->permitted_value_info["permitted_value_id"];
     }

@@ -1936,6 +1936,14 @@ wakarana::get_permitted_value実行時に呼び出されるものであり、直
 **返り値** : 成功した場合はwakarana_permitted_valueインスタンスを返す。
 
 
+#### ☆ wakarana_permitted_value::free($wakarana_permitted_value)
+wakarana_permitted_valueインスタンスを破棄してメモリを解放する。  
+wakarana_permitted_valueインスタンスはこの関数以外の方法(unsetや変数の上書き)では破棄されない。  
+☆staticメソッド。  
+  
+**$wakarana_permitted_value** : メモリ上から破棄するwakarana_permitted_valueインスタンス
+
+
 #### wakarana_permitted_value::get_id()
 権限値のIDを取得する。  
   
