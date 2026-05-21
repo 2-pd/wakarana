@@ -4,18 +4,31 @@
 
 --------------------------------------------------------------------------------
 
-【システム要件】
-PHP : 7以降
+_/_/_/_/ コンセプト _/_/_/_/
+
+・TOTPによる2要素認証やロールベースアクセス制御を少人数開発でも手軽に実装できることを目標としたユーザー管理・ログイン認証ライブラリ(フレームワークではない)
+・様々な規模のアプリケーションに使用できるよう、データベースはSQLiteとPostgreSQLの双方に対応
+・権限は対象リソースをカテゴリのような木構造に見立て、特定の枝に属するリソースの権限をまとめてロールに付与可能
+
+◆ システム要件
+PHP : 8以降
 SQLite : 3 (SQLiteを使用する場合)
-PostgreSQL : 10以降 (SQLiteを使用しない場合)
+PostgreSQL : 14以降 (SQLiteを使用しない場合)
 
 
 _/_/_/_/ ファイル構成 _/_/_/_/
 
 /wakarana ・・・Wakarana本体
-└ common.php ・・・main.phpとconfig.phpの双方で使用する関数・定数等をまとめたファイル
-└ main.php ・・・wakaranaクラスとwakarana_userクラスを含むWakaranaのメインファイル
-└ config.php ・・・wakarana_configクラスを含み、Wakaranaのセットアップ処理で使用するファイル
+└ main.php ・・・各クラスを含むファイルをロードする機能を持つメインファイル
+└ wakarana.php ・・・wakaranaクラスが記載されたファイル
+└ wakarana_common.php ・・・トレイトwakarana_commonが記載されたファイル
+└ wakarana_profile.php ・・・wakarana_profileクラスが記載されたファイル
+└ wakarana_data_item.php ・・・wakarana_data_itemクラスが記載されたファイル
+└ wakarana_user.php ・・・wakarana_userクラスが記載されたファイル
+└ wakarana_role.php ・・・wakarana_roleクラスが記載されたファイル
+└ wakarana_permission.php ・・・wakarana_permissionクラスが記載されたファイル
+└ wakarana_permitted_value.php ・・・wakarana_permitted_valueクラスが記載されたファイル
+└ wakarana_config.php ・・・wakarana_configクラスが記載されたファイル
 └ wakarana_config.ini ・・・Wakaranaの基本設定ファイル(別ディレクトリに設置する場合はwakaranaクラスのコンストラクタに引数を指定)
 └ wakarana_custom_fields.json ・・・カスタムフィールド設定ファイル(別ディレクトリに設置する場合はwakaranaクラスのコンストラクタに引数を指定)
 └ wakarana_email_domain_blacklist.conf ・・・メールドメインブラックリスト(各行に1つのドメインを記載したテキストファイル)

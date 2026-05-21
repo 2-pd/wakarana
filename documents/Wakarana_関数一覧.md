@@ -7,8 +7,8 @@
 # Wakarana 関数・定数まとめ
 
 
-## common.php
-
+## main.php
+以下の各クラスが記載されたファイルをそれぞれロードする機能を持つメインファイル。
 
 ### 定数
 
@@ -16,68 +16,176 @@
 Wakaranaのバージョン番号文字列
 
 
-### class wakarana_common
-wakaranaクラスとwakarana_configクラスの親クラス。このクラスの関数は全てwakaranaクラスとwakarana_configクラスで使用できる。
+## wakarana_profile
+データベース接続や各種設定値を保持するクラス。設定ファイルの書き込み機能は持たない。  
+**このクラスはwakaranaやwakarana_configといった他のクラスが内部で使用するためのものであるため、このクラスの関数を直接呼び出すべきではない。**
 
-#### wakarana_common::__construct($base_dir=NULL)
-指定したフォルダにある設定ファイルをロードする。  
+### 関数
+
+#### ◆ wakarana_profile::__construct($base_path)
+指定したフォルダにある設定ファイル類をロードし、wakarana_profileインスタンスを生成する。  
+設定ファイルがロードできなかった場合は例外が発生する。  
+◆クラス内呼び出し専用。  
   
-**$base_dir** : wakarana_config.iniのあるフォルダのパス。省略時はcommon.phpのあるフォルダを使用する。
+**$base_path** : wakarana_config.iniのあるフォルダの絶対パス。
 
 
-#### wakarana_common::__get($name)
-クラス内呼び出し用変数にクラス外からアクセスされた場合の処理。
-ベースディレクトリ、設定ファイル変数値、DB接続については読み出しを許可する。  
-  
-**$name** : クラス内変数名
-
-
-#### ☆ wakarana_common::check_id_string($id, $length=60)
-文字列に、ユーザーIDやロール名などの識別名として使用できない文字が含まれないかどうかを検査する。  
+#### ☆ wakarana_profile::of($base_dir=NULL)
+指定したフォルダにある設定ファイル類をロードし、wakarana_profileインスタンスを生成して返す。  
+既に同じフォルダを指定して生成されたインスタンスが存在する場合は、新しいインスタンスを生成せずに既存のものを返す。  
+設定ファイルがロードできなかった場合は例外が発生する。  
 ☆staticメソッド。  
   
-**$id** : 検査する文字列  
-**$length** : 文字列の長さの上限。検査する文字列がこれより長い場合は使用できない文字列とみなす。  
+**$base_dir** : wakarana_config.iniのあるフォルダの相対パスまたは絶対パス。省略時はwakarana_profile.phpのあるフォルダを使用する。  
   
-**返り値** : 識別名として使用可能な文字列ならTRUEを、それ以外の場合はFALSEを返す。
+**返り値** : 成功した場合はwakarana_profileインスタンスを返す。
 
 
-#### ◆ wakarana_common::update_base_path($base_dir)
-インスタンス変数として保持しているベースフォルダのパスを更新する。  
-◆クラス内呼び出し専用であり、wakarana_common::__constructにより自動的に実行される。
+#### wakarana_profile::get_base_path()
+インスタンス生成時に指定されたベースフォルダのパスを取得する。  
+  
+**返り値** : インスタンスが参照しているwakarana_config.iniがあるフォルダの絶対パスを返す。
 
 
-#### ◆ wakarana_common::connect_db()
+#### wakarana_profile::load_config($config_path)
+wakarana_config.iniを読み込み、その内容をインスタンス変数に保持する。  
+失敗した場合は例外が発生する。  
+  
+**$config_path** : wakarana_config.iniのパス  
+  
+**返り値** : 成功した場合はTRUEを返す。
+
+
+#### wakarana_profile::get_config($key)
+wakarana_config.iniの設定値を取得する。  
+  
+**$key** : wakarana_config.iniの項目名  
+  
+**返り値** : wakarana_config.iniの設定値を返す。存在しない項目名が指定された場合はNULLを返す。
+
+
+#### wakarana_profile::set_config($key, $value)
+wakarana_config.iniの設定値を一時的に上書きする。  
+この関数によりストレージ上のwakarana_config.iniが変更されるわけではない。  
+wakarana_config.iniの設定値を変更する場合はこの関数でなく wakarana_config::set_config_value を使用すべきである。  
+  
+**$key** : wakarana_config.iniの項目名  
+**$value** : 設定する値  
+  
+**返り値** : 成功した場合はTRUEを返し、存在しない項目名が指定された場合はFALSEを返す。
+
+
+#### wakarana_profile::connect_db()
 wakarana_config.iniの設定に基づき、データベースに接続する。  
-◆クラス内呼び出し専用であり、wakaranaクラスとwakarana_configクラスはこの関数を自動的に実行する。  
+失敗した場合は例外が発生する。  
   
-**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUEを返す。
 
 
-#### wakarana_common::begin_transaction()
+#### wakarana_profile::begin_transaction()
 データベースでトランザクションを開始する。  
 既に別のトランザクションが実行中の場合、内部的には新規のトランザクションではなくセーブポイントを作成する。  
+失敗した場合は例外が発生する。  
   
-**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUEを返す。
 
 
-#### wakarana_common::commit_transaction()
+#### wakarana_profile::commit_transaction()
 データベースで最後に開始したトランザクション(またはセーブポイント)を完了する。  
 まだ解決していないトランザクションが存在する場合、内部的にはセーブポイントを破棄するのみでコミット処理を行わない。  
+失敗した場合は例外が発生する。  
   
-**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUEを返す。
 
 
-#### wakarana_common::rollback_transaction()
+#### wakarana_profile::rollback_transaction()
 データベースで最後に開始したトランザクション(またはセーブポイント)での変更内容を取り消す。  
+失敗した場合は例外が発生する。  
+  
+**返り値** : 成功した場合はTRUEを返す。
+
+
+#### wakarana_profile::disconnect_db()
+データベースとの接続を終了する。  
+  
+**返り値** : 成功した場合はTRUEを返す。
+
+
+#### wakarana_profile::load_custom_field_definitions($custom_fields_file_path)
+wakarana_custom_fields.jsonを読み込み、その内容をインスタンス内に保持する。  
+  
+**$custom_fields_file_path** : wakarana_custom_fields.jsonのパス  
   
 **返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
-#### ◆ wakarana_common::disconnect_db()
-データベースとの接続を終了する。  
-◆クラス内呼び出し専用。
+#### wakarana_profile::get_custom_field_names()
+ユーザーデータに追加可能なカスタムフィールド名一覧を取得する。  
+  
+**返り値** : wakarana_custom_fields.jsonのキー一覧を配列で返す。
 
+
+#### wakarana_profile::get_custom_field_definition($custom_field_name=NULL)
+指定したカスタムフィールドの設定を連想配列で取得する。  
+  
+**$custom_field_name** : カスタムフィールド名。NULLを指定した場合は全てのカスタムフィールドの設定をカスタムフィールド名をキーとする連想配列にまとめて返す。  
+  
+**返り値** : 指定したカスタムフィールド名に対応する設定がwakarana_custom_fields.jsonに存在する場合、その内容を連想配列(キーは、"is_numeric"、"maximum_length"、"records_per_user"、"allow_nonunique_value")で返す。カスタムフィールド名が存在しなければNULLを返す。
+
+
+#### wakarana_profile::set_custom_field_definition($custom_field_name, $custom_field_definition)
+指定したカスタムフィールドの設定を一時的に上書きする。  
+この関数によりストレージ上のwakarana_custom_fields.jsonが変更されるわけではない。  
+カスタムフィールドの設定を変更する場合は、この関数でなく wakarana_config::create_custom_field または wakarana_config::create_custom_numerical_field を使用すべきである。  
+  
+**$custom_field_name** : カスタムフィールド名  
+**$custom_field_definition** : カスタムフィールドの情報を格納した連想配列(キーは、"is_numeric"、"maximum_length"、"records_per_user"、"allow_nonunique_value")。NULLを指定した場合は当該のカスタムフィールドを削除する。  
+  
+**返り値** : 成功した場合はTRUEを返す。存在しないカスタムフィールドを削除しようとしたときはNULLを返す。
+
+
+#### wakarana_profile::get_email_domain_blacklist()
+メールドメインブラックリストを配列形式で返す。  
+メールドメインブラックリストがインスタンス変数に読み込まれていなければ、ファイルから読み込む。  
+  
+**返り値** : メールドメインブラックリストのドメインを配列で返す。メールドメインブラックリストの読み込みに失敗した場合はFALSEを返す。
+
+
+#### wakarana_profile::add_email_domain_to_blacklist($damain_name)
+ドメインをメールドメインブラックリストへ一時的に追加する。  
+この関数によりストレージ上のwakarana_email_domain_blacklist.confが変更されるわけではない。  
+wakarana_email_domain_blacklist.confの内容を変更する場合はこの関数でなく wakarana_config::add_email_domain_to_blacklist を使用すべきである。  
+  
+**$domain_name** : ブラックリストに追加するドメイン名  
+  
+**返り値** : 成功した場合はTRUEを返す。
+
+
+#### wakarana_profile::remove_email_domain_from_blacklist($list_index)
+メールドメインブラックリストから指定した行にあるドメインを一時的に除外する。  
+この関数によりストレージ上のwakarana_email_domain_blacklist.confが変更されるわけではない。  
+wakarana_email_domain_blacklist.confの内容を変更する場合はこの関数でなく wakarana_config::remove_email_domain_from_blacklist を使用すべきである。  
+  
+**$list_index** : ブラックリストから除外する行の番号(0始まり)  
+  
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
+#### wakarana_profile::set_email_domain_blacklist($email_domain_blacklist)
+メールドメインブラックリストを一時的に上書きする。  
+この関数によりストレージ上のwakarana_email_domain_blacklist.confが変更されるわけではない。  
+wakarana_email_domain_blacklist.confの内容を変更する場合はこの関数でなく wakarana_config::replace_email_domain_blacklist を使用すべきである。  
+  
+**$email_domain_blacklist** : メールドメイン文字列を格納した配列  
+  
+**返り値** : 成功した場合はTRUEを返す。
+
+
+
+## trait wakarana_common
+wakaranaクラスとwakarana_configクラスに共通する関数群。このトレイトの関数は全てwakaranaクラスとwakarana_configクラスで使用できる。
+
+### 関数
 
 #### ◆ wakarana_common::print_error($error_text)
 エラーメッセージを出力する。  
@@ -94,10 +202,14 @@ wakarana_common::print_errorにて直近に入力されたエラーメッセー�
 **返り値** : エラーメッセージの文字列
 
 
-#### wakarana_common::get_config_keys()
-wakarana_config.iniの変数名一覧を取得する。  
+#### ☆ wakarana_common::check_id_string($id, $length=60)
+文字列に、ユーザーIDやロール名などの識別名として使用できない文字が含まれないかどうかを検査する。  
+☆staticメソッド。  
   
-**返り値** : wakarana_config.iniの変数名一覧を配列で返す。
+**$id** : 検査する文字列  
+**$length** : 文字列の長さの上限。検査する文字列がこれより長い場合は使用できない文字列とみなす。  
+  
+**返り値** : 識別名として使用可能な文字列ならTRUEを、それ以外の場合はFALSEを返す。
 
 
 #### wakarana_common::get_config_value($key)
@@ -146,11 +258,6 @@ wakarana_config.iniの設定値を取得する。
 **返り値** : カスタムフィールド名がwakarana_custom_fields.jsonに存在する場合、一意でない値を持てるならTRUE、持てないならFALSEを返す。カスタムフィールド名が存在しなければNULLを返す。
 
 
-#### ◆ wakarana_common::load_email_domain_blacklist()
-メールドメインブラックリストがインスタンス変数に読み込まれていなければ、ファイルから読み込む。  
-◆クラス内呼び出し専用。
-
-
 #### wakarana_common::check_email_domain($domain_name)
 指定したドメインがメールドメインブラックリストに含まれないことを確認する。  
   
@@ -159,53 +266,54 @@ wakarana_config.iniの設定値を取得する。
 **返り値** : ドメインがメールドメインブラックリストに含まれない場合はTRUE、含まれればFALSEを返す。
 
 
-#### wakarana_common::get_email_domain_blacklist()
-メールドメインブラックリストを配列で取得する。  
-  
-**返り値** : メールドメインブラックリストのドメインを配列で返す。
-
-
-
-## main.php
+## class wakarana
+Wakaranaの主要機能を提供し、wakarana_data_itemの子孫クラスのインスタンスは全てこのクラスのインスタンスにより生成される。
 
 
 ### 定数
 
-#### WAKARANA_STATUS_DISABLE
+#### wakarana::STATUS_DISABLE
 「**0**」。wakarana_users.statusにおける停止中アカウント識別用。
 
-#### WAKARANA_STATUS_NORMAL
+#### wakarana::STATUS_NORMAL
 「**1**」。wakarana_users.statusにおける有効なアカウント識別用。
 
-#### WAKARANA_STATUS_UNAPPROVED
+#### wakarana::STATUS_UNAPPROVED
 「**-1**」。wakarana_users.statusにおける未承認アカウント識別用。
 
-#### WAKARANA_ORDER_USER_ID
+#### wakarana::ORDER_USER_ID
 「**user_id**」。ユーザー一覧の並び替え基準「ユーザーID」。
 
-#### WAKARANA_ORDER_USER_NAME
+#### wakarana::ORDER_USER_NAME
 「**user_name**」。ユーザー一覧の並び替え基準「ユーザー名」。
 
-#### WAKARANA_ORDER_USER_CREATED
+#### wakarana::ORDER_USER_CREATED
 「**user_created**」。ユーザー一覧の並び替え基準「ユーザー作成日」。
 
-#### WAKARANA_BASE_ROLE
+#### wakarana::BASE_ROLE
 「**\_\_base\_\_**」。ベースロールの識別名。
 
-#### WAKARANA_ADMIN_ROLE
+#### wakarana::ADMIN_ROLE
 「**\_\_admin\_\_**」。特権管理者ロールの識別名。
 
-#### WAKARANA_BASE32_TABLE
-Base32エンコード用の変換対応表。
+#### ◆ wakarana::BASE32_TABLE
+Base32エンコード用の変換対応表。  
+◆クラス内呼び出し専用。
 
 
-### class wakarana
-wakarana_commonの派生クラス。Wakaranaの主要機能を提供し、wakarana_data_itemの子孫クラスのインスタンスは全てこのクラスのインスタンスにより生成される。
+### 関数
 
 #### wakarana::__construct($base_dir=NULL)
-wakarana_common::__constructとwakarana_common::connect_dbを順に実行する。  
+wakaranaインスタンスを生成し、データベースに接続する。  
+設定ファイルの読み込みやデータベースへの接続に失敗した場合は例外が発生する。  
   
-**$base_dir** : wakarana_config.iniのあるフォルダのパス。省略時はcommon.phpのあるフォルダを使用する。
+**$base_dir** : wakarana_config.iniのあるフォルダのパス。省略時はwakarana.phpのあるフォルダを使用する。
+
+
+#### wakarana::__debugInfo()
+wakaranaインスタンスがダンプされたときに実行される。  
+  
+**返り値** : ベースフォルダのパスのみを返す。
 
 
 #### wakarana::get_rejection_reason()
@@ -274,13 +382,6 @@ Base32方式でエンコードされた文字列をバイナリにデコード�
 **返り値** : パスワードが指定した文字数以上かつ大文字・小文字・数字の全てを含むならTRUE、そうでないならFALSEを返す。
 
 
-#### wakarana::new_wakarana_user($user_info)
-wakarana_userインスタンスを生成する。  
-この関数はクラス外から直接呼び出すべきではない。  
-  
-**$user_info** : ユーザー情報("user_id"(ユーザーID)、"user_name"(ユーザー名)、"password"(ハッシュ化されたパスワード)、"user_created"(アカウント作成日時)、"last_updated"(アカウント情報更新日時)、"last_access"(最終アクセス日時)、"status"(アカウントが使用可能か停止されているか)、"totp_key"(TOTPワンタイムパスワード生成キー))を格納した連想配列。
-
-
 #### wakarana::get_user($user_id)
 ユーザーIDで指定したユーザーのwakarana_userインスタンスを生成する。  
   
@@ -289,24 +390,24 @@ wakarana_userインスタンスを生成する。
 **返り値** : ユーザーが存在する場合はwakarana_userクラスのインスタンス、存在しない場合はFALSEを返す。
 
 
-#### wakarana::count_user()
+#### wakarana::count_users()
 ユーザーの総数を数える。  
   
 **返り値** : 登録されているユーザーの総数を返す。
 
 
-#### wakarana::get_all_users($start=0, $limit=100, $order_by=WAKARANA_ORDER_USER_CREATED, $asc=TRUE)
+#### wakarana::get_all_users($start=0, $limit=100, $order_by=wakarana::ORDER_USER_CREATED, $asc=TRUE)
 全ユーザーの一覧を順に返す。  
   
 **$start** : 何番目のユーザーから取得するか(1番目なら「0」)  
 **$limit** : 何件まで取得するか  
-**$order_by** : 並び替え基準。WAKARANA_ORDER_USER_CREATEDまたはWAKARANA_ORDER_USER_IDまたはWAKARANA_ORDER_USER_NAMEのいずれか。  
+**$order_by** : 並び替え基準。wakarana::ORDER_USER_CREATEDまたはwakarana::ORDER_USER_IDまたはwakarana::ORDER_USER_NAMEのいずれか。  
 **$asc** : 昇順で取得する場合はTRUE、降順ならFALSE。  
   
 **返り値** : 成功した場合は、wakarana_userインスタンスを配列で返す。失敗した場合はFALSEを返す。
 
 
-#### wakarana::create_user($user_id, $password, $user_name="", $status=WAKARANA_STATUS_NORMAL, $used_invite_code=NULL)
+#### wakarana::create_user($user_id, $password, $user_name="", $status=wakarana::STATUS_NORMAL, $used_invite_code=NULL)
 新しいユーザーを追加する。  
 追加したユーザーには自動的にベースロールが割り当てられる。既に存在するユーザーIDを指定した場合はエラーとなる。  
 招待コードを使用してのユーザー追加にはこの関数でなく wakarana::create_user_with_invite_code を使用すべきである。  
@@ -314,7 +415,7 @@ wakarana_userインスタンスを生成する。
 **$user_id** : 追加するユーザーのID。半角英数字及びアンダーバーが使用可能。  
 **$password** : 追加するユーザーのパスワード  
 **$user_name** : 追加するユーザーのハンドルネーム  
-**$status** : WAKARANA_STATUS_UNAPPROVEDを指定すると未承認ユーザー(ログイン不可)として作成することができる。  
+**$status** : wakarana::STATUS_UNAPPROVEDを指定すると未承認ユーザー(ログイン不可)として作成することができる。  
 **$used_invite_code** : ユーザー追加時に使用した招待コード。この関数を直接呼び出す際は常にNULLとする。  
   
 **返り値** : 成功した場合は追加したユーザーのwakarana_userインスタンスを返す。失敗した場合はFALSEを返す。  
@@ -322,7 +423,7 @@ wakarana_userインスタンスを生成する。
 **拒絶理由文字列** : "invalid_user_id"(ユーザーIDに使用できない文字が含まれる)、"user_already_exists"(ユーザーアカウントが既に存在している)、"weak_password"(弱いパスワードである)
 
 
-#### wakarana::create_user_with_invite_code($invite_code, $user_id, $password, $user_name="", $status=WAKARANA_STATUS_NORMAL)
+#### wakarana::create_user_with_invite_code($invite_code, $user_id, $password, $user_name="", $status=wakarana::STATUS_NORMAL)
 招待コードを検証し、有効であれば新しいユーザーを追加する。  
 追加したユーザーには自動的にベースロールが割り当てられる。既に存在するユーザーIDを指定した場合はエラーとなる。  
   
@@ -330,18 +431,11 @@ wakarana_userインスタンスを生成する。
 **$user_id** : 追加するユーザーのID。半角英数字及びアンダーバーが使用可能。  
 **$password** : 追加するユーザーのパスワード  
 **$user_name** : 追加するユーザーのハンドルネーム  
-**$status** : WAKARANA_STATUS_UNAPPROVEDを指定すると未承認ユーザー(ログイン不可)として作成することができる。  
+**$status** : wakarana::STATUS_UNAPPROVEDを指定すると未承認ユーザー(ログイン不可)として作成することができる。  
   
 **返り値** : 成功した場合は追加したユーザーのwakarana_userインスタンスを返す。失敗した場合はFALSEを返す。  
   
 **拒絶理由文字列** : "invalid_invite_code"(有効な招待コードではない)、"invalid_user_id"(ユーザーIDに使用できない文字が含まれる)、"user_already_exists"(ユーザーアカウントが既に存在している)、"weak_password"(弱いパスワードである)
-
-
-#### wakarana::new_wakarana_role($role_info)
-wakarana_roleインスタンスを生成する。  
-この関数はクラス外から直接呼び出すべきではない。  
-  
-**$role_info** : ロール情報("role_id"(ロールID)、"role_name"(ロール名)、"role_description"(ロールの説明文))を格納した連想配列。
 
 
 #### wakarana::get_role($role_id)
@@ -388,13 +482,6 @@ wakarana_roleインスタンスを生成する。
 **返り値** : 親権限のリソースIDが切り出せた場合はその文字列を返し、それ以外の場合はNULLを返す。
 
 
-#### wakarana::new_wakarana_permission($permission_info)
-wakarana_permissionインスタンスを生成する。  
-この関数はクラス外から直接呼び出すべきではない。  
-  
-**$permission_info** : 権限情報("resource_id"(権限対象リソースID)、"permission_name"(権限名)、"permission_description"(権限の説明文))を格納した連想配列。
-
-
 #### wakarana::get_permission($resource_id)
 権限のwakarana_permissionインスタンスを生成する。  
   
@@ -422,13 +509,6 @@ wakarana_permissionインスタンスを生成する。
 **返り値** : 成功した場合は作成した権限のwakarana_permissionインスタンスを、失敗した場合はFALSEを返す。  
   
 **拒絶理由文字列** : "invalid_resource_id"(リソースIDに使用できない文字が含まれる)、"resource_already_exists"(権限対象リソースが既に存在している)、"parent_resource_not_exists"(親となる権限対象リソースが存在しない)
-
-
-#### ◆ wakarana::new_wakarana_permitted_value($permitted_value_info)
-wakarana_permitted_valueインスタンスを生成する。  
-◆クラス内呼び出し専用。  
-  
-**$permitted_value_info** : 権限値情報("permitted_value_id"(権限値ID)、"permitted_value_name"(権限値名)、"permitted_value_description"(権限値の説明文))を格納した連想配列。
 
 
 #### wakarana::get_permitted_value($permitted_value_id)
@@ -527,7 +607,7 @@ wakarana_permitted_valueインスタンスを生成する。
 **$password** : パスワード  
 **$ip_address** : IPアドレス。NULLの場合はクライアント端末のIPアドレスを参照する。  
   
-**返り値** : 認証された場合はユーザーのwakarana_userインスタンス、ユーザーアカウントが停止中の場合はその状態値(WAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_UNAPPROVED)、ユーザーIDが2段階認証の対象ユーザーのものだった場合は仮トークン、それ以外の場合はFALSEを返す。  
+**返り値** : 認証された場合はユーザーのwakarana_userインスタンス、ユーザーアカウントが停止中の場合はその状態値(wakarana::STATUS_DISABLEまたはwakarana::STATUS_UNAPPROVED)、ユーザーIDが2段階認証の対象ユーザーのものだった場合は仮トークン、それ以外の場合はFALSEを返す。  
   
 **拒絶理由文字列** : "parameters_not_matched"(ユーザーIDまたはパスワードが誤っている)、"unavailable_user"(ユーザーアカウントが停止中である)、"currently_locked_out"(ロックアウト中のためログインを試行できない)
 
@@ -540,7 +620,7 @@ wakarana_permitted_valueインスタンスを生成する。
 **$user_id** : ユーザーID  
 **$password** : パスワード  
   
-**返り値** : ログインが完了した場合はwakarana_userインスタンス、ユーザーアカウントが停止中の場合はその状態値(WAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_UNAPPROVED)、ユーザーIDが2要素認証の対象ユーザーのものだった場合は仮トークン、それ以外の場合はFALSEを返す。  
+**返り値** : ログインが完了した場合はwakarana_userインスタンス、ユーザーアカウントが停止中の場合はその状態値(wakarana::STATUS_DISABLEまたはwakarana::STATUS_UNAPPROVED)、ユーザーIDが2要素認証の対象ユーザーのものだった場合は仮トークン、それ以外の場合はFALSEを返す。  
   
 **拒絶理由文字列** : "parameters_not_matched"(ユーザーIDまたはパスワード、TOTPコードのいずれかが誤っている)、"unavailable_user"(ユーザーアカウントが停止中である)、"currently_locked_out"(ロックアウト中のためログインを試行できない)
 
@@ -555,7 +635,7 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
 **$password** : パスワード  
 **$ip_address** : IPアドレス。NULLの場合はクライアント端末のIPアドレスを参照する。  
   
-**返り値** : 認証された場合はユーザーのwakarana_userインスタンス、ユーザーアカウントが停止中の場合はその状態値(WAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_UNAPPROVED)、メールアドレスが2要素認証の対象ユーザーのものだった場合は仮トークン、それ以外の場合はFALSEを返す。  
+**返り値** : 認証された場合はユーザーのwakarana_userインスタンス、ユーザーアカウントが停止中の場合はその状態値(wakarana::STATUS_DISABLEまたはwakarana::STATUS_UNAPPROVED)、メールアドレスが2要素認証の対象ユーザーのものだった場合は仮トークン、それ以外の場合はFALSEを返す。  
   
 **拒絶理由文字列** : "parameters_not_matched"(メールアドレスまたはパスワードが誤っている)、"unavailable_user"(ユーザーアカウントが停止中である)、"currently_locked_out"(ロックアウト中のためログインを試行できない)
 
@@ -569,7 +649,7 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
 **$email_address** : メールアドレス  
 **$password** : パスワード  
   
-**返り値** : ログインが完了した場合はwakarana_userインスタンス、ユーザーアカウントが停止中の場合はその状態値(WAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_UNAPPROVED)、メールアドレスが2要素認証の対象ユーザーのものだった場合は仮トークン、それ以外の場合はFALSEを返す。  
+**返り値** : ログインが完了した場合はwakarana_userインスタンス、ユーザーアカウントが停止中の場合はその状態値(wakarana::STATUS_DISABLEまたはwakarana::STATUS_UNAPPROVED)、メールアドレスが2要素認証の対象ユーザーのものだった場合は仮トークン、それ以外の場合はFALSEを返す。  
   
 **拒絶理由文字列** : "parameters_not_matched"(メールアドレスまたはパスワードが誤っている)、"unavailable_user"(ユーザーアカウントが停止中である)、"currently_locked_out"(ロックアウト中のためログインを試行できない)
 
@@ -908,8 +988,19 @@ TOTP生成鍵と現在時刻からワンタイムコードを生成する。
 **返り値** : ワンタイムコードを返す。
 
 
-### class wakarana_data_item
+
+## class wakarana_data_item
 wakarana_userクラスとwakarana_roleクラス、wakarana_permissionクラス、wakarana_permitted_valueクラスの親クラス。
+
+### 関数
+
+#### ◆ wakarana_data_item::__construct($wakarana_profile, $wakarana)
+コンストラクタ。wakarana_data_itemクラスの派生クラスをインスタンス化した際に呼び出される。  
+◆クラス内呼び出し専用。  
+  
+**$wakarana_profile** : wakarana_profileクラスのインスタンス  
+**$wakarana** : wakaranaクラスのインスタンス
+
 
 #### ◆ wakarana_data_item::print_error($error_text)
 エラーメッセージを出力する。  
@@ -925,22 +1016,46 @@ wakarana_data_item::print_errorにて直近に入力されたエラーメッセ�
 **返り値** : エラーメッセージの文字列を返す。エラーがまだ発生していない場合はNULLを返す。
 
 
-### class wakarana_user
+
+## class wakarana_user
 wakarana_data_itemの派生クラス。ユーザーの情報を読み書きするために使用する。1インスタンスごとに1ユーザーの情報が割り当てられる。
 
-#### wakarana_user::__construct($wakarana, $user_info)
-コンストラクタ。wakarana::get_user実行時に呼び出されるものであり、直接インスタンス化するべきではない。  
+### 関数
+
+#### ◆ wakarana_user::__construct($wakarana_profile, $wakarana, $user_info)
+コンストラクタ。wakarana_data_item::__constructを実行し、ユーザー情報もインスタンス変数に保持する。  
+◆クラス内呼び出し専用。  
   
+**$wakarana_profile** : ユーザーの情報が格納されたデータベースへの接続を持つwakarana_profileインスタンス  
 **$wakarana** : 呼び出し元のwakaranaインスタンス  
 **$user_info** : ユーザー情報("user_id"(ユーザーID)、"user_name"(ユーザー名)、"password"(ハッシュ化されたパスワード)、"user_created"(アカウント作成日時)、"last_updated"(アカウント情報更新日時)、"last_access"(最終アクセス日時)、"status"(アカウントが使用可能か停止されているか)、"totp_key"(TOTPワンタイムパスワード生成キー))を格納した連想配列
 
 
-#### ☆ wakarana_user::free($wakarana_user)
-wakarana_userインスタンスをメモリから解放する。  
-wakarana_userインスタンスはこの関数以外の方法(unsetや変数の上書き)では解放されない。  
+#### wakarana_user::__debugInfo()
+wakarana_userインスタンスがダンプされたときに実行される。  
+  
+**返り値** : ユーザーIDとユーザー名、呼び出し元wakaranaインスタンスのベースフォルダのみを返す。
+
+
+#### ☆ wakarana_user::of($wakarana_profile, $wakarana, $user_info)
+ユーザー情報を受け取り、wakarana_userインスタンスを生成して返す。  
+wakarana::get_user実行時に呼び出されるものであり、直接呼び出すべきではない。  
+既に同じユーザーアカウントに対応するインスタンスが存在する場合は、新しいインスタンスを生成せずに既存のものを返す。  
 ☆staticメソッド。  
   
-**$wakarana_user** : メモリから解放するwakarana_userインスタンス
+**$wakarana_profile** : ユーザーの情報が格納されたデータベースへの接続を持つwakarana_profileインスタンス  
+**$wakarana** : 呼び出し元のwakaranaインスタンス  
+**$user_info** : ユーザー情報("user_id"(ユーザーID)、"user_name"(ユーザー名)、"password"(ハッシュ化されたパスワード)、"user_created"(アカウント作成日時)、"last_updated"(アカウント情報更新日時)、"last_access"(最終アクセス日時)、"status"(アカウントが使用可能か停止されているか)、"totp_key"(TOTPワンタイムパスワード生成キー))を格納した連想配列  
+  
+**返り値** : 成功した場合はwakarana_userインスタンスを返す。
+
+
+#### ☆ wakarana_user::free($wakarana_user)
+wakarana_userインスタンスを破棄してメモリを解放する。  
+wakarana_userインスタンスはこの関数以外の方法(unsetや変数の上書き)では破棄されない。  
+☆staticメソッド。  
+  
+**$wakarana_user** : メモリ上から破棄するwakarana_userインスタンス
 
 
 #### wakarana_user::get_rejection_reason()
@@ -1003,7 +1118,7 @@ wakarana_userインスタンスで直前に行われた各種認証・登録処�
 #### wakarana_user::get_status()
 ユーザーの状態(アカウントが有効か停止されているか、等)を取得する。  
   
-**返り値** : WAKARANA_STATUS_NORMALまたはWAKARANA_STATUS_DISABLEまたはWAKARANA_STATUS_UNAPPROVED。
+**返り値** : wakarana::STATUS_NORMALまたはwakarana::STATUS_DISABLEまたはwakarana::STATUS_UNAPPROVED。
 
 
 #### wakarana_user::get_totp_enabled()
@@ -1096,7 +1211,7 @@ wakarana_userインスタンスで直前に行われた各種認証・登録処�
 ユーザーアカウントの状態(有効、停止、等)を切り替える。  
 有効以外の状態を指定した場合、そのユーザーは自動的にログアウト状態となる。  
   
-**$status** : WAKARANA_STATUS_NORMAL(有効)またはWAKARANA_STATUS_DISABLE(無効)またはWAKARANA_STATUS_UNAPPROVED(未承認)。  
+**$status** : wakarana::STATUS_NORMAL(有効)またはwakarana::STATUS_DISABLE(無効)またはwakarana::STATUS_UNAPPROVED(未承認)。  
   
 **返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
@@ -1498,14 +1613,46 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
 **返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
-### class wakarana_role
+
+## class wakarana_role
 wakarana_data_itemの派生クラス。ロールの情報を読み書きするために使用する。1インスタンスごとに1ロールの情報が割り当てられる。
 
-#### wakarana_role::__construct($wakarana, $role_info)
-コンストラクタ。wakarana::get_roleの実行時に呼び出されるものであり、直接インスタンス化するべきではない。  
+### 関数
+
+#### ◆ wakarana_role::__construct($wakarana_profile, $wakarana, $role_info)
+コンストラクタ。wakarana_data_item::__constructを実行し、ロール情報もインスタンス変数に保持する。  
+◆クラス内呼び出し専用。  
   
+**$wakarana_profile** : ロールの情報が格納されたデータベースへの接続を持つwakarana_profileインスタンス  
 **$wakarana** : 呼び出し元のwakaranaインスタンス  
 **$role_info** : ロール情報("role_id"(ロールID)、"role_name"(ロール名)、"role_description"(ロールの説明文))を格納した連想配列
+
+
+#### wakarana_role::__debugInfo()
+wakarana_roleインスタンスがダンプされたときに実行される。  
+  
+**返り値** : ロールIDとロール名、呼び出し元wakaranaインスタンスのベースフォルダのみを返す。
+
+
+#### ☆ wakarana_role::of($wakarana_profile, $wakarana, $role_info)
+ロール情報を受け取り、wakarana_roleインスタンスを生成して返す。  
+wakarana::get_role実行時に呼び出されるものであり、直接呼び出すべきではない。  
+既に同じロールに対応するインスタンスが存在する場合は、新しいインスタンスを生成せずに既存のものを返す。  
+☆staticメソッド。  
+  
+**$wakarana_profile** : ロールの情報が格納されたデータベースへの接続を持つwakarana_profileインスタンス  
+**$wakarana** : 呼び出し元のwakaranaインスタンス  
+**$role_info** : ロール情報("role_id"(ロールID)、"role_name"(ロール名)、"role_description"(ロールの説明文))を格納した連想配列  
+  
+**返り値** : 成功した場合はwakarana_roleインスタンスを返す。
+
+
+#### ☆ wakarana_role::free($wakarana_role)
+wakarana_roleインスタンスを破棄してメモリを解放する。  
+wakarana_roleインスタンスはこの関数以外の方法(unsetや変数の上書き)では破棄されない。  
+☆staticメソッド。  
+  
+**$wakarana_role** : メモリ上から破棄するwakarana_roleインスタンス
 
 
 #### wakarana_role::get_id()
@@ -1626,14 +1773,46 @@ wakarana_data_itemの派生クラス。ロールの情報を読み書きする�
 **返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
-### class wakarana_permission
+
+## class wakarana_permission
 wakarana_data_itemの派生クラス。権限の情報を読み書きするために使用する。1インスタンスごとに1権限の情報が割り当てられる。
 
-#### wakarana_permission::__construct($wakarana, $permission_info)
-コンストラクタ。wakarana::get_permissionの実行時に呼び出されるものであり、直接インスタンス化するべきではない。  
+### 関数
+
+#### ◆ wakarana_permission::__construct($wakarana_profile, $wakarana, $permission_info)
+コンストラクタ。wakarana_data_item::__constructを実行し、権限情報もインスタンス変数に保持する。  
+◆クラス内呼び出し専用。  
   
+**$wakarana_profile** : 権限の情報が格納されたデータベースへの接続を持つwakarana_profileインスタンス  
 **$wakarana** : 呼び出し元のwakaranaインスタンス  
 **$permission_info** : 権限情報("resource_id"(権限対象リソースID)、"permission_name"(権限名)、"permission_description"(権限の説明文))を格納した連想配列
+
+
+#### wakarana_permission::__debugInfo()
+wakarana_permissionインスタンスがダンプされたときに実行される。  
+  
+**返り値** : 権限対象リソースIDと権限名、呼び出し元wakaranaインスタンスのベースフォルダのみを返す。
+
+
+#### ☆ wakarana_permission::of($wakarana_profile, $wakarana, $permission_info)
+権限情報を受け取り、wakarana_permissionインスタンスを生成して返す。  
+wakarana::get_permission実行時に呼び出されるものであり、直接呼び出すべきではない。  
+既に同じ権限に対応するインスタンスが存在する場合は、新しいインスタンスを生成せずに既存のものを返す。  
+☆staticメソッド。  
+  
+**$wakarana_profile** : 権限の情報が格納されたデータベースへの接続を持つwakarana_profileインスタンス  
+**$wakarana** : 呼び出し元のwakaranaインスタンス  
+**$permission_info** : 権限情報("resource_id"(権限対象リソースID)、"permission_name"(権限名)、"permission_description"(権限の説明文))を格納した連想配列  
+  
+**返り値** : 成功した場合はwakarana_permissionインスタンスを返す。
+
+
+#### ☆ wakarana_permission::free($wakarana_permission)
+wakarana_permissionインスタンスを破棄してメモリを解放する。  
+wakarana_permissionインスタンスはこの関数以外の方法(unsetや変数の上書き)では破棄されない。  
+☆staticメソッド。  
+  
+**$wakarana_permission** : メモリ上から破棄するwakarana_permissionインスタンス
 
 
 #### wakarana_permission::get_resource_id()
@@ -1723,14 +1902,46 @@ wakarana_data_itemの派生クラス。権限の情報を読み書きするた�
 **返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
-### class wakarana_permitted_value
+
+## class wakarana_permitted_value
 wakarana_data_itemの派生クラス。権限値の情報を読み書きするために使用する。1インスタンスごとに1権限値の情報が割り当てられる。
 
-#### wakarana_permitted_value::__construct($wakarana, $permitted_value_info)
-コンストラクタ。wakarana::get_permitted_valueの実行時に呼び出されるものであり、直接インスタンス化するべきではない。  
+### 関数
+
+#### ◆ wakarana_permitted_value::__construct($wakarana_profile, $wakarana, $permitted_value_info)
+コンストラクタ。wakarana_data_item::__constructを実行し、権限値情報もインスタンス変数に保持する。  
+◆クラス内呼び出し専用。  
   
+**$wakarana_profile** : 権限値の情報が格納されたデータベースへの接続を持つwakarana_profileインスタンス  
 **$wakarana** : 呼び出し元のwakaranaインスタンス  
 **$permitted_value_info** : 権限値情報("permitted_value_id"(権限値ID)、"permitted_value_name"(権限値名)、"permitted_value_description"(権限値の説明文))を格納した連想配列
+
+
+#### wakarana_permitted_value::__debugInfo()
+wakarana_permitted_valueインスタンスがダンプされたときに実行される。  
+  
+**返り値** : 権限値IDと権限値名、呼び出し元wakaranaインスタンスのベースフォルダのみを返す。
+
+
+#### ☆ wakarana_permitted_value::of($wakarana_profile, $wakarana, $permitted_value_info)
+権限値情報を受け取り、wakarana_permitted_valueインスタンスを生成して返す。  
+wakarana::get_permitted_value実行時に呼び出されるものであり、直接呼び出すべきではない。  
+既に同じ権限値に対応するインスタンスが存在する場合は、新しいインスタンスを生成せずに既存のものを返す。  
+☆staticメソッド。  
+  
+**$wakarana_profile** : 権限値の情報が格納されたデータベースへの接続を持つwakarana_profileインスタンス  
+**$wakarana** : 呼び出し元のwakaranaインスタンス  
+**$permitted_value_info** : 権限値情報("permitted_value_id"(権限値ID)、"permitted_value_name"(権限値名)、"permitted_value_description"(権限値の説明文))を格納した連想配列  
+  
+**返り値** : 成功した場合はwakarana_permitted_valueインスタンスを返す。
+
+
+#### ☆ wakarana_permitted_value::free($wakarana_permitted_value)
+wakarana_permitted_valueインスタンスを破棄してメモリを解放する。  
+wakarana_permitted_valueインスタンスはこの関数以外の方法(unsetや変数の上書き)では破棄されない。  
+☆staticメソッド。  
+  
+**$wakarana_permitted_value** : メモリ上から破棄するwakarana_permitted_valueインスタンス
 
 
 #### wakarana_permitted_value::get_id()
@@ -1785,22 +1996,22 @@ wakarana_data_itemの派生クラス。権限値の情報を読み書きする�
 
 
 
-## config.php
-
+## class wakarana_config
+Wakaranaが組み込まれたアプリケーション本体のセットアップや設定変更の際に使用するクラス。
 
 ### 定数
 
-#### WAKARANA_CONFIG_ORIGINAL
+#### wakarana_config::ORIGINAL_CONFIG
 wakarana_config.iniの既定値一覧。
 
 
-### class wakarana_config
-wakarana_commonの派生クラス。Wakaranaが組み込まれたアプリケーション本体のセットアップや設定変更の際に使用する。
+### 関数
 
 #### wakarana_config::__construct($base_dir=NULL)
-ベースフォルダに各種設定ファイル(wakarana_config.ini、wakarana_custom_fields.json、wakarana_email_domain_blacklist.conf)がなければ作成し、wakarana_common::__constructを実行する。  
+ベースフォルダに各種設定ファイル(wakarana_config.ini、wakarana_custom_fields.json、wakarana_email_domain_blacklist.conf)がなければ作成し、wakarana_configインスタンスを生成する。  
+ベースフォルダが存在しなかった場合や設定ファイルが破損していた場合は例外が発生する。  
   
-**$base_dir** : wakarana_config.iniのある(または作成する)フォルダのパス。省略時はcommon.phpのあるフォルダを使用する。
+**$base_dir** : wakarana_config.iniのある(または作成する)フォルダの相対パスまたは絶対パス。省略時はwakarana_config.phpのあるフォルダを使用する。
 
 
 #### ◆ wakarana_config::save()
@@ -1813,9 +2024,18 @@ wakarana_commonの派生クラス。Wakaranaが組み込まれたアプリケー
 #### wakarana_config::set_config_value($key, $value, $save_now=TRUE)
 wakarana_config.iniの設定値を変更する。  
   
-**$key** : wakarana_config.iniの変数名  
+**$key** : wakarana_config.iniの項目名  
 **$value** : 設定する値  
 **$save_now** : FALSEならwakarana_config.iniへの上書きは保留する。  
+  
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
+#### ◆ wakarana_config::initialize_config($config_file_path)
+指定されたファイルをwakarana_config.iniの既定値で上書きする。  
+◆クラス内呼び出し専用。  
+  
+**$config_file_path** : 保存先設定ファイルのパス  
   
 **返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
@@ -1833,7 +2053,7 @@ wakarana_config.iniの設定値を全て既定値に戻す。
 **返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
-#### wakarana_config::add_custom_field($custom_field_name, $maximum_length=500, $records_per_user=1, $allow_nonunique_value=TRUE, $save_now=TRUE)
+#### wakarana_config::create_custom_field($custom_field_name, $maximum_length=500, $records_per_user=1, $allow_nonunique_value=TRUE, $save_now=TRUE)
 文字列型カスタムフィールドを追加する。  
 既に存在するカスタムフィールド名を指定した場合はその設定を上書きする。  
   
@@ -1846,7 +2066,7 @@ wakarana_config.iniの設定値を全て既定値に戻す。
 **返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
-#### wakarana_config::add_custom_numerical_field($custom_field_name, $records_per_user=1, $allow_nonunique_value=TRUE, $save_now=TRUE)
+#### wakarana_config::create_custom_numerical_field($custom_field_name, $records_per_user=1, $allow_nonunique_value=TRUE, $save_now=TRUE)
 数値型カスタムフィールドを追加する。  
 既に存在するカスタムフィールド名を指定した場合はその設定を上書きする。  
   
