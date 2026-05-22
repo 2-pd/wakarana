@@ -118,8 +118,12 @@ class wakarana {
     }
     
     
-    static function hash_password ($user_id, $password) {
-        return hash("sha512", $password.hash("sha512", $user_id));
+    static function verify_password ($hash, $password, $salt = NULL) {
+        if (str_starts_with($hash, "$")) {
+            return password_verify($password, $hash);
+        } else {
+            return $hash === hash("sha512", $password.hash("sha512", $salt));
+        }
     }
     
     
@@ -222,7 +226,7 @@ class wakarana {
             return FALSE;
         }
         
-        $password_hash = self::hash_password($user_id, $password);
+        $password_hash = $this->generate_password_hash($password, $user_id);
         $date_time = date("Y-m-d H:i:s");
         
         try {
@@ -772,6 +776,10 @@ class wakarana {
         $user = $this->get_user($user_id);
         
         if (empty($user)) {
+            if (self::check_id_string($user_id) && !empty($this->profile->get_config("dummy_password_hash"))) {
+                self::verify_password($this->profile->get_config("dummy_password_hash"), $password, $user_id);
+            }
+            
             $this->rejection_reason = "parameters_not_matched";
             return FALSE;
         }

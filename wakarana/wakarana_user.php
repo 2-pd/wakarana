@@ -66,7 +66,7 @@ class wakarana_user extends wakarana_data_item {
     
     
     function check_password ($password) {
-        if (wakarana::hash_password($this->user_info["user_id"], $password) === $this->user_info["password"]) {
+        if (wakarana::verify_password($this->user_info["password"], $password, $this->user_info["user_id"])) {
             return TRUE;
         } else {
             return FALSE;
@@ -211,7 +211,7 @@ class wakarana_user extends wakarana_data_item {
             return FALSE;
         }
         
-        $password_hash = wakarana::hash_password($this->user_info["user_id"], $password);
+        $password_hash = $this->wakarana->generate_password_hash($password, $this->user_info["user_id"]);
         
         try {
             $this->profile->db_obj->exec('UPDATE "wakarana_users" SET "password" = \''.$password_hash.'\', "last_updated" = \''.date("Y-m-d H:i:s").'\'  WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
