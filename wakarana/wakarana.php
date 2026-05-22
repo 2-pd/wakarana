@@ -642,24 +642,6 @@ class wakarana {
     }
     
     
-    static function create_random_password ($length = 14) {
-        $password = substr(strtr(base64_encode(random_bytes(ceil($length * 0.75))), "+/", "-."), 0, $length);
-        
-        if ($length >= 3 && !self::check_password_strength($password, $length)) {
-            $random_array = range(0, $length - 1);
-            shuffle($random_array);
-            
-            $alphabets = range("A","Z");
-            
-            $password = substr($password, 0, $random_array[0]).$alphabets[mt_rand(0, 25)].substr($password, $random_array[0] + 1);
-            $password = substr($password, 0, $random_array[1]).strtolower($alphabets[mt_rand(0, 25)]).substr($password, $random_array[1] + 1);
-            $password = substr($password, 0, $random_array[2]).mt_rand(0, 9).substr($password, $random_array[2] + 1);
-        }
-        
-        return $password;
-    }
-    
-    
     static function create_token () {
         return rtrim(strtr(base64_encode(random_bytes(32)), "+/", "-_"), "=");
     }
@@ -1777,6 +1759,10 @@ class wakarana {
     
     function count_user () { //2027年6月以降のバージョンで削除
         return $this->count_users();
+    }
+    
+    static function create_random_password ($length = 14) { //2027年6月以降のバージョンで削除
+        return self::generate_random_password($length);
     }
     
     function delete_login_tokens ($expire = -1) { //2027年6月以降のバージョンで削除

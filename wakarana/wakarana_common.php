@@ -30,6 +30,24 @@ trait wakarana_common {
     }
     
     
+    static function generate_random_password ($length = 14) {
+        $password = substr(strtr(base64_encode(random_bytes(ceil($length * 0.75))), "+/", "-."), 0, $length);
+        
+        if ($length >= 3 && !self::check_password_strength($password, $length)) {
+            $random_array = range(0, $length - 1);
+            shuffle($random_array);
+            
+            $alphabets = range("A","Z");
+            
+            $password = substr($password, 0, $random_array[0]).$alphabets[mt_rand(0, 25)].substr($password, $random_array[0] + 1);
+            $password = substr($password, 0, $random_array[1]).strtolower($alphabets[mt_rand(0, 25)]).substr($password, $random_array[1] + 1);
+            $password = substr($password, 0, $random_array[2]).mt_rand(0, 9).substr($password, $random_array[2] + 1);
+        }
+        
+        return $password;
+    }
+    
+    
     function generate_password_hash ($password, $salt = NULL) {
         if ($this->profile->get_config("use_argon2_for_password_hashing")) {
             return password_hash($password, PASSWORD_ARGON2ID, array("memory_cost" => $this->profile->get_config("argon2_memory_cost"), "time_cost" => $this->profile->get_config("argon2_time_cost"), "threads" => $this->profile->get_config("argon2_parallelism")));
