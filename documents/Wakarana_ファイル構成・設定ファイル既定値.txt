@@ -37,9 +37,9 @@ _/_/_/_/ ファイル構成 _/_/_/_/
 
 _/_/_/_/ 基本設定ファイル wakarana_config.ini _/_/_/_/
 
-  display_errors　エラー文を出力するかどうか
+  display_errors　エラー文を出力するか否か
   
-  use_sqlite データベースにSQLiteを使用するかどうか(trueの場合はsqlite、falseの場合はPostgreSQLを使用する)
+  use_sqlite データベースにSQLiteを使用するか否か(trueの場合はsqlite、falseの場合はPostgreSQLを使用する)
   sqlite_db_file SQLiteのデータベースファイルのパス(この設定ファルからの相対パス)
   
   db_host PostgreSQLのホスト名
@@ -49,6 +49,12 @@ _/_/_/_/ 基本設定ファイル wakarana_config.ini _/_/_/_/
   db_port PostgreSQLのポート番号
   
   allow_weak_password 弱いパスワード(空または10文字未満、大文字・小文字・数字のどれかを含んでいない)を許すか否か(trueまたはfalse、trueの場合は弱いパスワードが使用可能となる)
+  
+  use_argon2_for_password_hashing パスワードのハッシュ化にアルゴリズムとしてArgon2(Argon2id)を使用するか否か(trueの場合はArgon2id、falseの場合はSHA-512を使用する)
+  argon2_memory_cost Argon2を使用したハッシュ値の算出1件で消費されるメモリ量(キロバイト単位)
+  argon2_time_cost Argon2を使用したハッシュ値の算出1件での計算処理反復回数
+  argon2_parallelism Argon2を使用したハッシュ値の算出を実行するスレッド数
+  dummy_password_hash 存在しないユーザーIDでログインが試行された場合の照合処理に使用するダミーのパスワードハッシュ(nullの場合は照合処理そのものを実施しない)
   
   allow_nonunique_email_address 同じメールアドレスでの複数のアカウント作成を許すか否か(trueまたはfalse、trueの場合はメールアドレスなし(NULL)を許可しない)
   email_addresses_per_user ユーザーごとに登録可能なメールアドレスの数
@@ -90,6 +96,12 @@ pg_db = "wakarana"
 pg_port = 5432
 
 allow_weak_password = false
+
+use_argon2_for_password_hashing = true
+argon2_memory_cost = 19456
+argon2_time_cost = 2
+argon2_parallelism = 1
+dummy_password_hash = null
 
 allow_nonunique_email_address = false
 email_addresses_per_user = 5
