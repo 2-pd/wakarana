@@ -1685,6 +1685,10 @@ class wakarana {
             return FALSE;
         }
         
+        if ($stmt->rowCount() === 0) {
+            return FALSE;
+        }
+        
         return TRUE;
     }
     

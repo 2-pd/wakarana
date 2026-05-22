@@ -356,6 +356,10 @@ class wakarana_user extends wakarana_data_item {
             return FALSE;
         }
         
+        if ($stmt->rowCount() === 0) {
+            return FALSE;
+        }
+        
         return TRUE;
     }
     
@@ -1179,6 +1183,10 @@ class wakarana_user extends wakarana_data_item {
             $stmt->execute();
         } catch (PDOException $err) {
             $this->print_error("指定されたセッショントークンの削除に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        if ($stmt->rowCount() === 0) {
             return FALSE;
         }
         
