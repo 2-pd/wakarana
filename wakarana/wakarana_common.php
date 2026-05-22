@@ -30,6 +30,18 @@ trait wakarana_common {
     }
     
     
+    function generate_password_hash ($password, $salt = NULL) {
+        if ($this->profile->get_config("use_argon2_for_password_hashing")) {
+            return password_hash($password, PASSWORD_ARGON2ID, array("memory_cost" => $this->profile->get_config("argon2_memory_cost"), "time_cost" => $this->profile->get_config("argon2_time_cost"), "threads" => $this->profile->get_config("argon2_parallelism")));
+        } elseif (!empty($salt)) {
+            return hash("sha512", $password.hash("sha512", $salt));
+        } else {
+            $this->print_error("現在の設定ではハッシュ値の算出にソルト値の指定が必要です。");
+            return FALSE;
+        }
+    }
+    
+    
     function get_config_value ($key) {
         return $this->profile->get_config($key);
     }
