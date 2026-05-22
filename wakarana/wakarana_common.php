@@ -30,6 +30,15 @@ trait wakarana_common {
     }
     
     
+    static function check_password_strength ($password, $min_length = 10) {
+        if (strlen($password) >= $min_length && preg_match("/[A-Z]/u", $password) && preg_match("/[a-z]/u", $password) && preg_match("/[0-9]/u", $password)) {
+            return TRUE;
+        } else {
+            return FALSE;
+        }
+    }
+    
+    
     static function generate_random_password ($length = 14) {
         $password = substr(strtr(base64_encode(random_bytes(ceil($length * 0.75))), "+/", "-."), 0, $length);
         

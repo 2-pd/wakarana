@@ -123,15 +123,6 @@ class wakarana {
     }
     
     
-    static function check_password_strength ($password, $min_length = 10) {
-        if (strlen($password) >= $min_length && preg_match("/[A-Z]/u", $password) && preg_match("/[a-z]/u", $password) && preg_match("/[0-9]/u", $password)) {
-            return TRUE;
-        } else {
-            return FALSE;
-        }
-    }
-    
-    
     function get_user ($user_id) {
         if (!self::check_id_string($user_id)) {
             return FALSE;

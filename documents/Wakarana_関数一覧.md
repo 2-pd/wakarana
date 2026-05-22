@@ -212,6 +212,16 @@ wakarana_common::print_errorにて直近に入力されたエラーメッセー�
 **返り値** : 識別名として使用可能な文字列ならTRUEを、それ以外の場合はFALSEを返す。
 
 
+#### ☆ wakarana_common::check_password_strength($password, $min_length=10)
+パスワードの強度を確認する。  
+☆staticメソッド。  
+  
+**$password** : パスワード  
+**$min_length** : 強いパスワードとみなす最小の文字数  
+  
+**返り値** : パスワードが指定した文字数以上かつ大文字・小文字・数字の全てを含むならTRUE、そうでないならFALSEを返す。
+
+
 #### ☆ wakarana_common::generate_random_password($length=14)
 パスワードとして使用可能な文字列をランダムに生成する。  
 ☆staticメソッド。  
@@ -389,16 +399,6 @@ Base32方式でエンコードされた文字列をバイナリにデコード�
 **$salt** : ソルトとして使用された文字列。ハッシュアルゴリズムとしてArgon2を使用する設定では無視される。  
   
 **返り値** : パスワードがハッシュ値に対応するものだった場合はTRUE、それ以外の場合はFALSEを返す。
-
-
-#### ☆ wakarana::check_password_strength($password, $min_length=10)
-パスワードの強度を確認する。  
-☆staticメソッド。  
-  
-**$password** : パスワード  
-**$min_length** : 強いパスワードとみなす最小の文字数  
-  
-**返り値** : パスワードが指定した文字数以上かつ大文字・小文字・数字の全てを含むならTRUE、そうでないならFALSEを返す。
 
 
 #### wakarana::get_user($user_id)
@@ -2056,17 +2056,17 @@ wakarana_config.iniの設定値を全て既定値に戻す。
 **返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
+#### wakarana_config::generate_dummy_password_hash()
+ダミーのパスワードを生成し、wakarana_config.iniの設定に従ってハッシュ値を計算する。  
+  
+**返り値** : ダミーパスワードをハッシュ化した文字列を返す。
+
+
 #### ◆ wakarana_config::save_custom_fields()
 現在の設定値でwakarana_custom_fields.jsonを上書きする。  
 ◆クラス内呼び出し専用。  
   
 **返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
-
-
-#### wakarana_config::generate_dummy_password_hash()
-ダミーのパスワードを生成し、wakarana_config.iniの設定に従ってハッシュ値を計算する。  
-  
-**返り値** : ダミーパスワードをハッシュ化した文字列を返す。
 
 
 #### wakarana_config::create_custom_field($custom_field_name, $maximum_length=500, $records_per_user=1, $allow_nonunique_value=TRUE, $save_now=TRUE)

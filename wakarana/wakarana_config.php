@@ -240,6 +240,11 @@ class wakarana_config {
     }
     
     
+    function generate_dummy_password_hash () {
+        return $this->generate_password_hash(self::generate_random_password(), $this->profile->get_config("use_argon2_for_password_hashing") ? NULL : base64_encode(random_bytes(6)));
+    }
+    
+    
     protected function save_custom_fields () {
         if (@file_put_contents($this->profile->get_base_path()."/wakarana_custom_fields.json", json_encode($this->profile->get_custom_field_definition())) !== FALSE) {
             return TRUE;
