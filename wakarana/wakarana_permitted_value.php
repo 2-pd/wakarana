@@ -145,7 +145,7 @@ class wakarana_permitted_value extends wakarana_data_item {
         }
         
         try {
-            $stmt = $this->profile->db_obj->query('SELECT "u"."user_id", "u"."password", "u"."user_name", "u"."user_created", "u"."last_updated", "u"."last_access", "u"."status", "u"."totp_key", "wakarana_user_permitted_value_caches"."maximum_permitted_value" FROM "wakarana_users" AS "u", "wakarana_user_permitted_value_caches" WHERE "wakarana_user_permitted_value_caches"."permitted_value_id" = \''.$this->permitted_value_info["permitted_value_id"].'\' '.$min_q.$max_q.'AND "wakarana_user_permitted_value_caches"."user_id" = "u"."user_id" ORDER BY "wakarana_user_permitted_value_caches"."maximum_permitted_value" DESC');
+            $stmt = $this->profile->db_obj->query('SELECT "u"."user_id", "u"."password_hash", "u"."user_name", "u"."user_created", "u"."last_updated", "u"."last_access", "u"."status", "u"."totp_key", "wakarana_user_permitted_value_caches"."maximum_permitted_value" FROM "wakarana_users" AS "u", "wakarana_user_permitted_value_caches" WHERE "wakarana_user_permitted_value_caches"."permitted_value_id" = \''.$this->permitted_value_info["permitted_value_id"].'\' '.$min_q.$max_q.'AND "wakarana_user_permitted_value_caches"."user_id" = "u"."user_id" ORDER BY "wakarana_user_permitted_value_caches"."maximum_permitted_value" DESC');
         } catch (PDOException $err) {
             $this->print_error("権限値を持つユーザーの一覧取得に失敗しました。".$err->getMessage());
             return FALSE;

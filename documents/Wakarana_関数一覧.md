@@ -1038,7 +1038,7 @@ wakarana_data_itemの派生クラス。ユーザーの情報を読み書きす�
   
 **$wakarana_profile** : ユーザーの情報が格納されたデータベースへの接続を持つwakarana_profileインスタンス  
 **$wakarana** : 呼び出し元のwakaranaインスタンス  
-**$user_info** : ユーザー情報("user_id"(ユーザーID)、"user_name"(ユーザー名)、"password"(ハッシュ化されたパスワード)、"user_created"(アカウント作成日時)、"last_updated"(アカウント情報更新日時)、"last_access"(最終アクセス日時)、"status"(アカウントが使用可能か停止されているか)、"totp_key"(TOTPワンタイムパスワード生成キー))を格納した連想配列
+**$user_info** : ユーザー情報("user_id"(ユーザーID)、"user_name"(ユーザー名)、"password_hash"(パスワードのハッシュ値)、"user_created"(アカウント作成日時)、"last_updated"(アカウント情報更新日時)、"last_access"(最終アクセス日時)、"status"(アカウントが使用可能か停止されているか)、"totp_key"(TOTPワンタイムパスワード生成キー))を格納した連想配列
 
 
 #### wakarana_user::__debugInfo()
@@ -1055,7 +1055,7 @@ wakarana::get_user実行時に呼び出されるものであり、直接呼び�
   
 **$wakarana_profile** : ユーザーの情報が格納されたデータベースへの接続を持つwakarana_profileインスタンス  
 **$wakarana** : 呼び出し元のwakaranaインスタンス  
-**$user_info** : ユーザー情報("user_id"(ユーザーID)、"user_name"(ユーザー名)、"password"(ハッシュ化されたパスワード)、"user_created"(アカウント作成日時)、"last_updated"(アカウント情報更新日時)、"last_access"(最終アクセス日時)、"status"(アカウントが使用可能か停止されているか)、"totp_key"(TOTPワンタイムパスワード生成キー))を格納した連想配列  
+**$user_info** : ユーザー情報("user_id"(ユーザーID)、"user_name"(ユーザー名)、"password_hash"(パスワードのハッシュ値)、"user_created"(アカウント作成日時)、"last_updated"(アカウント情報更新日時)、"last_access"(最終アクセス日時)、"status"(アカウントが使用可能か停止されているか)、"totp_key"(TOTPワンタイムパスワード生成キー))を格納した連想配列  
   
 **返り値** : 成功した場合はwakarana_userインスタンスを返す。
 

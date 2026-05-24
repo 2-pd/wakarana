@@ -424,9 +424,9 @@ class wakarana_config {
         
         try {
             if ($this->profile->get_config("use_sqlite")) {
-                $this->profile->db_obj->exec("CREATE TABLE IF NOT EXISTS `wakarana_users`(`user_id` TEXT COLLATE NOCASE NOT NULL PRIMARY KEY, `password` TEXT NOT NULL, `user_name` TEXT COLLATE NOCASE, `user_created` TEXT NOT NULL, `last_updated` TEXT NOT NULL, `last_access` TEXT NOT NULL, `status` INTEGER NOT NULL, `totp_key` TEXT, `used_invite_code` TEXT)");
+                $this->profile->db_obj->exec("CREATE TABLE IF NOT EXISTS `wakarana_users`(`user_id` TEXT COLLATE NOCASE NOT NULL PRIMARY KEY, `password_hash` TEXT NOT NULL, `user_name` TEXT COLLATE NOCASE, `user_created` TEXT NOT NULL, `last_updated` TEXT NOT NULL, `last_access` TEXT NOT NULL, `status` INTEGER NOT NULL, `totp_key` TEXT, `used_invite_code` TEXT)");
             } else {
-                $this->profile->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_users"("user_id" varchar(60) NOT NULL PRIMARY KEY, "password" text NOT NULL, "user_name" varchar(240), "user_created" timestamp NOT NULL, "last_updated" timestamp NOT NULL, "last_access" timestamp NOT NULL, "status" smallint NOT NULL, "totp_key" varchar(16), "used_invite_code" varchar(16))');
+                $this->profile->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_users"("user_id" varchar(60) NOT NULL PRIMARY KEY, "password_hash" text NOT NULL, "user_name" varchar(240), "user_created" timestamp NOT NULL, "last_updated" timestamp NOT NULL, "last_access" timestamp NOT NULL, "status" smallint NOT NULL, "totp_key" varchar(16), "used_invite_code" varchar(16))');
             }
         } catch (PDOException $err) {
             $this->print_error("テーブル wakarana_users の作成処理に失敗しました。".$err->getMessage());

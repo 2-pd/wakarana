@@ -134,9 +134,9 @@ class wakarana {
         
         try {
             if ($this->profile->get_config("use_sqlite")) {
-                $stmt = $this->profile->db_obj->query("SELECT `user_id`, `password`, `user_name`, `user_created`, `last_updated`, `last_access`, `status`, `totp_key` FROM `wakarana_users` WHERE `user_id` = '".$user_id."'");
+                $stmt = $this->profile->db_obj->query("SELECT `user_id`, `password_hash`, `user_name`, `user_created`, `last_updated`, `last_access`, `status`, `totp_key` FROM `wakarana_users` WHERE `user_id` = '".$user_id."'");
             } else {
-                $stmt = $this->profile->db_obj->query('SELECT "user_id", "password", "user_name", "user_created", "last_updated", "last_access", "status", "totp_key" FROM "wakarana_users" WHERE LOWER("user_id") = \''.strtolower($user_id).'\'');
+                $stmt = $this->profile->db_obj->query('SELECT "user_id", "password_hash", "user_name", "user_created", "last_updated", "last_access", "status", "totp_key" FROM "wakarana_users" WHERE LOWER("user_id") = \''.strtolower($user_id).'\'');
             }
         } catch (PDOException $err) {
             $this->print_error("ユーザー情報の取得に失敗しました。".$err->getMessage());
@@ -196,7 +196,7 @@ class wakarana {
         }
         
         try {
-            $stmt = $this->profile->db_obj->query('SELECT "user_id", "password", "user_name", "user_created", "last_updated", "last_access", "status", "totp_key" FROM "wakarana_users" ORDER BY '.$order_by_q.' '.($asc ? 'ASC' : 'DESC').' LIMIT '.$limit.' OFFSET '.$start);
+            $stmt = $this->profile->db_obj->query('SELECT "user_id", "password_hash", "user_name", "user_created", "last_updated", "last_access", "status", "totp_key" FROM "wakarana_users" ORDER BY '.$order_by_q.' '.($asc ? 'ASC' : 'DESC').' LIMIT '.$limit.' OFFSET '.$start);
         } catch (PDOException $err) {
             $this->print_error("ユーザー一覧の取得に失敗しました。".$err->getMessage());
             return FALSE;
@@ -244,7 +244,7 @@ class wakarana {
         $this->profile->begin_transaction();
         
         try {
-            $stmt = $this->profile->db_obj->prepare('INSERT INTO "wakarana_users"("user_id", "password", "user_name", "user_created", "last_updated", "last_access", "status", "totp_key", "used_invite_code") VALUES (\''.$user_id.'\', \''.$password_hash.'\', :user_name, \''.$date_time.'\', \''.$date_time.'\', \''.$date_time.'\', '.intval($status).', NULL, :used_invite_code)');
+            $stmt = $this->profile->db_obj->prepare('INSERT INTO "wakarana_users"("user_id", "password_hash", "user_name", "user_created", "last_updated", "last_access", "status", "totp_key", "used_invite_code") VALUES (\''.$user_id.'\', \''.$password_hash.'\', :user_name, \''.$date_time.'\', \''.$date_time.'\', \''.$date_time.'\', '.intval($status).', NULL, :used_invite_code)');
             
             if (!empty($user_name)) {
                 $stmt->bindValue(":user_name", mb_substr($user_name, 0, 240), PDO::PARAM_STR);
@@ -867,7 +867,7 @@ class wakarana {
     
     function search_users_with_email_address ($email_address) {
         try {
-            $stmt = $this->profile->db_obj->prepare('SELECT "u"."user_id", "u"."password", "u"."user_name", "u"."user_created", "u"."last_updated", "u"."last_access", "u"."status", "u"."totp_key" FROM "wakarana_users" AS "u", "wakarana_user_email_addresses" WHERE "wakarana_user_email_addresses"."email_address" = :email_address AND "u"."user_id" = "wakarana_user_email_addresses"."user_id"');
+            $stmt = $this->profile->db_obj->prepare('SELECT "u"."user_id", "u"."password_hash", "u"."user_name", "u"."user_created", "u"."last_updated", "u"."last_access", "u"."status", "u"."totp_key" FROM "wakarana_users" AS "u", "wakarana_user_email_addresses" WHERE "wakarana_user_email_addresses"."email_address" = :email_address AND "u"."user_id" = "wakarana_user_email_addresses"."user_id"');
             
             $stmt->bindValue(":email_address", $email_address, PDO::PARAM_STR);
             
@@ -1265,7 +1265,7 @@ class wakarana {
     
     function get_invited_users ($invite_code) {
         try {
-            $stmt = $this->profile->db_obj->prepare('SELECT "user_id", "password", "user_name", "user_created", "last_updated", "last_access", "status", "totp_key" FROM "wakarana_users" WHERE "used_invite_code" = :used_invite_code ORDER BY "user_created" ASC');
+            $stmt = $this->profile->db_obj->prepare('SELECT "user_id", "password_hash", "user_name", "user_created", "last_updated", "last_access", "status", "totp_key" FROM "wakarana_users" WHERE "used_invite_code" = :used_invite_code ORDER BY "user_created" ASC');
             
             $stmt->bindValue(":used_invite_code", $invite_code, PDO::PARAM_STR);
             
@@ -1399,7 +1399,7 @@ class wakarana {
         }
         
         try {
-            $stmt = $this->profile->db_obj->prepare('SELECT "u"."user_id", "u"."password", "u"."user_name", "u"."user_created", "u"."last_updated", "u"."last_access", "u"."status", "u"."totp_key" FROM "wakarana_users" AS "u", "'.$table_name.'" WHERE "'.$table_name.'"."custom_field_name" = \''.$custom_field_name.'\' AND "'.$table_name.'"."custom_field_value" = :custom_field_value AND "u"."user_id" = "'.$table_name.'"."user_id"');
+            $stmt = $this->profile->db_obj->prepare('SELECT "u"."user_id", "u"."password_hash", "u"."user_name", "u"."user_created", "u"."last_updated", "u"."last_access", "u"."status", "u"."totp_key" FROM "wakarana_users" AS "u", "'.$table_name.'" WHERE "'.$table_name.'"."custom_field_name" = \''.$custom_field_name.'\' AND "'.$table_name.'"."custom_field_value" = :custom_field_value AND "u"."user_id" = "'.$table_name.'"."user_id"');
             
             $stmt->bindValue(":custom_field_value", $custom_field_value);
             
