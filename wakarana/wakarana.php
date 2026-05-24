@@ -118,16 +118,11 @@ class wakarana {
     }
     
     
-    static function hash_password ($user_id, $password) {
-        return hash("sha512", $password.hash("sha512", $user_id));
-    }
-    
-    
-    static function check_password_strength ($password, $min_length = 10) {
-        if (strlen($password) >= $min_length && preg_match("/[A-Z]/u", $password) && preg_match("/[a-z]/u", $password) && preg_match("/[0-9]/u", $password)) {
-            return TRUE;
+    static function verify_password ($hash, $password, $salt = NULL) {
+        if (str_starts_with($hash, "$")) {
+            return password_verify($password, $hash);
         } else {
-            return FALSE;
+            return $hash === hash("sha512", $password.hash("sha512", $salt));
         }
     }
     
@@ -139,9 +134,9 @@ class wakarana {
         
         try {
             if ($this->profile->get_config("use_sqlite")) {
-                $stmt = $this->profile->db_obj->query("SELECT `user_id`, `password`, `user_name`, `user_created`, `last_updated`, `last_access`, `status`, `totp_key` FROM `wakarana_users` WHERE `user_id` = '".$user_id."'");
+                $stmt = $this->profile->db_obj->query("SELECT `user_id`, `password_hash`, `user_name`, `user_created`, `last_updated`, `last_access`, `status`, `totp_key` FROM `wakarana_users` WHERE `user_id` = '".$user_id."'");
             } else {
-                $stmt = $this->profile->db_obj->query('SELECT "user_id", "password", "user_name", "user_created", "last_updated", "last_access", "status", "totp_key" FROM "wakarana_users" WHERE LOWER("user_id") = \''.strtolower($user_id).'\'');
+                $stmt = $this->profile->db_obj->query('SELECT "user_id", "password_hash", "user_name", "user_created", "last_updated", "last_access", "status", "totp_key" FROM "wakarana_users" WHERE LOWER("user_id") = \''.strtolower($user_id).'\'');
             }
         } catch (PDOException $err) {
             $this->print_error("ユーザー情報の取得に失敗しました。".$err->getMessage());
@@ -201,7 +196,7 @@ class wakarana {
         }
         
         try {
-            $stmt = $this->profile->db_obj->query('SELECT "user_id", "password", "user_name", "user_created", "last_updated", "last_access", "status", "totp_key" FROM "wakarana_users" ORDER BY '.$order_by_q.' '.($asc ? 'ASC' : 'DESC').' LIMIT '.$limit.' OFFSET '.$start);
+            $stmt = $this->profile->db_obj->query('SELECT "user_id", "password_hash", "user_name", "user_created", "last_updated", "last_access", "status", "totp_key" FROM "wakarana_users" ORDER BY '.$order_by_q.' '.($asc ? 'ASC' : 'DESC').' LIMIT '.$limit.' OFFSET '.$start);
         } catch (PDOException $err) {
             $this->print_error("ユーザー一覧の取得に失敗しました。".$err->getMessage());
             return FALSE;
@@ -231,7 +226,7 @@ class wakarana {
             return FALSE;
         }
         
-        $password_hash = self::hash_password($user_id, $password);
+        $password_hash = $this->generate_password_hash($password, $user_id);
         $date_time = date("Y-m-d H:i:s");
         
         try {
@@ -249,7 +244,7 @@ class wakarana {
         $this->profile->begin_transaction();
         
         try {
-            $stmt = $this->profile->db_obj->prepare('INSERT INTO "wakarana_users"("user_id", "password", "user_name", "user_created", "last_updated", "last_access", "status", "totp_key", "used_invite_code") VALUES (\''.$user_id.'\', \''.$password_hash.'\', :user_name, \''.$date_time.'\', \''.$date_time.'\', \''.$date_time.'\', '.intval($status).', NULL, :used_invite_code)');
+            $stmt = $this->profile->db_obj->prepare('INSERT INTO "wakarana_users"("user_id", "password_hash", "user_name", "user_created", "last_updated", "last_access", "status", "totp_key", "used_invite_code") VALUES (\''.$user_id.'\', \''.$password_hash.'\', :user_name, \''.$date_time.'\', \''.$date_time.'\', \''.$date_time.'\', '.intval($status).', NULL, :used_invite_code)');
             
             if (!empty($user_name)) {
                 $stmt->bindValue(":user_name", mb_substr($user_name, 0, 240), PDO::PARAM_STR);
@@ -642,24 +637,6 @@ class wakarana {
     }
     
     
-    static function create_random_password ($length = 14) {
-        $password = substr(strtr(base64_encode(random_bytes(ceil($length * 0.75))), "+/", "-."), 0, $length);
-        
-        if ($length >= 3 && !self::check_password_strength($password, $length)) {
-            $random_array = range(0, $length - 1);
-            shuffle($random_array);
-            
-            $alphabets = range("A","Z");
-            
-            $password = substr($password, 0, $random_array[0]).$alphabets[mt_rand(0, 25)].substr($password, $random_array[0] + 1);
-            $password = substr($password, 0, $random_array[1]).strtolower($alphabets[mt_rand(0, 25)]).substr($password, $random_array[1] + 1);
-            $password = substr($password, 0, $random_array[2]).mt_rand(0, 9).substr($password, $random_array[2] + 1);
-        }
-        
-        return $password;
-    }
-    
-    
     static function create_token () {
         return rtrim(strtr(base64_encode(random_bytes(32)), "+/", "-_"), "=");
     }
@@ -799,6 +776,10 @@ class wakarana {
         $user = $this->get_user($user_id);
         
         if (empty($user)) {
+            if (self::check_id_string($user_id) && !empty($this->profile->get_config("dummy_password_hash"))) {
+                self::verify_password($this->profile->get_config("dummy_password_hash"), $password, $user_id);
+            }
+            
             $this->rejection_reason = "parameters_not_matched";
             return FALSE;
         }
@@ -886,7 +867,7 @@ class wakarana {
     
     function search_users_with_email_address ($email_address) {
         try {
-            $stmt = $this->profile->db_obj->prepare('SELECT "u"."user_id", "u"."password", "u"."user_name", "u"."user_created", "u"."last_updated", "u"."last_access", "u"."status", "u"."totp_key" FROM "wakarana_users" AS "u", "wakarana_user_email_addresses" WHERE "wakarana_user_email_addresses"."email_address" = :email_address AND "u"."user_id" = "wakarana_user_email_addresses"."user_id"');
+            $stmt = $this->profile->db_obj->prepare('SELECT "u"."user_id", "u"."password_hash", "u"."user_name", "u"."user_created", "u"."last_updated", "u"."last_access", "u"."status", "u"."totp_key" FROM "wakarana_users" AS "u", "wakarana_user_email_addresses" WHERE "wakarana_user_email_addresses"."email_address" = :email_address AND "u"."user_id" = "wakarana_user_email_addresses"."user_id"');
             
             $stmt->bindValue(":email_address", $email_address, PDO::PARAM_STR);
             
@@ -1284,7 +1265,7 @@ class wakarana {
     
     function get_invited_users ($invite_code) {
         try {
-            $stmt = $this->profile->db_obj->prepare('SELECT "user_id", "password", "user_name", "user_created", "last_updated", "last_access", "status", "totp_key" FROM "wakarana_users" WHERE "used_invite_code" = :used_invite_code ORDER BY "user_created" ASC');
+            $stmt = $this->profile->db_obj->prepare('SELECT "user_id", "password_hash", "user_name", "user_created", "last_updated", "last_access", "status", "totp_key" FROM "wakarana_users" WHERE "used_invite_code" = :used_invite_code ORDER BY "user_created" ASC');
             
             $stmt->bindValue(":used_invite_code", $invite_code, PDO::PARAM_STR);
             
@@ -1418,7 +1399,7 @@ class wakarana {
         }
         
         try {
-            $stmt = $this->profile->db_obj->prepare('SELECT "u"."user_id", "u"."password", "u"."user_name", "u"."user_created", "u"."last_updated", "u"."last_access", "u"."status", "u"."totp_key" FROM "wakarana_users" AS "u", "'.$table_name.'" WHERE "'.$table_name.'"."custom_field_name" = \''.$custom_field_name.'\' AND "'.$table_name.'"."custom_field_value" = :custom_field_value AND "u"."user_id" = "'.$table_name.'"."user_id"');
+            $stmt = $this->profile->db_obj->prepare('SELECT "u"."user_id", "u"."password_hash", "u"."user_name", "u"."user_created", "u"."last_updated", "u"."last_access", "u"."status", "u"."totp_key" FROM "wakarana_users" AS "u", "'.$table_name.'" WHERE "'.$table_name.'"."custom_field_name" = \''.$custom_field_name.'\' AND "'.$table_name.'"."custom_field_value" = :custom_field_value AND "u"."user_id" = "'.$table_name.'"."user_id"');
             
             $stmt->bindValue(":custom_field_value", $custom_field_value);
             
@@ -1777,6 +1758,10 @@ class wakarana {
     
     function count_user () { //2027年6月以降のバージョンで削除
         return $this->count_users();
+    }
+    
+    static function create_random_password ($length = 14) { //2027年6月以降のバージョンで削除
+        return self::generate_random_password($length);
     }
     
     function delete_login_tokens ($expire = -1) { //2027年6月以降のバージョンで削除

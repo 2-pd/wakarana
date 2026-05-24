@@ -9,7 +9,7 @@ _/_/_/_/ データベース _/_/_/_/
 
 テーブル `wakarana_users`
   `user_id` varchar(60) [TEXT COLLATE NOCASE] (NOT NULL PRIMARY KEY) ユーザーID(半角英数字及びアンダーバーが使用可能、大文字小文字区別なし)
-  `password` varchar(128) [TEXT] (NOT NULL) パスワード+ソルト(ユーザーIDのSHA512ハッシュ)のSHA512ハッシュ(バージョンアップでアルゴリズム変更の可能性あり)
+  `password_hash` text [TEXT] (NOT NULL) パスワードのハッシュ値を含むModular Crypt Formatの文字列(またはパスワードのSHA-512方式のハッシュ値)
   `user_name` varchar(240) [TEXT COLLATE NOCASE] ユーザー名(ハンドルネームや氏名など、空欄可)
   `user_created` timestamp [TEXT] (NOT NULL) アカウントの作成日時
   `last_updated` timestamp [TEXT] (NOT NULL) アカウント情報の最終更新日時

@@ -19,6 +19,12 @@ class wakarana_config {
             
             "allow_weak_password" => FALSE,
             
+            "use_argon2_for_password_hashing" => TRUE,
+            "argon2_memory_cost" => 19456,
+            "argon2_time_cost" => 2,
+            "argon2_parallelism" => 1,
+            "dummy_password_hash" => NULL,
+            
             "allow_nonunique_email_address" => FALSE,
             "email_addresses_per_user" => 5,
             "verification_email_expire" => 1800,
@@ -96,6 +102,13 @@ class wakarana_config {
         fwrite($file_h, "\n");
         
         fwrite($file_h, "allow_weak_password = ".($this->profile->get_config("allow_weak_password") ? "true" : "false")."\n");
+        fwrite($file_h, "\n");
+        
+        fwrite($file_h, "use_argon2_for_password_hashing = ".($this->profile->get_config("use_argon2_for_password_hashing") ? "true" : "false")."\n");
+        fwrite($file_h, "argon2_memory_cost = ".$this->profile->get_config("argon2_memory_cost")."\n");
+        fwrite($file_h, "argon2_time_cost = ".$this->profile->get_config("argon2_time_cost")."\n");
+        fwrite($file_h, "argon2_parallelism = ".$this->profile->get_config("argon2_parallelism")."\n");
+        fwrite($file_h, "dummy_password_hash = ".(is_null($this->profile->get_config("dummy_password_hash")) ? "null" : "\"".$this->profile->get_config("dummy_password_hash")."\"")."\n");
         fwrite($file_h, "\n");
         
         fwrite($file_h, "allow_nonunique_email_address = ".($this->profile->get_config("allow_nonunique_email_address") ? "true" : "false")."\n");
@@ -176,6 +189,13 @@ class wakarana_config {
         fwrite($file_h, "allow_weak_password = ".(self::ORIGINAL_CONFIG["allow_weak_password"] ? "true" : "false")."\n");
         fwrite($file_h, "\n");
         
+        fwrite($file_h, "use_argon2_for_password_hashing = ".(self::ORIGINAL_CONFIG["use_argon2_for_password_hashing"] ? "true" : "false")."\n");
+        fwrite($file_h, "argon2_memory_cost = ".self::ORIGINAL_CONFIG["argon2_memory_cost"]."\n");
+        fwrite($file_h, "argon2_time_cost = ".self::ORIGINAL_CONFIG["argon2_time_cost"]."\n");
+        fwrite($file_h, "argon2_parallelism = ".self::ORIGINAL_CONFIG["argon2_parallelism"]."\n");
+        fwrite($file_h, "dummy_password_hash = ".(is_null(self::ORIGINAL_CONFIG["dummy_password_hash"]) ? "null" : "\"".self::ORIGINAL_CONFIG["dummy_password_hash"]."\"")."\n");
+        fwrite($file_h, "\n");
+        
         fwrite($file_h, "allow_nonunique_email_address = ".(self::ORIGINAL_CONFIG["allow_nonunique_email_address"] ? "true" : "false")."\n");
         fwrite($file_h, "email_addresses_per_user = ".self::ORIGINAL_CONFIG["email_addresses_per_user"]."\n");
         fwrite($file_h, "verification_email_expire = ".self::ORIGINAL_CONFIG["verification_email_expire"]."\n");
@@ -217,6 +237,11 @@ class wakarana_config {
         $config_path = $this->profile->get_base_path()."/wakarana_config.ini";
         
         return $this->initialize_config($config_path) && $this->profile->load_config($config_path);
+    }
+    
+    
+    function generate_dummy_password_hash () {
+        return $this->generate_password_hash(self::generate_random_password(), $this->profile->get_config("use_argon2_for_password_hashing") ? NULL : base64_encode(random_bytes(6)));
     }
     
     
@@ -399,9 +424,9 @@ class wakarana_config {
         
         try {
             if ($this->profile->get_config("use_sqlite")) {
-                $this->profile->db_obj->exec("CREATE TABLE IF NOT EXISTS `wakarana_users`(`user_id` TEXT COLLATE NOCASE NOT NULL PRIMARY KEY, `password` TEXT NOT NULL, `user_name` TEXT COLLATE NOCASE, `user_created` TEXT NOT NULL, `last_updated` TEXT NOT NULL, `last_access` TEXT NOT NULL, `status` INTEGER NOT NULL, `totp_key` TEXT, `used_invite_code` TEXT)");
+                $this->profile->db_obj->exec("CREATE TABLE IF NOT EXISTS `wakarana_users`(`user_id` TEXT COLLATE NOCASE NOT NULL PRIMARY KEY, `password_hash` TEXT NOT NULL, `user_name` TEXT COLLATE NOCASE, `user_created` TEXT NOT NULL, `last_updated` TEXT NOT NULL, `last_access` TEXT NOT NULL, `status` INTEGER NOT NULL, `totp_key` TEXT, `used_invite_code` TEXT)");
             } else {
-                $this->profile->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_users"("user_id" varchar(60) NOT NULL PRIMARY KEY, "password" varchar(128) NOT NULL, "user_name" varchar(240), "user_created" timestamp NOT NULL, "last_updated" timestamp NOT NULL, "last_access" timestamp NOT NULL, "status" smallint NOT NULL, "totp_key" varchar(16), "used_invite_code" varchar(16))');
+                $this->profile->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_users"("user_id" varchar(60) NOT NULL PRIMARY KEY, "password_hash" text NOT NULL, "user_name" varchar(240), "user_created" timestamp NOT NULL, "last_updated" timestamp NOT NULL, "last_access" timestamp NOT NULL, "status" smallint NOT NULL, "totp_key" varchar(16), "used_invite_code" varchar(16))');
             }
         } catch (PDOException $err) {
             $this->print_error("テーブル wakarana_users の作成処理に失敗しました。".$err->getMessage());
