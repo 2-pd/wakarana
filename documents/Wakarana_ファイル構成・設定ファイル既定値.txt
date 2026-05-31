@@ -3,17 +3,32 @@
   PHPユーザーマネージャライブラリ「Wakarana」設計案　ページ(1)
 
 --------------------------------------------------------------------------------
-【システム要件】
-PHP : 7以降
+
+_/_/_/_/ コンセプト _/_/_/_/
+
+・TOTPによる2要素認証やロールベースアクセス制御を少人数開発でも手軽に実装できることを目標としたユーザー管理・ログイン認証ライブラリ(フレームワークではない)
+・様々な規模のアプリケーションに使用できるよう、データベースはSQLiteとPostgreSQLの双方に対応
+・権限は対象リソースをカテゴリのような木構造に見立て、特定の枝に属するリソースの権限をまとめてロールに付与可能
+
+◆ システム要件
+PHP : 8以降
 SQLite : 3 (SQLiteを使用する場合)
-PostgreSQL : 10以降 (SQLiteを使用しない場合)
+PostgreSQL : 14以降 (SQLiteを使用しない場合)
+
 
 _/_/_/_/ ファイル構成 _/_/_/_/
 
 /wakarana ・・・Wakarana本体
-└ common.php ・・・main.phpとconfig.phpの双方で使用する関数・定数等をまとめたファイル
-└ main.php ・・・wakaranaクラスとwakarana_userクラスを含むWakaranaのメインファイル
-└ config.php ・・・wakarana_configクラスを含み、Wakaranaのセットアップ処理で使用するファイル
+└ main.php ・・・各クラスを含むファイルをロードする機能を持つメインファイル
+└ wakarana.php ・・・wakaranaクラスが記載されたファイル
+└ wakarana_common.php ・・・トレイトwakarana_commonが記載されたファイル
+└ wakarana_profile.php ・・・wakarana_profileクラスが記載されたファイル
+└ wakarana_data_item.php ・・・wakarana_data_itemクラスが記載されたファイル
+└ wakarana_user.php ・・・wakarana_userクラスが記載されたファイル
+└ wakarana_role.php ・・・wakarana_roleクラスが記載されたファイル
+└ wakarana_permission.php ・・・wakarana_permissionクラスが記載されたファイル
+└ wakarana_permitted_value.php ・・・wakarana_permitted_valueクラスが記載されたファイル
+└ wakarana_config.php ・・・wakarana_configクラスが記載されたファイル
 └ wakarana_config.ini ・・・Wakaranaの基本設定ファイル(別ディレクトリに設置する場合はwakaranaクラスのコンストラクタに引数を指定)
 └ wakarana_custom_fields.json ・・・カスタムフィールド設定ファイル(別ディレクトリに設置する場合はwakaranaクラスのコンストラクタに引数を指定)
 └ wakarana_email_domain_blacklist.conf ・・・メールドメインブラックリスト(各行に1つのドメインを記載したテキストファイル)
@@ -21,9 +36,11 @@ _/_/_/_/ ファイル構成 _/_/_/_/
 
 
 _/_/_/_/ 基本設定ファイル wakarana_config.ini _/_/_/_/
-  display_errors　エラー文を出力するかどうか
+
+  display_errors　エラー文を出力するか否か
   
-  use_sqlite データベースにSQLiteを使用するかどうか(trueの場合はsqlite、falseの場合はPostgreSQLを使用する)
+  use_sqlite データベースにSQLiteを使用するか否か(trueの場合はsqlite、falseの場合はPostgreSQLを使用する)
+  sqlite_db_file SQLiteのデータベースファイルのパス(この設定ファルからの相対パス)
   
   db_host PostgreSQLのホスト名
   db_user PostgreSQLのユーザー名
@@ -31,20 +48,25 @@ _/_/_/_/ 基本設定ファイル wakarana_config.ini _/_/_/_/
   db_db PostgreSQLのデータベース名
   db_port PostgreSQLのポート番号
   
-  sqlite_db_file SQLiteのデータベースファイルのパス(この設定ファルからの相対パス)
+  allow_weak_password 弱いパスワード(空または10文字未満、大文字・小文字・数字のどれかを含んでいない)を許すか否か(trueまたはfalse、trueの場合は弱いパスワードが使用可能となる)
   
-  allow_weak_password 弱いパスワード(空または10文字未満、大文字・小文字・数字のどれかを含んでいない)を許すかどうか
+  use_argon2_for_password_hashing パスワードのハッシュ化にアルゴリズムとしてArgon2(Argon2id)を使用するか否か(trueの場合はArgon2id、falseの場合はSHA-512を使用する)
+  argon2_memory_cost Argon2を使用したハッシュ値の算出1件で消費されるメモリ量(キロバイト単位)
+  argon2_time_cost Argon2を使用したハッシュ値の算出1件での計算処理反復回数
+  argon2_parallelism Argon2を使用したハッシュ値の算出を実行するスレッド数
+  dummy_password_hash 存在しないユーザーIDでログインが試行された場合の照合処理に使用するダミーのパスワードハッシュ(nullの場合は照合処理そのものを実施しない)
   
-  allow_nonunique_email_address 同じメールアドレスでの複数のアカウント作成を許すかどうか(trueまたはfalse、trueの場合はメールアドレスなし(NULL)を許可しない)
+  allow_nonunique_email_address 同じメールアドレスでの複数のアカウント作成を許すか否か(trueまたはfalse、trueの場合はメールアドレスなし(NULL)を許可しない)
   email_addresses_per_user ユーザーごとに登録可能なメールアドレスの数
   verification_email_expire メールアドレス確認トークンの有効時間(秒数で指定)
   verification_email_sendable_interval 同一メールアドレスへの確認トークン発行可能間隔(秒数で指定)
   
-  login_token_cookie_name ログイントークンのCookie保存名
+  session_token_cookie_name セッショントークンのCookie保存名
   cookie_domain サブドメインと主ドメインでログインを共通化する場合、主ドメインを指定する(例: "example.jp"と"hoge.example.jp"でログインを共通化する場合は"example.jp"を指定する)
+  delete_session_on_ip_address_change クライアント端末のIPアドレスが変わった場合にセッショントークンを破棄するか否か(trueまたはfalse、trueの場合はクライアント端末のIPアドレスが変わるとログアウト状態になる)
   
-  login_tokens_per_user ユーザーごとのトークン保持可能数(超過した場合は、生成日時の古いトークンから順に削除される)
-  login_token_expire ログイン用トークンの有効時間(秒数で指定)
+  sessions_per_user ユーザーごとのトークン保持可能数(超過した場合は、生成日時の古いトークンから順に削除される)
+  session_expire セッショントークンの有効時間(秒数で指定)
   one_time_tokens_per_user ユーザーごとのワンタイムトークンの保持可能数(上記に同じ)
   one_time_token_expire ワンタイムトークンの有効時間(秒数で指定)
   
@@ -59,45 +81,56 @@ _/_/_/_/ 基本設定ファイル wakarana_config.ini _/_/_/_/
   
   proxy_count リバースプロキシを使用している環境ではその個数を指定する。
 
-<各変数のデフォルト値>
-display_errors=true
 
-use_sqlite=true
-sqlite_db_file="wakarana.db"
+◆ 各変数のデフォルト値
 
-pg_host="localhost"
-pg_user="postgres"
-pg_pass=""
-pg_db="wakarana"
-pg_port=5432
+display_errors = true
 
-allow_weak_password=false
+use_sqlite = true
+sqlite_db_file = "wakarana.db"
 
-allow_nonunique_email_address=false
-email_addresses_per_user=5
-verification_email_expire=1800
+pg_host = "localhost"
+pg_user = "postgres"
+pg_pass = ""
+pg_db = "wakarana"
+pg_port = 5432
 
-login_token_cookie_name="wakarana_login_token"
-cookie_domain=""
+allow_weak_password = false
 
-login_tokens_per_user=4
-login_token_expire=2592000
-one_time_tokens_per_user=8
-one_time_token_expire=43200
+use_argon2_for_password_hashing = true
+argon2_memory_cost = 19456
+argon2_time_cost = 2
+argon2_parallelism = 1
+dummy_password_hash = null
 
-minimum_authenticate_interval=5
-authenticate_logs_per_user=20
-authenticate_log_retention_time=1209600
+allow_nonunique_email_address = false
+email_addresses_per_user = 5
+verification_email_expire = 1800
+verification_email_sendable_interval = 10
 
-password_reset_token_expire=1800
+session_token_cookie_name = "wakarana_session_token"
+cookie_domain = ""
+delete_session_on_ip_address_change = false
 
-totp_pin_expire=1
-two_step_verification_token_expire=600
+sessions_per_user = 4
+session_expire = 2592000
+one_time_tokens_per_user = 8
+one_time_token_expire = 43200
 
-proxy_count=0
+minimum_authenticate_interval = 5
+authenticate_logs_per_user = 20
+authenticate_log_retention_time = 1209600
+
+password_reset_token_expire = 1800
+
+totp_pin_expire = 1
+two_step_verification_token_expire = 600
+
+proxy_count = 0
 
 
 _/_/_/_/ カスタムフィールド設定ファイル wakarana_custom_fields.json _/_/_/_/
+
 {
     "カスタムフィールド名" : {
         "is_numeric" : 数値型かどうか(trueまたはfalse),
