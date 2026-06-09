@@ -7,7 +7,7 @@
 _/_/_/_/ データベース _/_/_/_/
 []内はSQLiteでのデータ型
 
-テーブル `wakarana_users`
+テーブル `wakarana_users` ・・・ ユーザーの基本情報を記録するテーブル
   `user_id` varchar(60) [TEXT COLLATE NOCASE] (NOT NULL PRIMARY KEY) ユーザーID(半角英数字及びアンダーバーが使用可能、大文字小文字区別なし)
   `password_hash` text [TEXT] (NOT NULL) パスワードのハッシュ値を含むModular Crypt Formatの文字列(またはパスワードのSHA-512方式のハッシュ値)
   `user_name` varchar(240) [TEXT COLLATE NOCASE] ユーザー名(ハンドルネームや氏名など、空欄可)
@@ -26,7 +26,7 @@ _/_/_/_/ データベース _/_/_/_/
  ※`last_access`については、処理の高速化の観点から、あえてインデックスを指定しない。
 
 
-テーブル `wakarana_user_email_addresses`
+テーブル `wakarana_user_email_addresses` ・・・ ユーザーのメールアドレスを記録するテーブル
   `user_id` varchar(60) [TEXT COLLATE NOCASE] (NOT NULL) ユーザーID
   `email_address` varchar(254) [TEXT] (NOT NULL) メールアドレス
   `is_primary` boolean [INTEGER] (NOT NULL)
@@ -36,7 +36,7 @@ _/_/_/_/ データベース _/_/_/_/
   INDEX `wakarana_idx_e2` `email_address`
 
 
-テーブル `wakarana_user_custom_fields`
+テーブル `wakarana_user_custom_fields` ・・・ ユーザーの文字列型カスタムフィールドを記録するテーブル
   `user_id` varchar(60) [TEXT COLLATE NOCASE] (NOT NULL) ユーザーID
   `custom_field_name` varchar(60) [TEXT] (NOT NULL) カスタムフィールド名
   `value_number` smallint [INTEGER] (NOT NULL) カスタムフィールド値が複数ある場合の並び順番号(1から付番)
@@ -47,7 +47,7 @@ _/_/_/_/ データベース _/_/_/_/
   INDEX `wakarana_idx_c2` `custom_field_name`, `custom_field_value`
 
 
-テーブル `wakarana_user_custom_numerical_fields`
+テーブル `wakarana_user_custom_numerical_fields` ・・・ ユーザーの数値型カスタムフィールドを記録するテーブル
   `user_id` varchar(60) [TEXT COLLATE NOCASE] (NOT NULL) ユーザーID
   `custom_field_name` varchar(60) [TEXT] (NOT NULL) カスタムフィールド名
   `value_number` smallint [INTEGER] (NOT NULL) カスタムフィールド値が複数ある場合の並び順番号(1から付番)
@@ -58,14 +58,14 @@ _/_/_/_/ データベース _/_/_/_/
   INDEX `wakarana_idx_cn2` `custom_field_name`, `custom_field_value`
 
 
-テーブル `wakarana_recovery_codes`
+テーブル `wakarana_recovery_codes` ・・・ ユーザーの2要素認証失敗時用リカバリコードを記録するテーブル
   `user_id` varchar(60) [TEXT COLLATE NOCASE] (NOT NULL) ユーザーID
   `recovery_code` varchar(24) [TEXT] (NOT NULL) 2要素認証失敗時用リカバリコード
   
   PRIMARY KEY `user_id`, `recovery_code`
 
 
-テーブル `wakarana_sessions`
+テーブル `wakarana_sessions` ・・・ ユーザーのセッション情報を記録するテーブル
   `session_id` varchar(16) [TEXT] (NOT NULL PRIMARY KEY) セッションID
   `token` varchar(43) [TEXT] (NOT NULL UNIQUE) セッショントークン(/dev/urandom由来の32バイト乱数バイナリをBase64エンコード(+と/の代わりに-と_)したもの)
   `user_id` varchar(60) [TEXT COLLATE NOCASE] (NOT NULL) ユーザーID
@@ -81,7 +81,7 @@ _/_/_/_/ データベース _/_/_/_/
  ※`last_access`と`ip_address`については、処理の高速化の観点から、あえてインデックスを指定しない。
 
 
-テーブル `wakarana_roles`
+テーブル `wakarana_roles` ・・・ ロールの基本情報を記録するテーブル
   `role_id` varchar(60) [TEXT] (NOT NULL PRIMARY KEY) ロールID
   `role_name` varchar(120) [TEXT COLLATE NOCASE] (NOT NULL) ロール名
   `role_description` text [TEXT] ロールの説明文
@@ -89,7 +89,7 @@ _/_/_/_/ データベース _/_/_/_/
   INDEX `wakarana_idx_r1` `role_name`, `role_id`
 
 
-テーブル `wakarana_user_roles`
+テーブル `wakarana_user_roles` ・・・ ユーザーとロールの対応関係を記録するテーブル
   `user_id` varchar(60) [TEXT COLLATE NOCASE] (NOT NULL) ユーザーID
   `role_id` varchar(60) [TEXT] (NOT NULL) ロール名
   
@@ -97,7 +97,7 @@ _/_/_/_/ データベース _/_/_/_/
   INDEX `wakarana_idx_ur1` `role_id`, `user_id`
 
 
-テーブル `wakarana_permissions`
+テーブル `wakarana_permissions` ・・・ 権限の対象となるリソースの基本情報を記録するテーブル
   `resource_id` varchar(120) [TEXT] (NOT NULL PRIMARY KEY) 権限の対象となる概念のID
   `permission_name` varchar(120) [TEXT COLLATE NOCASE] (NOT NULL) 権限名
   `permission_description` text [TEXT] 権限の説明文
@@ -105,7 +105,7 @@ _/_/_/_/ データベース _/_/_/_/
   INDEX `wakarana_idx_p1` `permission_name`, `resource_id`
 
 
-テーブル `wakarana_permission_actions`
+テーブル `wakarana_permission_actions` ・・・ 各リソースに対応する動作の情報を記録するテーブル
   `resource_id` varchar(120) [TEXT] (NOT NULL) 権限の対象となる概念のID
   `action` varchar(60) [TEXT] (NOT NULL) 許可される操作の識別名
   
@@ -113,7 +113,7 @@ _/_/_/_/ データベース _/_/_/_/
   INDEX `wakarana_idx_pa1` `action`, `resource_id`
 
 
-テーブル `wakarana_role_permissions`
+テーブル `wakarana_role_permissions` ・・・ ロールと権限(リソースと動作の対)の対応関係を記録するテーブル
   `role_id` varchar(60) [TEXT] (NOT NULL) ロールID
   `resource_id` varchar(120) [TEXT] (NOT NULL) 権限の対象となる概念のID
   `action` varchar(60) [TEXT] (NOT NULL) 許可される操作の識別名
@@ -122,7 +122,7 @@ _/_/_/_/ データベース _/_/_/_/
   INDEX `wakarana_idx_rp1` `resource_id`, `action`, `role_id`
 
 
-テーブル `wakarana_user_permission_caches`
+テーブル `wakarana_user_permission_caches` ・・・ ユーザーと権限(リソースと動作の対)の対応関係をキャッシュするテーブル
   `user_id` varchar(60) [TEXT COLLATE NOCASE] (NOT NULL) ユーザーID
   `resource_id` varchar(120) [TEXT] (NOT NULL) 権限の対象となる概念のID
   `action` varchar(60) [TEXT] (NOT NULL) 許可される操作の識別名
@@ -131,7 +131,7 @@ _/_/_/_/ データベース _/_/_/_/
   INDEX `wakarana_idx_up1` `resource_id`, `action`, `user_id`
 
 
-テーブル `wakarana_permitted_values`
+テーブル `wakarana_permitted_values` ・・・ 権限値の基本情報を記録するテーブル
   `permitted_value_id` varchar(60) [TEXT] (NOT NULL PRIMARY KEY) 権限値変数ID
   `permitted_value_name` varchar(120) [TEXT] (NOT NULL) 権限値名
   `permitted_value_description` text [TEXT] 権限値の説明文
@@ -139,7 +139,7 @@ _/_/_/_/ データベース _/_/_/_/
   INDEX `wakarana_idx_v1` `permitted_value_name`, `permitted_value_id`
 
 
-テーブル `wakarana_role_permitted_values`
+テーブル `wakarana_role_permitted_values` ・・・ 各ロールに割り当てられている権限値を記録するテーブル
   `role_id` varchar(60) [TEXT] (NOT NULL) ロールID
   `permitted_value_id` varchar(60) [TEXT] (NOT NULL) 権限値変数ID
   `permitted_value` integer [INTEGER] (NOT NULL) 権限の値
@@ -148,7 +148,7 @@ _/_/_/_/ データベース _/_/_/_/
   INDEX `wakarana_idx_rv1` `permitted_value_id`, `permitted_value`, `role_id`
 
 
-テーブル `wakarana_user_permitted_value_caches`
+テーブル `wakarana_user_permitted_value_caches` ・・・ 各ユーザーが保有する権限値をキャッシュするテーブル
   `user_id` varchar(60) [TEXT COLLATE NOCASE] (NOT NULL) ユーザーID
   `permitted_value_id` varchar(60) [TEXT] (NOT NULL) 権限値変数ID
   `maximum_permitted_value` integer [INTEGER] (NOT NULL) 権限の値のうち最大のもの
@@ -157,7 +157,7 @@ _/_/_/_/ データベース _/_/_/_/
   INDEX `wakarana_idx_uv1` `permitted_value_id`, `maximum_permitted_value`, `user_id`
 
 
-テーブル `wakarana_one_time_tokens`
+テーブル `wakarana_one_time_tokens` ・・・ CSRF対策用のワンタイムトークンを記録するテーブル
   `token` varchar(43) [TEXT] (NOT NULL PRIMARY KEY) ワンタイムトークン(上記と同じ)
   `user_id` varchar(60) [TEXT COLLATE NOCASE] (NOT NULL) ユーザーID
   `token_created` timestamp [TEXT] (NOT NULL) そのトークンの生成日時
@@ -167,18 +167,27 @@ _/_/_/_/ データベース _/_/_/_/
   INDEX `wakarana_idx_o3` `user_id`, `token`
 
 
-テーブル `wakarana_authenticate_logs`
-  `user_id` varchar(60) [TEXT COLLATE NOCASE] (NOT NULL) ユーザーID
-  `succeeded` boolean [INTEGER] (NOT NULL) ログインに成功したかどうか
-  `authenticate_datetime` timestamp [TEXT] (NOT NULL) ログイン試行が行われた日時(マイクロ秒単位)
+テーブル `wakarana_authentication_logs` ・・・ ユーザーによる各種試行のログを保存するテーブル
   `ip_address` varchar(39) [TEXT] (NOT NULL) 利用者のIPアドレス
+  `user_id` varchar(60) [TEXT COLLATE NOCASE] ユーザーID
+  `authentication_type` varchar(32) [TEXT] (NOT NULL) 試行の種類
+  `succeeded` boolean [INTEGER] (NOT NULL) 試行に成功したかどうか
+  `failure_reason` text [TEXT] 試行失敗時の失敗理由メッセージ(試行成功時はNULL)
+  `authentication_datetime` timestamp [TEXT] (NOT NULL) 試行が行われた日時(マイクロ秒単位)
   
-  INDEX `wakarana_idx_a1` `user_id`, `authenticate_datetime`
-  INDEX `wakarana_idx_a2` `ip_address`, `authenticate_datetime`
-  INDEX `wakarana_idx_a3` `authenticate_datetime`
+  INDEX `wakarana_idx_a1` `user_id`, `authentication_datetime`
+  INDEX `wakarana_idx_a2` `authentication_datetime`
 
 
-テーブル `wakarana_email_address_verification_codes`
+テーブル `wakarana_failed_authentication_per_ip_address` ・・・ IPアドレスごとの試行失敗情報を保存するテーブル
+  `ip_address` varchar(39) [TEXT] (NOT NULL PRIMARY KEY) 利用者のIPアドレス
+  `failure_count` smallint [INTEGER] 現時点までの連続失敗回数
+  `last_authentication_datetime` timestamp [TEXT] (NOT NULL) 最後に試行が行われた日時(マイクロ秒単位)
+
+  INDEX `wakarana_idx_fa1` `last_authentication_datetime`
+
+
+テーブル `wakarana_email_address_verification_codes` ・・・ メールアドレス確認用コードを保存するテーブル
   `user_id` varchar(60) [TEXT COLLATE NOCASE] (UNIQUE)ユーザーID(NULLの場合は、ユーザーID登録前のメールアドレス確認)
   `email_address` varchar(254) [TEXT] (NOT NULL) メールアドレス
   `verification_code` varchar(8) [TEXT] (NOT NULL) メールアドレス確認用コード
@@ -190,7 +199,7 @@ _/_/_/_/ データベース _/_/_/_/
   INDEX `wakarana_idx_ev3` `ip_address`, `code_created`
 
 
-テーブル `wakarana_invite_codes`
+テーブル `wakarana_invite_codes` ・・・ ユーザー招待コードを保存するテーブル
   `invite_code` varchar(16) [TEXT] (NOT NULL PRIMARY KEY) 招待コード
   `is_active` boolean [INTEGER] (NOT NULL) 有効か否か
   `user_id` varchar(60) [TEXT COLLATE NOCASE] コードを発行したユーザーのユーザーID(現存するユーザーが発行したコードでない場合はNULL)
@@ -207,15 +216,15 @@ _/_/_/_/ データベース _/_/_/_/
   INDEX `wakarana_idx_i6` `usage_count`, `is_active`
 
 
-テーブル `wakarana_password_reset_tokens`
-  `token` varchar(43) [TEXT] (NOT NULL PRIMARY KEY) メールアドレス確認用トークン(上記と同じ)
-  `user_id` varchar(60) [TEXT COLLATE NOCASE] (NOT NULL UNIQUE)ユーザーID(NULLの場合は、ユーザーID登録前のメールアドレス確認)
+テーブル `wakarana_password_reset_tokens` ・・・ パスワードリセット用トークンを保存するテーブル
+  `token` varchar(43) [TEXT] (NOT NULL PRIMARY KEY) パスワードリセット用トークン(上記と同じ)
+  `user_id` varchar(60) [TEXT COLLATE NOCASE] (NOT NULL UNIQUE)ユーザーID
   `token_created` timestamp [TEXT] (NOT NULL) そのトークンの生成日時
   
   INDEX `wakarana_idx_pr1` `token_created`
 
 
-テーブル `wakarana_two_step_verification_tokens`
+テーブル `wakarana_two_step_verification_tokens` ・・・ 2要素認証用仮トークンを保存するテーブル
   `token` varchar(43) [TEXT] (NOT NULL PRIMARY KEY) 仮トークン(上記と同じ)
   `user_id` varchar(60) [TEXT COLLATE NOCASE] (NOT NULL UNIQUE) ユーザーID
   `token_created` timestamp [TEXT] (NOT NULL) そのトークンの生成日時

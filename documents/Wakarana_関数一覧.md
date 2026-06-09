@@ -584,34 +584,49 @@ Base32方式でエンコードされた文字列をバイナリにデコード�
 **返り値** : キー"operating_system"(OS名)と"browser_name"(ブラウザ名)が含まれる連想配列。
 
 
-#### wakarana::get_client_auth_logs($ip_address)
-クライアントのIPアドレスからログイン試行履歴を新しい順に配列で取得する。  
+#### wakarana::check_auth_allowed($ip_address, $user_id=NULL)
+指定されたIPアドレスとユーザーIDがともにタイムアウト中でないことを確認する。  
   
-**$ip_address** : サニタイズ済みのIPアドレス  
+**$ip_address** : IPアドレス  
+**$user_id** : ユーザーID。ユーザーアカウントに依存しない試行の場合はNULL。  
   
-**返り値** : 成功した場合はそのIPアドレスの各試行履歴が格納された連想配列("user_id"(ユーザーID)、"succeeded"(正しいパスワードを入力したか否か)、"authenticate_datetime"(試行日時))を、配列に入れて返す。失敗した場合はFALSEを返す。
+**返り値** : タイムアウト中でなければTRUE、IPアドレスとユーザーIDのいずれか一方でもタイムアウト中の場合はFALSEを返す。
 
 
-#### wakarana::check_client_auth_interval($ip_address, $unsucceeded_only=FALSE)
-クライアントのIPアドレスが前回のログイン試行から次に試行できるようになるまでの期間を経過しているかを調べる。  
+#### wakarana::add_auth_log($ip_address, $user_id, $authentication_type, $succeeded, $failure_reason=NULL)
+認証試行ログを登録する。  
   
-**$ip_address** : サニタイズ済みのIPアドレス  
-**$unsucceeded_only** : 失敗した試行のみを対象にする  
+**$ip_address** : IPアドレス  
+**$user_id** : ユーザーID。ユーザーアカウントに依存しない試行の場合はNULL。  
+**$authentication_type** : 試行の種類を表す文字列  
+**$succeeded** : 成功したか否か  
+**$failure_reason** : 失敗理由文。成功した場合はNULL。  
   
-**返り値** : wakarana_config.iniで指定した期間が経過していればTRUE、そうでない場合はFALSEを返す。
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
-#### wakarana::delete_auth_logs($expire=-1)
-指定した期間より前のログイン試行履歴を全て削除する。  
+#### wakarana::delete_auth_logs($retention_seconds_or_datetime=-1)
+指定した期間より前の認証試行ログを全て削除する。  
   
-**$expire** : 経過時間の秒数。-1を指定した場合はwakarana_config.iniで指定した履歴の保持秒数が代わりに使用される。  
+**$retention_seconds_or_datetime** : 経過時間の秒数。-1を指定した場合はwakarana_config.iniで指定した履歴の保持秒数が代わりに使用される。YYYY-MM-DD hh:mm:ss形式の日時文字列が指定された場合、当該日時以前の試行ログを削除する。  
+  
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
+#### wakarana::export_auth_logs($file_path, $date_str, $compress=TRUE, $delete_exported_logs=FALSE)
+指定した日付の認証試行ログをJSONL形式でファイルに出力する。  
+  
+**$file_path** : 出力するファイルのパス。既に存在するファイルを指定した場合は上書きする。  
+**$date_str** : YYYY-MM-DD形式の日付文字列  
+**$compress** : TRUEが指定された場合、出力ファイルはgzip圧縮される。  
+**$delete_exported_logs** : TRUEが指定された場合、ファイルに出力されたログはデータベースから削除される。  
   
 **返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
 #### wakarana::authenticate($user_id, $password, $ip_address=NULL)
 ユーザーIDとパスワードを照合するが、トークンの生成と送信は行わない。  
-内部的にログイン試行ログの参照と登録は実施する。  
+内部的に認証試行ログの参照と登録は実施する。  
   
 **$user_id** : ユーザーID  
 **$password** : パスワード  
@@ -637,7 +652,7 @@ Base32方式でエンコードされた文字列をバイナリにデコード�
 
 #### wakarana::authenticate_with_email_address($email_address, $password, $ip_address=NULL)
 ユーザーIDの代わりにメールアドレスを使用し、パスワードを照合する。トークンの生成と送信は行わない。  
-内部的にログイン試行ログの参照と登録は実施する。  
+内部的に認証試行ログの参照と登録は実施する。  
   
 wakarana_config.iniで同じメールアドレスを複数アカウントに使用できるよう設定している場合、この関数は使用できない。  
   
@@ -1382,38 +1397,18 @@ wakarana_userインスタンスで直前に行われた各種認証・登録処�
 **返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
-#### wakarana_user::get_auth_logs()
-ユーザーのログイン試行履歴を新しい順に配列で取得する。  
+#### wakarana_user::get_auth_logs($limit=NULL)
+ユーザーの認証試行ログを新しい順に配列で取得する。  
   
-**返り値** : 成功した場合はそのユーザーの各試行履歴が格納された連想配列("succeeded"(認証に成功したか否か)、"authenticate_datetime"(試行日時), "ip_address"(IPアドレス))を、配列に入れて返す。失敗した場合はFALSEを返す。
-
-
-#### wakarana_user::check_auth_interval($unsucceeded_only=FALSE)
-ユーザーが前回のログイン試行から次に試行できるようになるまでの期間を経過しているかを調べる。  
+**$limit** : 取得するログの上限件数  
   
-**$unsucceeded_only** : 失敗した試行のみを対象にする  
-  
-**返り値** : wakarana_config.iniで指定した期間が経過していればTRUE、そうでない場合はFALSEを返す。
-
-
-#### wakarana_user::add_auth_log($succeeded)
-ユーザーのログイン試行ログを登録する。  
-  
-**$succeeded** : ログインが成功した場合はTRUE、失敗した場合はFALSEを指定する。  
-  
-**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
-
-
-#### wakarana_user::delete_auth_logs()
-ユーザーのログイン試行履歴を全て削除する。  
-  
-**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はそのユーザーの各試行ログが格納された連想配列("ip_address"(IPアドレス)、"authentication_type"(認証の種類)、"succeeded"(認証に成功したか否か)、"failure_reason"(試行失敗時の失敗理由メッセージ)、"authentication_datetime"(試行日時))を、新しいものから順に配列へ入れて返す。失敗した場合はFALSEを返す。
 
 
 #### wakarana_user::update_last_access($session_id=NULL, ip_address=NULL)
 現在の時刻をユーザーの最終アクセス日時として記録する。  
 セッションIDを指定した場合、そのセッションの最終アクセス日時も更新し、さらに、IPアドレスが指定されていた場合はその値でセッションのIPアドレスを更新する。  
-なお、セッショントークン発行処理とログアウト処理ではこの関数が自動的に実行される。
+なお、セッショントークン発行処理とログアウト処理ではこの関数が自動的に実行される。  
   
 **$session_id** : セッションID  
 **$ip_address** : クライアント端末のIPアドレス  
@@ -1461,7 +1456,7 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
 
 #### wakarana_user::authenticate($password, $ip_address=NULL)
 ユーザーに対するパスワードの照合を行う。  
-セッショントークンの生成と送信は行わないが、内部的にログイン試行ログの参照と登録は実施する。  
+セッショントークンの生成と送信は行わないが、内部的に認証試行ログの参照と登録は実施する。  
   
 **$password** : パスワード  
 **$ip_address** : IPアドレス。NULLの場合はクライアント端末のIPアドレスを参照する。  
