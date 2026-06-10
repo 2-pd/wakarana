@@ -181,7 +181,7 @@ _/_/_/_/ データベース _/_/_/_/
 
 テーブル `wakarana_failed_authentication_per_ip_address` ・・・ IPアドレスごとの試行失敗情報を保存するテーブル
   `ip_address` varchar(39) [TEXT] (NOT NULL PRIMARY KEY) 利用者のIPアドレス
-  `failure_count` smallint [INTEGER] 現時点までの連続失敗回数
+  `failure_count` integer [INTEGER] (NOT NULL) 現時点までの連続失敗回数
   `last_authentication_datetime` timestamp [TEXT] (NOT NULL) 最後に試行が行われた日時(マイクロ秒単位)
 
   INDEX `wakarana_idx_fa1` `last_authentication_datetime`
