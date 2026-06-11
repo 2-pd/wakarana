@@ -720,18 +720,6 @@ class wakarana {
     }
     
     
-    function get_client_auth_logs ($ip_address) {
-        try {
-            $stmt = $this->profile->db_obj->query('SELECT "user_id", "succeeded", "authenticate_datetime" FROM "wakarana_authenticate_logs" WHERE "ip_address" = \''.$ip_address.'\' ORDER BY "authenticate_datetime" DESC');
-            
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $err) {
-            $this->print_error("認証試行ログの取得に失敗しました。".$err->getMessage());
-            return FALSE;
-        }
-    }
-    
-    
     function check_client_auth_interval ($ip_address, $unsucceeded_only = FALSE) {
         if ($unsucceeded_only) {
             $succeeded_q = ' AND "succeeded" = FALSE';
@@ -751,6 +739,29 @@ class wakarana {
             $this->print_error("認証試行間隔の確認に失敗しました。".$err->getMessage());
             return FALSE;
         }
+    }
+    
+    
+    function add_auth_log ($ip_address, $user_id, $authentication_type, $succeeded, $failure_reason = NULL) {
+        try {
+            $stmt = $this->profile->db_obj->prepare('INSERT INTO "wakarana_authentication_logs"("ip_address", "user_id", "authentication_type", "succeeded", "failure_reason", "authentication_datetime") VALUES (:ip_address, :user_id, :authentication_type, '.($succeeded ? '1' : '0').', :failure_reason, \''.(new DateTime())->format("Y-m-d H:i:s.u").'\')');
+            
+            $stmt->bindValue(":ip_address", $ip_address, PDO::PARAM_STR);
+            $stmt->bindValue(":user_id", $user_id, PDO::PARAM_STR);
+            $stmt->bindValue(":authentication_type", $authentication_type, PDO::PARAM_STR);
+            if (is_null($failure_reason)) {
+                $stmt->bindValue(":failure_reason", NULL, PDO::PARAM_NULL);
+            } else {
+                $stmt->bindValue(":failure_reason", $failure_reason, PDO::PARAM_STR);
+            }
+            
+            $stmt->execute();
+        } catch (PDOException $err) {
+            $this->print_error("認証試行ログの登録に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        return TRUE;
     }
     
     
