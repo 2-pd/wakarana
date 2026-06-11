@@ -765,13 +765,24 @@ class wakarana {
     }
     
     
-    function delete_auth_logs ($expire = -1) {
-        if ($expire === -1) {
-            $expire = $this->profile->get_config("minimum_authenticate_interval");
+    function delete_auth_logs ($retention_seconds_or_datetime = -1) {
+        if (is_string($retention_seconds_or_datetime)) {
+            if (!preg_match("/\A[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01]) ([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]\z/u", $retention_seconds_or_datetime)) {
+                $this->print_error("日時の指定が異常です。");
+                return FALSE;
+            }
+            
+            $authentication_datetime = $retention_seconds_or_datetime.".999999";
+        } else {
+            if ($retention_seconds_or_datetime === -1) {
+                $retention_seconds_or_datetime = $this->profile->get_config("auth_log_retention_seconds");
+            }
+            
+            $authentication_datetime = (new DateTime())->modify("-".$retention_seconds_or_datetime." second")->format("Y-m-d H:i:s.u");
         }
         
         try {
-            $this->profile->db_obj->exec('DELETE FROM "wakarana_authenticate_logs" WHERE "authenticate_datetime" <= \''.(new DateTime())->modify("-".$expire." second")->format("Y-m-d H:i:s.u").'\'');
+            $this->profile->db_obj->exec('DELETE FROM "wakarana_authentication_logs" WHERE "authentication_datetime" <= \''.$authentication_datetime.'\'');
         } catch (PDOException $err) {
             $this->print_error("認証試行ログの削除に失敗しました。".$err->getMessage());
             return FALSE;
