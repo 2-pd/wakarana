@@ -624,6 +624,12 @@ Base32方式でエンコードされた文字列をバイナリにデコード�
 **返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
+#### wakarana::delete_expired_ip_address_auth_info()
+IPアドレスごとの認証失敗情報のうち、保持期間を過ぎたものを削除する。  
+  
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
 #### wakarana::authenticate($user_id, $password, $ip_address=NULL)
 ユーザーIDとパスワードを照合するが、トークンの生成と送信は行わない。  
 内部的に認証試行ログの参照と登録は実施する。  

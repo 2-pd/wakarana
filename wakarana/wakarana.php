@@ -832,6 +832,18 @@ class wakarana {
     }
     
     
+    function delete_expired_ip_address_auth_info () {
+        try {
+            $this->profile->db_obj->exec('DELETE FROM "wakarana_failed_authentication_per_ip_address" WHERE "last_authentication_datetime" < \''.(new DateTime("-".$this->profile->get_config("auth_failure_expiration_seconds")." seconds")->format("Y-m-d H:i:s.u")).'\'');
+        } catch (PDOException $err) {
+            $this->print_error("認証失敗情報の削除に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        return TRUE;
+    }
+    
+    
     function authenticate ($user_id, $password, $ip_address = NULL) {
         $this->rejection_reason = NULL;
         
