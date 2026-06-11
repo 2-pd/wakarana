@@ -73,6 +73,7 @@ _/_/_/_/ 基本設定ファイル wakarana_config.ini _/_/_/_/
   auth_initial_delay_seconds ログイン試行後、次に試行できるようになるまでのタイムアウト時間(秒)
   auth_max_delay_seconds 連続でログインに失敗した場合のタイムアウト時間の上限(秒)
   auth_log_retention_seconds ログイン試行ログの保持期間(秒数で指定、nullまたは0の場合はログイン試行ログを削除しない)
+  auth_failure_expiration_seconds 連続ログイン失敗回数の保持期間(秒)
   
   password_reset_token_expire パスワードリセット用トークンの有効時間(秒数で指定)
   
@@ -120,6 +121,7 @@ one_time_token_expire = 43200
 auth_initial_delay_seconds = 5
 auth_max_delay_seconds = 60
 auth_log_retention_seconds = 1209600
+auth_failure_expiration_seconds = 1800
 
 password_reset_token_expire = 1800
 
