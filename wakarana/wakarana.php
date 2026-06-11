@@ -743,11 +743,22 @@ class wakarana {
     
     
     function add_auth_log ($ip_address, $user_id, $authentication_type, $succeeded, $failure_reason = NULL) {
+        $dt = new DateTime();
+        $now_datetime = $dt->format("Y-m-d H:i:s.u");
+        $dt->modify("-".$this->profile->get_config("auth_failure_expiration_seconds")." seconds");
+        $threshold_datetime = $dt->format("Y-m-d H:i:s.u");
+        
+        $this->profile->begin_transaction();
+        
         try {
-            $stmt = $this->profile->db_obj->prepare('INSERT INTO "wakarana_authentication_logs"("ip_address", "user_id", "authentication_type", "succeeded", "failure_reason", "authentication_datetime") VALUES (:ip_address, :user_id, :authentication_type, '.($succeeded ? '1' : '0').', :failure_reason, \''.(new DateTime())->format("Y-m-d H:i:s.u").'\')');
+            $stmt = $this->profile->db_obj->prepare('INSERT INTO "wakarana_authentication_logs"("ip_address", "user_id", "authentication_type", "succeeded", "failure_reason", "authentication_datetime") VALUES (:ip_address, :user_id, :authentication_type, '.($succeeded ? '1' : '0').', :failure_reason, \''.$now_datetime.'\')');
             
             $stmt->bindValue(":ip_address", $ip_address, PDO::PARAM_STR);
-            $stmt->bindValue(":user_id", $user_id, PDO::PARAM_STR);
+            if (is_null($user_id)) {
+                $stmt->bindValue(":user_id", NULL, PDO::PARAM_NULL);
+            } else {
+                $stmt->bindValue(":user_id", $user_id, PDO::PARAM_STR);
+            }
             $stmt->bindValue(":authentication_type", $authentication_type, PDO::PARAM_STR);
             if (is_null($failure_reason)) {
                 $stmt->bindValue(":failure_reason", NULL, PDO::PARAM_NULL);
@@ -756,10 +767,35 @@ class wakarana {
             }
             
             $stmt->execute();
+            
+            if ($succeeded) {
+                $stmt = $this->profile->db_obj->prepare('DELETE FROM "wakarana_failed_authentication_per_ip_address" WHERE "ip_address" = :ip_address');
+            } else {
+                $stmt = $this->profile->db_obj->prepare('
+                    INSERT INTO "wakarana_failed_authentication_per_ip_address" ("ip_address", "failure_count", "last_authentication_datetime")
+                    VALUES (:ip_address, 1, \''.$now_datetime.'\')
+                    ON CONFLICT ("ip_address") DO UPDATE SET
+                        "failure_count" = CASE
+                            WHEN "wakarana_failed_authentication_per_ip_address"."last_authentication_datetime" >= \''.$threshold_datetime.'\'
+                            THEN "wakarana_failed_authentication_per_ip_address"."failure_count" + 1
+                            ELSE 1
+                        END,
+                        "last_authentication_datetime" = \''.$now_datetime.'\'
+                ');
+            }
+            
+            $stmt->bindValue(":ip_address", $ip_address, PDO::PARAM_STR);
+            
+            $stmt->execute();
         } catch (PDOException $err) {
             $this->print_error("認証試行ログの登録に失敗しました。".$err->getMessage());
+            
+            $this->profile->rollback_transaction();
+            
             return FALSE;
         }
+        
+        $this->profile->commit_transaction();
         
         return TRUE;
     }
@@ -776,6 +812,10 @@ class wakarana {
         } else {
             if ($retention_seconds_or_datetime === -1) {
                 $retention_seconds_or_datetime = $this->profile->get_config("auth_log_retention_seconds");
+                
+                if (empty($retention_seconds_or_datetime)) {
+                    return NULL;
+                }
             }
             
             $authentication_datetime = (new DateTime())->modify("-".$retention_seconds_or_datetime." second")->format("Y-m-d H:i:s.u");

@@ -39,8 +39,8 @@ class wakarana_config {
             "one_time_tokens_per_user" => 8,
             "one_time_token_expire" => 43200,
             
-            "auth_initial_delay_seconds" => 5,
-            "auth_max_delay_seconds" => 60,
+            "auth_initial_lockout_seconds" => 5,
+            "auth_max_lockout_seconds" => 60,
             "auth_log_retention_seconds" => 1209600,
             "auth_failure_expiration_seconds" => 1800,
             
@@ -129,8 +129,8 @@ class wakarana_config {
         fwrite($file_h, "one_time_token_expire = ".$this->profile->get_config("one_time_token_expire")."\n");
         fwrite($file_h, "\n");
         
-        fwrite($file_h, "auth_initial_delay_seconds = ".$this->profile->get_config("auth_initial_delay_seconds")."\n");
-        fwrite($file_h, "auth_max_delay_seconds = ".$this->profile->get_config("auth_max_delay_seconds")."\n");
+        fwrite($file_h, "auth_initial_lockout_seconds = ".$this->profile->get_config("auth_initial_lockout_seconds")."\n");
+        fwrite($file_h, "auth_max_lockout_seconds = ".$this->profile->get_config("auth_max_lockout_seconds")."\n");
         fwrite($file_h, "auth_log_retention_seconds = ".$this->profile->get_config("auth_log_retention_seconds")."\n");
         fwrite($file_h, "auth_failure_expiration_seconds = ".$this->profile->get_config("auth_failure_expiration_seconds")."\n");
         fwrite($file_h, "\n");
@@ -215,8 +215,8 @@ class wakarana_config {
         fwrite($file_h, "one_time_token_expire = ".self::ORIGINAL_CONFIG["one_time_token_expire"]."\n");
         fwrite($file_h, "\n");
         
-        fwrite($file_h, "auth_initial_delay_seconds = ".self::ORIGINAL_CONFIG["auth_initial_delay_seconds"]."\n");
-        fwrite($file_h, "auth_max_delay_seconds = ".self::ORIGINAL_CONFIG["auth_max_delay_seconds"]."\n");
+        fwrite($file_h, "auth_initial_lockout_seconds = ".self::ORIGINAL_CONFIG["auth_initial_lockout_seconds"]."\n");
+        fwrite($file_h, "auth_max_lockout_seconds = ".self::ORIGINAL_CONFIG["auth_max_lockout_seconds"]."\n");
         fwrite($file_h, "auth_log_retention_seconds = ".self::ORIGINAL_CONFIG["auth_log_retention_seconds"]."\n");
         fwrite($file_h, "auth_failure_expiration_seconds = ".self::ORIGINAL_CONFIG["auth_failure_expiration_seconds"]."\n");
         fwrite($file_h, "\n");

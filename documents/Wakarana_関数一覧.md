@@ -585,12 +585,12 @@ Base32方式でエンコードされた文字列をバイナリにデコード�
 
 
 #### wakarana::check_auth_allowed($ip_address, $user_id=NULL)
-指定されたIPアドレスとユーザーIDがともにタイムアウト中でないことを確認する。  
+指定されたIPアドレスとユーザーIDがともにロックアウト中でないことを確認する。  
   
 **$ip_address** : IPアドレス  
 **$user_id** : ユーザーID。ユーザーアカウントに依存しない試行の場合はNULL。  
   
-**返り値** : タイムアウト中でなければTRUE、IPアドレスとユーザーIDのいずれか一方でもタイムアウト中の場合はFALSEを返す。
+**返り値** : ロックアウト中でなければTRUE、IPアドレスとユーザーIDのいずれか一方でもロックアウト中の場合はFALSEを返す。
 
 
 #### wakarana::add_auth_log($ip_address, $user_id, $authentication_type, $succeeded, $failure_reason=NULL)
@@ -608,9 +608,9 @@ Base32方式でエンコードされた文字列をバイナリにデコード�
 #### wakarana::delete_auth_logs($retention_seconds_or_datetime=-1)
 指定した期間より前の認証試行ログを全て削除する。  
   
-**$retention_seconds_or_datetime** : 経過時間の秒数。-1を指定した場合はwakarana_config.iniで指定した履歴の保持秒数が代わりに使用される。YYYY-MM-DD hh:mm:ss形式の日時文字列が指定された場合、当該日時以前の試行ログを削除する。  
+**$retention_seconds_or_datetime** : 経過時間の秒数。-1を指定した場合はwakarana_config.iniで指定した履歴の保持秒数(この値がnullの場合は削除処理を実行しない)が代わりに使用される。YYYY-MM-DD hh:mm:ss形式の日時文字列が指定された場合、当該日時以前の試行ログを削除する。  
   
-**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はTRUE、削除処理を実行しなかった場合はNULL、失敗した場合はFALSEを返す。
 
 
 #### wakarana::export_auth_logs($file_path, $date_str, $compress=TRUE, $delete_exported_logs=FALSE)
