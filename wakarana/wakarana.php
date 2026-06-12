@@ -720,25 +720,53 @@ class wakarana {
     }
     
     
-    function check_client_auth_interval ($ip_address, $unsucceeded_only = FALSE) {
-        if ($unsucceeded_only) {
-            $succeeded_q = ' AND "succeeded" = FALSE';
-        } else {
-            $succeeded_q = '';
+    function check_auth_allowed ($ip_address, $user_id = NULL) {
+        $this->profile->begin_transaction();
+        
+        $this->delete_auth_logs();
+        $this->delete_expired_ip_address_auth_info();
+        
+        $this->profile->commit_transaction();
+        
+        if (!is_null($user_id)) {
+            try {
+                $stmt = $this->profile->db_obj->prepare('SELECT 1 FROM "wakarana_authentication_logs" WHERE "user_id" = :user_id AND "authentication_datetime" > \''.(new DateTime("-".$this->profile->get_config("auth_initial_lockout_seconds")." seconds")->format("Y-m-d H:i:s.u")).'\' LIMIT 1');
+                
+                $stmt->bindValue(":user_id", $user_id, PDO::PARAM_STR);
+                
+                $stmt->execute();
+            } catch (PDOException $err) {
+                $this->print_error("ユーザーIDのロックアウト状態の確認に失敗しました。".$err->getMessage());
+                return FALSE;
+            }
+            
+            if (!empty($stmt->fetchColumn())) {
+                return FALSE;
+            }
         }
         
         try {
-            $stmt = $this->profile->db_obj->query('SELECT 1 FROM "wakarana_authenticate_logs" WHERE "ip_address" = \''.$ip_address.'\' AND "authenticate_datetime" >= \''.date("Y-m-d H:i:s", time() - $this->profile->get_config("minimum_authenticate_interval")).'\''.$succeeded_q." LIMIT 1");
+            $stmt = $this->profile->db_obj->prepare('SELECT * FROM "wakarana_failed_authentication_per_ip_address" WHERE "ip_address" = :ip_address');
             
-            if (empty($stmt->fetchColumn())) {
-                return TRUE;
-            } else {
-                return FALSE;
-            }
+            $stmt->bindValue(":ip_address", $ip_address, PDO::PARAM_STR);
+            
+            $stmt->execute();
         } catch (PDOException $err) {
-            $this->print_error("認証試行間隔の確認に失敗しました。".$err->getMessage());
+            $this->print_error("IPアドレスのロックアウト状態の確認に失敗しました。".$err->getMessage());
             return FALSE;
         }
+        
+        $auth_info = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!empty($auth_info)) {
+            $lockout_seconds = min(2 ** ($auth_info["failure_count"] - 1) * $this->profile->get_config("auth_initial_lockout_seconds"), $this->profile->get_config("auth_max_lockout_seconds"));
+            
+            if ($auth_info["last_authentication_datetime"] > new DateTime("-".$lockout_seconds." seconds")->format("Y-m-d H:i:s.u")) {
+                return FALSE;
+            }
+        }
+        
+        return TRUE;
     }
     
     
@@ -818,7 +846,7 @@ class wakarana {
                 }
             }
             
-            $authentication_datetime = (new DateTime())->modify("-".$retention_seconds_or_datetime." second")->format("Y-m-d H:i:s.u");
+            $authentication_datetime = new DateTime("-".$retention_seconds_or_datetime." seconds")->format("Y-m-d H:i:s.u");
         }
         
         try {

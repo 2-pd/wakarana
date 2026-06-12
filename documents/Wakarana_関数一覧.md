@@ -595,6 +595,7 @@ Base32方式でエンコードされた文字列をバイナリにデコード�
 
 #### wakarana::add_auth_log($ip_address, $user_id, $authentication_type, $succeeded, $failure_reason=NULL)
 認証試行ログを登録する。  
+各種認証処理を行う関数は内部的にこの関数を実行する。  
   
 **$ip_address** : IPアドレス  
 **$user_id** : ユーザーID。ユーザーアカウントに依存しない試行の場合はNULL。  
