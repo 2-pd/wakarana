@@ -294,6 +294,12 @@ wakarana_config.iniの設定値を取得する。
 **返り値** : ドメインがメールドメインブラックリストに含まれない場合はTRUE、含まれればFALSEを返す。
 
 
+#### wakarana_common::get_email_domain_blacklist()
+メールドメインブラックリストを配列で取得する。  
+  
+**返り値** : メールドメインブラックリストのドメインを配列で返す。メールドメインブラックリストの読み込みに失敗した場合はFALSEを返す。
+
+
 ## class wakarana
 Wakaranaの主要機能を提供し、wakarana_data_itemの子孫クラスのインスタンスは全てこのクラスのインスタンスにより生成される。
 

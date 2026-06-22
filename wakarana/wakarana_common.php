@@ -126,4 +126,9 @@ trait wakarana_common {
     function check_email_domain ($domain_name) {
         return !in_array(mb_strtolower(trim($domain_name)), $this->profile->get_email_domain_blacklist());
     }
+    
+    
+    function get_email_domain_blacklist () {
+        return $this->profile->get_email_domain_blacklist();
+    }
 }
