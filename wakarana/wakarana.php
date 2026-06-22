@@ -880,6 +880,106 @@ class wakarana {
     }
     
     
+    function export_auth_logs ($file_path, $date_str, $compress = TRUE, $delete_exported_logs = FALSE) {
+        set_time_limit(0);
+        
+        $this->profile->db_obj->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $this->profile->db_obj->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+        
+        $fp = $compress ? gzopen($file_path, "wb9") : @fopen($file_path, "w");
+        if (empty($fp)) {
+            $this->print_error("ファイルの作成に失敗しました。");
+            
+            return FALSE;
+        }
+        
+        $datetime_start = $date_str." 00:00:00.000000";
+        $datetime_end = $date_str." 23:59:59.999999";
+        
+        if ($this->profile->get_config("use_sqlite")) {
+            try {
+                $stmt = $this->profile->db_obj->prepare('SELECT * FROM "wakarana_authentication_logs" WHERE "authentication_datetime" >= :datetime_start AND "authentication_datetime" <= :datetime_end ORDER BY "authentication_datetime" ASC');
+                $stmt->bindValue(":datetime_start", $datetime_start, PDO::PARAM_STR);
+                $stmt->bindValue(":datetime_end", $datetime_end, PDO::PARAM_STR);
+                $stmt->execute();
+                
+                while ($row = $stmt->fetch()) {
+                    if ($compress) {
+                        gzwrite($fp, json_encode($row, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR)."\n");
+                    } else {
+                        fwrite($fp, json_encode($row, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR)."\n");
+                    }
+                }
+            } catch (PDOException $err) {
+                $this->print_error("認証試行ログの抽出に失敗しました。".$err->getMessage());
+                return FALSE;
+            }
+        } else {
+            $this->profile->begin_transaction();
+            
+            try {
+                $stmt = $this->profile->db_obj->prepare('DECLARE "auth_log_cursor" CURSOR FOR SELECT * FROM "wakarana_authentication_logs" WHERE "authentication_datetime" >= :datetime_start AND "authentication_datetime" <= :datetime_end ORDER BY "authentication_datetime" ASC');
+                $stmt->bindValue(":datetime_start", $datetime_start, PDO::PARAM_STR);
+                $stmt->bindValue(":datetime_end", $datetime_end, PDO::PARAM_STR);
+                $stmt->execute();
+                
+                $fetch_stmt = $this->profile->db_obj->prepare('FETCH 10000 FROM "auth_log_cursor"');
+                
+                while (TRUE) {
+                    $fetch_stmt->execute();
+                    $rows = $fetch_stmt->fetchAll();
+                    
+                    if (empty($rows)) {
+                        break;
+                    }
+                    
+                    foreach ($rows as $row) {
+                        if ($compress) {
+                            gzwrite($fp, json_encode($row, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR)."\n");
+                        } else {
+                            fwrite($fp, json_encode($row, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR)."\n");
+                        }
+                    }
+                }
+            } catch (PDOException $err) {
+                $this->print_error("認証試行ログの抽出に失敗しました。".$err->getMessage());
+                
+                $this->profile->rollback_transaction();
+                
+                return FALSE;
+            }
+            
+            $this->profile->commit_transaction();
+        }
+        
+        if ($compress) {
+            gzclose($fp);
+        } else {
+            fclose($fp);
+        }
+        
+        if ($delete_exported_logs) {
+            try {
+                $stmt = $this->profile->db_obj->prepare('DELETE FROM "wakarana_authentication_logs" WHERE "authentication_datetime" >= :datetime_start AND "authentication_datetime" <= :datetime_end');
+                $stmt->bindValue(":datetime_start", $datetime_start, PDO::PARAM_STR);
+                $stmt->bindValue(":datetime_end", $datetime_end, PDO::PARAM_STR);
+                $stmt->execute();
+                
+                if ($this->profile->get_config("use_sqlite")) {
+                    exec('VACUUM');
+                } else {
+                    exec('VACUUM FULL "wakarana_authentication_logs"');
+                }
+            } catch (PDOException $err) {
+                $this->print_error("認証試行ログの削除に失敗しました。".$err->getMessage());
+                return FALSE;
+            }
+        }
+        
+        return TRUE;
+    }
+    
+    
     function delete_expired_ip_address_auth_info () {
         try {
             $this->profile->db_obj->exec('DELETE FROM "wakarana_failed_authentication_per_ip_address" WHERE "last_authentication_datetime" < \''.(new DateTime("-".$this->profile->get_config("auth_failure_expiration_seconds")." seconds")->format("Y-m-d H:i:s.u")).'\'');
