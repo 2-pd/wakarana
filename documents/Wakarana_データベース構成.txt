@@ -169,13 +169,13 @@ _/_/_/_/ データベース _/_/_/_/
 
 テーブル `wakarana_authentication_logs` ・・・ ユーザーによる各種試行のログを保存するテーブル
   `ip_address` varchar(39) [TEXT] (NOT NULL) 利用者のIPアドレス
-  `user_id` varchar(60) [TEXT COLLATE NOCASE] ユーザーID
-  `authentication_type` varchar(32) [TEXT] (NOT NULL) 試行の種類
-  `succeeded` boolean [INTEGER] (NOT NULL) 試行に成功したかどうか
-  `failure_reason` text [TEXT] 試行失敗時の失敗理由メッセージ(試行成功時はNULL)
+  `authentication_id` varchar(254) [TEXT COLLATE NOCASE] ユーザーIDまたはメールアドレス
+  `authentication_type` varchar(60) [TEXT] (NOT NULL) 試行の種類
+  `succeeded` boolean [INTEGER] 試行に成功したかどうか(成功・失敗の概念が存在しない試行の場合はNULL)
+  `failure_reason` text [TEXT] 試行失敗時等の失敗理由メッセージ(試行成功時はNULL)
   `authentication_datetime` timestamp [TEXT] (NOT NULL) 試行が行われた日時(マイクロ秒単位)
   
-  INDEX `wakarana_idx_a1` `user_id`, `authentication_datetime`
+  INDEX `wakarana_idx_a1` `authentication_id`, `authentication_datetime`
   INDEX `wakarana_idx_a2` `authentication_datetime`
 
 

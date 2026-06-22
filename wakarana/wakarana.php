@@ -282,6 +282,16 @@ class wakarana {
     
     
     function create_user_with_invite_code ($invite_code, $user_id, $password, $user_name = "", $status = self::STATUS_NORMAL) {
+        $this->rejection_reason = NULL;
+        
+        $ip_address = $this->get_client_ip_address();
+        
+        if (!$this->check_auth_allowed($ip_address)) {
+            $this->rejection_reason = "currently_locked_out";
+            
+            return FALSE;
+        }
+        
         $this->disable_expired_invite_codes();
         
         $invite_code = strtoupper($invite_code);
@@ -301,6 +311,9 @@ class wakarana {
         
         if ($remaining_number === FALSE) {
             $this->rejection_reason = "invalid_invite_code";
+            
+            $this->add_auth_log($ip_address, NULL, "create_user_with_invite_code", FALSE, $this->rejection_reason);
+            
             return FALSE;
         }
         
@@ -310,6 +323,8 @@ class wakarana {
         
         if (!is_object($user)) {
             $this->profile->rollback_transaction();
+            
+            $this->add_auth_log($ip_address, NULL, "create_user_with_invite_code", NULL, $this->rejection_reason);
             
             return FALSE;
         }
@@ -327,6 +342,8 @@ class wakarana {
             
             return FALSE;
         }
+        
+        $this->add_auth_log($ip_address, $user->get_id(), "create_user_with_invite_code", TRUE);
         
         $this->profile->commit_transaction();
         
@@ -720,7 +737,7 @@ class wakarana {
     }
     
     
-    function check_auth_allowed ($ip_address, $user_id = NULL) {
+    function check_auth_allowed ($ip_address, $user_id_or_email_address = NULL) {
         $this->profile->begin_transaction();
         
         $this->delete_auth_logs();
@@ -728,11 +745,11 @@ class wakarana {
         
         $this->profile->commit_transaction();
         
-        if (!is_null($user_id)) {
+        if (!is_null($user_id_or_email_address)) {
             try {
-                $stmt = $this->profile->db_obj->prepare('SELECT 1 FROM "wakarana_authentication_logs" WHERE "user_id" = :user_id AND "authentication_datetime" > \''.(new DateTime("-".$this->profile->get_config("auth_initial_lockout_seconds")." seconds")->format("Y-m-d H:i:s.u")).'\' LIMIT 1');
+                $stmt = $this->profile->db_obj->prepare('SELECT 1 FROM "wakarana_authentication_logs" WHERE "authentication_id" = :authentication_id AND "authentication_datetime" > \''.(new DateTime("-".$this->profile->get_config("auth_initial_lockout_seconds")." seconds")->format("Y-m-d H:i:s.u")).'\' LIMIT 1');
                 
-                $stmt->bindValue(":user_id", $user_id, PDO::PARAM_STR);
+                $stmt->bindValue(":authentication_id", $user_id_or_email_address, PDO::PARAM_STR);
                 
                 $stmt->execute();
             } catch (PDOException $err) {
@@ -770,7 +787,7 @@ class wakarana {
     }
     
     
-    function add_auth_log ($ip_address, $user_id, $authentication_type, $succeeded, $failure_reason = NULL) {
+    function add_auth_log ($ip_address, $user_id_or_email_address, $authentication_type, $succeeded, $failure_reason = NULL) {
         $dt = new DateTime();
         $now_datetime = $dt->format("Y-m-d H:i:s.u");
         $dt->modify("-".$this->profile->get_config("auth_failure_expiration_seconds")." seconds");
@@ -779,15 +796,20 @@ class wakarana {
         $this->profile->begin_transaction();
         
         try {
-            $stmt = $this->profile->db_obj->prepare('INSERT INTO "wakarana_authentication_logs"("ip_address", "user_id", "authentication_type", "succeeded", "failure_reason", "authentication_datetime") VALUES (:ip_address, :user_id, :authentication_type, '.($succeeded ? '1' : '0').', :failure_reason, \''.$now_datetime.'\')');
+            $stmt = $this->profile->db_obj->prepare('INSERT INTO "wakarana_authentication_logs"("ip_address", "authentication_id", "authentication_type", "succeeded", "failure_reason", "authentication_datetime") VALUES (:ip_address, :authentication_id, :authentication_type, :succeeded, :failure_reason, \''.$now_datetime.'\')');
             
             $stmt->bindValue(":ip_address", $ip_address, PDO::PARAM_STR);
-            if (is_null($user_id)) {
-                $stmt->bindValue(":user_id", NULL, PDO::PARAM_NULL);
+            if (is_null($user_id_or_email_address)) {
+                $stmt->bindValue(":authentication_id", NULL, PDO::PARAM_NULL);
             } else {
-                $stmt->bindValue(":user_id", $user_id, PDO::PARAM_STR);
+                $stmt->bindValue(":authentication_id", $user_id_or_email_address, PDO::PARAM_STR);
             }
             $stmt->bindValue(":authentication_type", $authentication_type, PDO::PARAM_STR);
+            if (is_null($succeeded)) {
+                $stmt->bindValue(":succeeded", NULL, PDO::PARAM_NULL);
+            } else {
+                $stmt->bindValue(":succeeded", $succeeded, PDO::PARAM_INT);
+            }
             if (is_null($failure_reason)) {
                 $stmt->bindValue(":failure_reason", NULL, PDO::PARAM_NULL);
             } else {
@@ -796,9 +818,7 @@ class wakarana {
             
             $stmt->execute();
             
-            if ($succeeded) {
-                $stmt = $this->profile->db_obj->prepare('DELETE FROM "wakarana_failed_authentication_per_ip_address" WHERE "ip_address" = :ip_address');
-            } else {
+            if (!$succeeded && !is_null($succeeded)) {
                 $stmt = $this->profile->db_obj->prepare('
                     INSERT INTO "wakarana_failed_authentication_per_ip_address" ("ip_address", "failure_count", "last_authentication_datetime")
                     VALUES (:ip_address, 1, \''.$now_datetime.'\')
@@ -810,11 +830,11 @@ class wakarana {
                         END,
                         "last_authentication_datetime" = \''.$now_datetime.'\'
                 ');
+                
+                $stmt->bindValue(":ip_address", $ip_address, PDO::PARAM_STR);
+                
+                $stmt->execute();
             }
-            
-            $stmt->bindValue(":ip_address", $ip_address, PDO::PARAM_STR);
-            
-            $stmt->execute();
         } catch (PDOException $err) {
             $this->print_error("認証試行ログの登録に失敗しました。".$err->getMessage());
             
@@ -875,18 +895,35 @@ class wakarana {
     function authenticate ($user_id, $password, $ip_address = NULL) {
         $this->rejection_reason = NULL;
         
-        $user = $this->get_user($user_id);
+        if (is_null($ip_address)) {
+            $ip_address = $this->get_client_ip_address();
+        }
         
-        if (empty($user)) {
-            if (self::check_id_string($user_id) && !empty($this->profile->get_config("dummy_password_hash"))) {
-                self::verify_password($this->profile->get_config("dummy_password_hash"), $password, $user_id);
-            }
+        if (!$this->check_auth_allowed($ip_address, $user_id)) {
+            $this->rejection_reason = "currently_locked_out";
             
-            $this->rejection_reason = "parameters_not_matched";
             return FALSE;
         }
         
-        $result = $user->authenticate($password, $ip_address);
+        $user = $this->get_user($user_id);
+        
+        if (empty($user)) {
+            $this->rejection_reason = "parameters_not_matched";
+            
+            if (self::check_id_string($user_id)) {
+                if (!empty($this->profile->get_config("dummy_password_hash"))) {
+                    self::verify_password($this->profile->get_config("dummy_password_hash"), $password, $user_id);
+                }
+            } else {
+                $user_id = NULL;
+            }
+            
+            $this->add_auth_log($ip_address, $user_id, "authenticate", FALSE, $this->rejection_reason);
+            
+            return FALSE;
+        }
+        
+        $result = $user->authenticate($password, $ip_address, FALSE);
         
         if ($result === TRUE) {
             return $user;
@@ -914,6 +951,16 @@ class wakarana {
     function authenticate_with_email_address ($email_address, $password, $ip_address = NULL) {
         $this->rejection_reason = NULL;
         
+        if (is_null($ip_address)) {
+            $ip_address = $this->get_client_ip_address();
+        }
+        
+        if (!$this->check_auth_allowed($ip_address, $email_address)) {
+            $this->rejection_reason = "currently_locked_out";
+            
+            return FALSE;
+        }
+        
         if ($this->profile->get_config("allow_nonunique_email_address")) {
             $this->print_error("同一メールアドレスの複数アカウントへの登録を容認する設定では、メールアドレスでのログインは利用できません。");
             return FALSE;
@@ -922,11 +969,22 @@ class wakarana {
         $users = $this->search_users_with_email_address($email_address);
         
         if (empty($users)) {
+            if ($this->check_email_address($email_address, FALSE)) {
+                if (!empty($this->profile->get_config("dummy_password_hash"))) {
+                    self::verify_password($this->profile->get_config("dummy_password_hash"), $password, "");
+                }
+            } else {
+                $email_address = NULL;
+            }
+            
             $this->rejection_reason = "parameters_not_matched";
+            
+            $this->add_auth_log($ip_address, $email_address, "authenticate_with_email_address", FALSE, $this->rejection_reason);
+            
             return FALSE;
         }
         
-        $result = $users[0]->authenticate($password, $ip_address);
+        $result = $users[0]->authenticate($password, $ip_address, FALSE);
         
         if ($result === TRUE) {
             return $users[0];
@@ -990,11 +1048,11 @@ class wakarana {
     }
     
     
-    function check_email_address ($email_address) {
+    function check_email_address ($email_address, $check_blacklist = TRUE) {
         $this->rejection_reason = NULL;
         
         if (preg_match("/\A[A-Za-z0-9!#$%&'\*+\/=?^_`\{\|\}~\.\-]+@[A-Za-z0-9\-]+(\.[A-Za-z0-9\-]+)+\z/u", $email_address)) {
-            if ($this->check_email_domain(substr($email_address, strpos($email_address, "@") + 1))) {
+            if (!$check_blacklist || $this->check_email_domain(substr($email_address, strpos($email_address, "@") + 1))) {
                 return TRUE;
             }
             
@@ -1079,12 +1137,27 @@ class wakarana {
     
     
     function email_address_verify ($email_address, $verification_code) {
+        $this->rejection_reason = NULL;
+        
+        $ip_address = $this->get_client_ip_address();
+        
+        if (!$this->check_auth_allowed($ip_address, $email_address)) {
+            $this->rejection_reason = "currently_locked_out";
+            
+            return FALSE;
+        }
+        
         if (!$this->check_email_address($email_address)) {
+            $this->add_auth_log($ip_address, NULL, "email_address_verify", FALSE, $this->rejection_reason);
+            
             return FALSE;
         }
         
         if (!$this->profile->get_config("allow_nonunique_email_address") && !empty($this->search_users_with_email_address($email_address))) {
             $this->rejection_reason = "email_address_already_exists";
+            
+            $this->add_auth_log($ip_address, $email_address, "email_address_verify", FALSE, $this->rejection_reason);
+            
             return FALSE;
         }
         
@@ -1117,15 +1190,30 @@ class wakarana {
                 return FALSE;
             }
             
+            $this->add_auth_log($ip_address, $email_address, "email_address_verify", TRUE);
+            
             return TRUE;
         } else {
             $this->rejection_reason = "parameters_not_matched";
+            
+            $this->add_auth_log($ip_address, $email_address, "email_address_verify", FALSE, $this->rejection_reason);
+            
             return FALSE;
         }
     }
     
     
     function get_email_address_verification_code_expire ($email_address, $verification_code) {
+        $this->rejection_reason = NULL;
+        
+        $ip_address = $this->get_client_ip_address();
+        
+        if (!$this->check_auth_allowed($ip_address, $email_address)) {
+            $this->rejection_reason = "currently_locked_out";
+            
+            return FALSE;
+        }
+        
         $this->delete_email_address_verification_codes();
         
         $verification_code = strtoupper($verification_code);
@@ -1145,8 +1233,18 @@ class wakarana {
         $data = $stmt->fetchColumn();
         
         if ($data !== FALSE) {
+            $this->add_auth_log($ip_address, $email_address, "get_email_address_verification_code_expire", NULL);
+            
             return date("Y-m-d H:i:s", strtotime($data) + $this->profile->get_config("verification_email_expire"));
         } else {
+            if (!$this->check_email_address($email_address, FALSE)) {
+                $email_address = NULL;
+            }
+            
+            $this->rejection_reason = "parameters_not_matched";
+            
+            $this->add_auth_log($ip_address, $email_address, "get_email_address_verification_code_expire", FALSE, $this->rejection_reason);
+            
             return FALSE;
         }
     }
@@ -1169,6 +1267,16 @@ class wakarana {
     
     
     function get_invite_code_expire ($invite_code) {
+        $this->rejection_reason = NULL;
+        
+        $ip_address = $this->get_client_ip_address();
+        
+        if (!$this->check_auth_allowed($ip_address)) {
+            $this->rejection_reason = "currently_locked_out";
+            
+            return FALSE;
+        }
+        
         $invite_code = strtoupper($invite_code);
         $ts = time();
         
@@ -1185,7 +1293,17 @@ class wakarana {
         
         $code_expire = $stmt->fetchColumn();
         
-        if (empty($code_expire)) {
+        if ($code_expire === FALSE) {
+            $this->rejection_reason = "invalid_invite_code";
+            
+            $this->add_auth_log($ip_address, NULL, "get_invite_code_expire", FALSE, $this->rejection_reason);
+            
+            return $code_expire;
+        }
+        
+        $this->add_auth_log($ip_address, NULL, "get_invite_code_expire", NULL);
+        
+        if (is_null($code_expire)) {
             return $code_expire;
         } else {
             return strtotime($code_expire) - $ts;
@@ -1605,24 +1723,30 @@ class wakarana {
             $ip_address = $this->get_client_ip_address();
         }
         
+        if (!$this->check_auth_allowed($ip_address)) {
+            $this->rejection_reason = "currently_locked_out";
+            
+            return FALSE;
+        }
+        
         $user = $this->get_2sv_token_holder($tmp_token);
         
         if (is_object($user)) {
-            if ($this->check_client_auth_interval($ip_address, TRUE) && $user->check_auth_interval(TRUE)) {
-                if ($user->totp_check($totp_pin)) {
-                    $user->delete_2sv_token();
-                    
-                    $user->add_auth_log(TRUE);
-                    
-                    return $user;
-                } else {
-                    $this->rejection_reason = "pin_not_matched";
-                }
+            if ($user->totp_check($totp_pin)) {
+                $user->delete_2sv_token();
+                
+                $this->add_auth_log($ip_address, $user->get_id(), "totp_authenticate", TRUE);
+                
+                return $user;
             } else {
-                $this->rejection_reason = "currently_locked_out";
+                $this->rejection_reason = "pin_not_matched";
+                
+                $this->add_auth_log($ip_address, $user->get_id(), "totp_authenticate", FALSE, $this->rejection_reason);
             }
+        } else {
+            $this->rejection_reason = "invalid_token";
             
-            $user->add_auth_log(FALSE);
+            $this->add_auth_log($ip_address, NULL, "totp_authenticate", FALSE, $this->rejection_reason);
         }
         
         return FALSE;
@@ -1647,24 +1771,30 @@ class wakarana {
             $ip_address = $this->get_client_ip_address();
         }
         
+        if (!$this->check_auth_allowed($ip_address)) {
+            $this->rejection_reason = "currently_locked_out";
+            
+            return FALSE;
+        }
+        
         $user = $this->get_2sv_token_holder($tmp_token);
         
         if (is_object($user)) {
-            if ($this->check_client_auth_interval($ip_address, TRUE) && $user->check_auth_interval(TRUE)) {
-                if ($user->check_recovery_code($recovery_code)) {
-                    $user->delete_2sv_token();
-                    
-                    $user->add_auth_log(TRUE);
-                    
-                    return $user;
-                } else {
-                    $this->rejection_reason = "code_not_matched";
-                }
+            if ($user->check_recovery_code($recovery_code)) {
+                $user->delete_2sv_token();
+                
+                $this->add_auth_log($ip_address, $user->get_id(), "authenticate_with_recovery_code", TRUE);
+                
+                return $user;
             } else {
-                $this->rejection_reason = "currently_locked_out";
+                $this->rejection_reason = "code_not_matched";
             }
             
-            $user->add_auth_log(FALSE);
+            $this->add_auth_log($ip_address, $user->get_id(), "authenticate_with_recovery_code", FALSE, $this->rejection_reason);
+        } else {
+            $this->rejection_reason = "invalid_token";
+            
+            $this->add_auth_log($ip_address, NULL, "authenticate_with_recovery_code", FALSE, $this->rejection_reason);
         }
         
         return FALSE;

@@ -454,7 +454,7 @@ Base32方式でエンコードされた文字列をバイナリにデコード�
   
 **返り値** : 成功した場合は追加したユーザーのwakarana_userインスタンスを返す。失敗した場合はFALSEを返す。  
   
-**拒絶理由文字列** : "invalid_invite_code"(有効な招待コードではない)、"invalid_user_id"(ユーザーIDに使用できない文字が含まれる)、"user_already_exists"(ユーザーアカウントが既に存在している)、"weak_password"(弱いパスワードである)
+**拒絶理由文字列** : "invalid_invite_code"(有効な招待コードではない)、"invalid_user_id"(ユーザーIDに使用できない文字が含まれる)、"user_already_exists"(ユーザーアカウントが既に存在している)、"weak_password"(弱いパスワードである)、"currently_locked_out"(ロックアウト中のため招待コードを検証できない)
 
 
 #### wakarana::get_role($role_id)
@@ -584,13 +584,13 @@ Base32方式でエンコードされた文字列をバイナリにデコード�
 **返り値** : キー"operating_system"(OS名)と"browser_name"(ブラウザ名)が含まれる連想配列。
 
 
-#### wakarana::check_auth_allowed($ip_address, $user_id=NULL)
+#### wakarana::check_auth_allowed($ip_address, $user_id_or_email_address=NULL)
 指定されたIPアドレスとユーザーIDがともにロックアウト中でないことを確認する。  
   
-**$ip_address** : IPアドレス  
-**$user_id** : ユーザーID。ユーザーアカウントに依存しない試行の場合はNULL。  
+**$ip_address** : IPアドレス。  
+**$user_id_email_address** : ユーザーIDまたはメールアドレス。ユーザーアカウントに依存しない試行の場合はNULL。  
   
-**返り値** : ロックアウト中でなければTRUE、IPアドレスとユーザーIDのいずれか一方でもロックアウト中の場合はFALSEを返す。
+**返り値** : ロックアウト中でなければTRUE、IPアドレスとユーザーIDまたはメールアドレスのいずれか一方でもロックアウト中の場合はFALSEを返す。
 
 
 #### wakarana::add_auth_log($ip_address, $user_id, $authentication_type, $succeeded, $failure_reason=NULL)
@@ -702,10 +702,11 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
 **返り値** : 指定したメールアドレスを登録しているユーザーがいれば、該当ユーザーらのwakarana_userインスタンスの配列、そうでない場合は空配列、エラーの場合は-1を返す。
 
 
-#### wakarana::check_email_address($email_address)
+#### wakarana::check_email_address($email_address, $check_blacklist=TRUE)
 指定した文字列がメールアドレスの規格に沿ったものであり、かつ、そのドメインがメールドメインブラックリストに含まれないドメインであることを確認する。  
   
 **$email_address** : メールアドレス  
+**$check_blacklist** : FALSEの場合、メールドメインブラックリストを確認しない。
   
 **返り値** : メールアドレスの規格に沿った文字列であり、かつ、メールドメインブラックリストに含まれないドメインの場合はTRUE、それ以外の場合はFALSEを返す。  
   
@@ -739,7 +740,7 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
   
 **返り値** : 認証された場合はTRUEを返し、それ以外の場合はFALSEを返す。  
   
-**拒絶理由文字列** : "invalid_email_address"(メールアドレスとして正しくない文字列である)、"blacklisted_email_domain"(メールドメインがブラックリストに登録されている)、"email_address_already_exists"(既に登録されているメールアドレスである)、"parameters_not_matched"(メールアドレスまたは確認コードが誤っている)
+**拒絶理由文字列** : "invalid_email_address"(メールアドレスとして正しくない文字列である)、"blacklisted_email_domain"(メールドメインがブラックリストに登録されている)、"email_address_already_exists"(既に登録されているメールアドレスである)、"parameters_not_matched"(メールアドレスまたは確認コードが誤っている)、"currently_locked_out"(ロックアウト中のため確認コードを照合できない)
 
 
 #### wakarana::get_email_address_verification_code_expire($email_address, $verification_code)
@@ -748,7 +749,9 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
 **$email_address** : コードが紐付けられたメールアドレス  
 **$verification_code** : メールアドレス確認コード。大文字小文字を区別しない。  
   
-**返り値** : 新規ユーザー登録用の有効な確認コードだった場合はYYYY-MM-DD hh:mm:ss形式の有効期限、それ以外の場合はFALSEを返す。
+**返り値** : 新規ユーザー登録用の有効な確認コードだった場合はYYYY-MM-DD hh:mm:ss形式の有効期限、それ以外の場合はFALSEを返す。  
+  
+**拒絶理由文字列** : "parameters_not_matched"(有効な確認コードではない)、"currently_locked_out"(ロックアウト中のため確認コードを照合できない)
 
 
 #### wakarana::delete_email_address_verification_codes($expire=-1)
@@ -764,7 +767,9 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
   
 **$invite_code** : 招待コード文字列。大文字小文字を区別しない。  
   
-**返り値** : 有効な招待コードだった場合はその有効期限までの残り秒数またはNULL(無期限で有効な場合)、それ以外の場合はFALSEを返す。
+**返り値** : 有効な招待コードだった場合はその有効期限までの残り秒数またはNULL(無期限で有効な場合)、それ以外の場合はFALSEを返す。  
+  
+**拒絶理由文字列** : "invalid_invite_code"(有効な招待コードではない)、"currently_locked_out"(ロックアウト中のため確認コードを照合できない)
 
 
 #### wakarana::get_invite_code_info($invite_code)
@@ -1461,12 +1466,13 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
 **返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
-#### wakarana_user::authenticate($password, $ip_address=NULL)
+#### wakarana_user::authenticate($password, $ip_address=NULL, $check_auth_allowed=TRUE)
 ユーザーに対するパスワードの照合を行う。  
 セッショントークンの生成と送信は行わないが、内部的に認証試行ログの参照と登録は実施する。  
   
 **$password** : パスワード  
 **$ip_address** : IPアドレス。NULLの場合はクライアント端末のIPアドレスを参照する。  
+**$check_auth_allowed** : FALSEの場合はユーザーのロックアウト状態を確認しない。  
   
 **返り値** : 認証された場合はTRUE、そうでない場合はFALSEを返す。  
   
@@ -1495,7 +1501,7 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
   
 **返り値** : 認証された場合はTRUEを返し、それ以外の場合はFALSEを返す。  
   
-**拒絶理由文字列** : "invalid_email_address"(メールアドレスとして正しくない文字列である)、"blacklisted_email_domain"(メールドメインがブラックリストに登録されている)、"email_address_already_exists"(既に登録されているメールアドレスである)、"registration_limit_over"(メールアドレス登録数の上限に達している)、"parameters_not_matched"(メールアドレスまたは確認コードが誤っている)
+**拒絶理由文字列** : "invalid_email_address"(メールアドレスとして正しくない文字列である)、"blacklisted_email_domain"(メールドメインがブラックリストに登録されている)、"email_address_already_exists"(既に登録されているメールアドレスである)、"registration_limit_over"(メールアドレス登録数の上限に達している)、"parameters_not_matched"(メールアドレスまたは確認コードが誤っている)、"currently_locked_out"(ロックアウト中のため確認コードを検証できない)
 
 
 #### wakarana_user::verify_and_replace_primary_email_address($email_address, $verification_code)
@@ -1507,7 +1513,7 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
   
 **返り値** : 認証された場合はTRUEを返し、それ以外の場合はFALSEを返す。  
   
-**拒絶理由文字列** : "invalid_email_address"(メールアドレスとして正しくない文字列である)、"blacklisted_email_domain"(メールドメインがブラックリストに登録されている)、"email_address_already_exists"(既に登録されているメールアドレスである)、"parameters_not_matched"(メールアドレスまたは確認コードが誤っている)
+**拒絶理由文字列** : "invalid_email_address"(メールアドレスとして正しくない文字列である)、"blacklisted_email_domain"(メールドメインがブラックリストに登録されている)、"email_address_already_exists"(既に登録されているメールアドレスである)、"parameters_not_matched"(メールアドレスまたは確認コードが誤っている)、"currently_locked_out"(ロックアウト中のため確認コードを検証できない)
 
 
 #### wakarana_user::get_email_address_verification_code_expire($email_address, $verification_code)
@@ -1516,7 +1522,9 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
 **$email_address** : コードが紐付けられたメールアドレス  
 **$verification_code** : メールアドレス確認コード。大文字小文字を区別しない。  
   
-**返り値** : ユーザーに割り当てられた有効な確認コードだった場合はYYYY-MM-DD hh:mm:ss形式の有効期限、それ以外の場合はFALSEを返す。
+**返り値** : ユーザーに割り当てられた有効な確認コードだった場合はYYYY-MM-DD hh:mm:ss形式の有効期限、それ以外の場合はFALSEを返す。  
+  
+**拒絶理由文字列** : "parameters_not_matched"(有効な確認コードではない)、"currently_locked_out"(ロックアウト中のため確認コードを照合できない)
 
 
 #### wakarana_user::delete_email_address_verification_code()
