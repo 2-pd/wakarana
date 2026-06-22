@@ -11,7 +11,7 @@ class wakarana_config {
             "use_sqlite" => TRUE,
             "sqlite_db_file" => "wakarana.db",
             
-            "pg_host" => "localhost",
+            "pg_host" => "127.0.0.1",
             "pg_user" => "postgres",
             "pg_pass" => "",
             "pg_db" => "wakarana",
@@ -39,9 +39,10 @@ class wakarana_config {
             "one_time_tokens_per_user" => 8,
             "one_time_token_expire" => 43200,
             
-            "minimum_authenticate_interval" => 5,
-            "authenticate_logs_per_user" => 20,
-            "authenticate_log_retention_time" => 1209600,
+            "auth_initial_lockout_seconds" => 5,
+            "auth_max_lockout_seconds" => 60,
+            "auth_log_retention_seconds" => 1209600,
+            "auth_failure_expiration_seconds" => 1800,
             
             "password_reset_token_expire" => 1800,
             
@@ -128,9 +129,10 @@ class wakarana_config {
         fwrite($file_h, "one_time_token_expire = ".$this->profile->get_config("one_time_token_expire")."\n");
         fwrite($file_h, "\n");
         
-        fwrite($file_h, "minimum_authenticate_interval = ".$this->profile->get_config("minimum_authenticate_interval")."\n");
-        fwrite($file_h, "authenticate_logs_per_user = ".$this->profile->get_config("authenticate_logs_per_user")."\n");
-        fwrite($file_h, "authenticate_log_retention_time = ".$this->profile->get_config("authenticate_log_retention_time")."\n");
+        fwrite($file_h, "auth_initial_lockout_seconds = ".$this->profile->get_config("auth_initial_lockout_seconds")."\n");
+        fwrite($file_h, "auth_max_lockout_seconds = ".$this->profile->get_config("auth_max_lockout_seconds")."\n");
+        fwrite($file_h, "auth_log_retention_seconds = ".$this->profile->get_config("auth_log_retention_seconds")."\n");
+        fwrite($file_h, "auth_failure_expiration_seconds = ".$this->profile->get_config("auth_failure_expiration_seconds")."\n");
         fwrite($file_h, "\n");
         
         fwrite($file_h, "password_reset_token_expire = ".$this->profile->get_config("password_reset_token_expire")."\n");
@@ -213,9 +215,10 @@ class wakarana_config {
         fwrite($file_h, "one_time_token_expire = ".self::ORIGINAL_CONFIG["one_time_token_expire"]."\n");
         fwrite($file_h, "\n");
         
-        fwrite($file_h, "minimum_authenticate_interval = ".self::ORIGINAL_CONFIG["minimum_authenticate_interval"]."\n");
-        fwrite($file_h, "authenticate_logs_per_user = ".self::ORIGINAL_CONFIG["authenticate_logs_per_user"]."\n");
-        fwrite($file_h, "authenticate_log_retention_time = ".self::ORIGINAL_CONFIG["authenticate_log_retention_time"]."\n");
+        fwrite($file_h, "auth_initial_lockout_seconds = ".self::ORIGINAL_CONFIG["auth_initial_lockout_seconds"]."\n");
+        fwrite($file_h, "auth_max_lockout_seconds = ".self::ORIGINAL_CONFIG["auth_max_lockout_seconds"]."\n");
+        fwrite($file_h, "auth_log_retention_seconds = ".self::ORIGINAL_CONFIG["auth_log_retention_seconds"]."\n");
+        fwrite($file_h, "auth_failure_expiration_seconds = ".self::ORIGINAL_CONFIG["auth_failure_expiration_seconds"]."\n");
         fwrite($file_h, "\n");
         
         fwrite($file_h, "password_reset_token_expire = ".self::ORIGINAL_CONFIG["password_reset_token_expire"]."\n");
@@ -719,21 +722,38 @@ class wakarana_config {
         
         try {
             if ($this->profile->get_config("use_sqlite")) {
-                $this->profile->db_obj->exec("CREATE TABLE IF NOT EXISTS `wakarana_authenticate_logs`(`user_id` TEXT COLLATE NOCASE NOT NULL, `succeeded` INTEGER NOT NULL, `authenticate_datetime` TEXT NOT NULL, `ip_address` TEXT NOT NULL)");
+                $this->profile->db_obj->exec("CREATE TABLE IF NOT EXISTS `wakarana_authentication_logs`(`ip_address` TEXT NOT NULL, `authentication_id` TEXT COLLATE NOCASE, `authentication_type` TEXT NOT NULL, `succeeded` INTEGER, `failure_reason` TEXT, `authentication_datetime` TEXT NOT NULL)");
             } else {
-                $this->profile->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_authenticate_logs"("user_id" varchar(60) NOT NULL, "succeeded" boolean NOT NULL, "authenticate_datetime" timestamp NOT NULL, "ip_address" varchar(39) NOT NULL)');
+                $this->profile->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_authentication_logs"("ip_address" varchar(39) NOT NULL, "authentication_id" varchar(254), "authentication_type" varchar(60) NOT NULL, "succeeded" boolean, "failure_reason" text, "authentication_datetime" timestamp NOT NULL)');
             }
         } catch (PDOException $err) {
-            $this->print_error("テーブル wakarana_authenticate_logs の作成処理に失敗しました。".$err->getMessage());
+            $this->print_error("テーブル wakarana_authentication_logs の作成処理に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
         try {
-            $this->profile->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_a1" ON "wakarana_authenticate_logs"("user_id", "authenticate_datetime")');
-            $this->profile->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_a2" ON "wakarana_authenticate_logs"("ip_address", "authenticate_datetime")');
-            $this->profile->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_a3" ON "wakarana_authenticate_logs"("authenticate_datetime")');
+            $this->profile->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_a1" ON "wakarana_authentication_logs"("authentication_id", "authentication_datetime")');
+            $this->profile->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_a2" ON "wakarana_authentication_logs"("authentication_datetime")');
         } catch (PDOException $err) {
-            $this->print_error("テーブル wakarana_authenticate_logs のインデックス作成処理に失敗しました。".$err->getMessage());
+            $this->print_error("テーブル wakarana_authentication_logs のインデックス作成処理に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        try {
+            if ($this->profile->get_config("use_sqlite")) {
+                $this->profile->db_obj->exec("CREATE TABLE IF NOT EXISTS `wakarana_failed_authentication_per_ip_address`(`ip_address` TEXT NOT NULL PRIMARY KEY, `failure_count` INTEGER NOT NULL, `last_authentication_datetime` TEXT NOT NULL)");
+            } else {
+                $this->profile->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_failed_authentication_per_ip_address"("ip_address" varchar(39) NOT NULL PRIMARY KEY, "failure_count" integer NOT NULL, "last_authentication_datetime" timestamp NOT NULL)');
+            }
+        } catch (PDOException $err) {
+            $this->print_error("テーブル wakarana_failed_authentication_per_ip_address の作成処理に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        try {
+            $this->profile->db_obj->exec('CREATE INDEX IF NOT EXISTS "wakarana_idx_fa1" ON "wakarana_failed_authentication_per_ip_address"("last_authentication_datetime")');
+        } catch (PDOException $err) {
+            $this->print_error("テーブル wakarana_failed_authentication_per_ip_address のインデックス作成処理に失敗しました。".$err->getMessage());
             return FALSE;
         }
         

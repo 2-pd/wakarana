@@ -282,6 +282,16 @@ class wakarana {
     
     
     function create_user_with_invite_code ($invite_code, $user_id, $password, $user_name = "", $status = self::STATUS_NORMAL) {
+        $this->rejection_reason = NULL;
+        
+        $ip_address = $this->get_client_ip_address();
+        
+        if (!$this->check_auth_allowed($ip_address)) {
+            $this->rejection_reason = "currently_locked_out";
+            
+            return FALSE;
+        }
+        
         $this->disable_expired_invite_codes();
         
         $invite_code = strtoupper($invite_code);
@@ -301,6 +311,9 @@ class wakarana {
         
         if ($remaining_number === FALSE) {
             $this->rejection_reason = "invalid_invite_code";
+            
+            $this->add_auth_log($ip_address, NULL, "create_user_with_invite_code", FALSE, $this->rejection_reason);
+            
             return FALSE;
         }
         
@@ -310,6 +323,8 @@ class wakarana {
         
         if (!is_object($user)) {
             $this->profile->rollback_transaction();
+            
+            $this->add_auth_log($ip_address, NULL, "create_user_with_invite_code", NULL, $this->rejection_reason);
             
             return FALSE;
         }
@@ -327,6 +342,8 @@ class wakarana {
             
             return FALSE;
         }
+        
+        $this->add_auth_log($ip_address, $user->get_id(), "create_user_with_invite_code", TRUE);
         
         $this->profile->commit_transaction();
         
@@ -720,49 +737,254 @@ class wakarana {
     }
     
     
-    function get_client_auth_logs ($ip_address) {
-        try {
-            $stmt = $this->profile->db_obj->query('SELECT "user_id", "succeeded", "authenticate_datetime" FROM "wakarana_authenticate_logs" WHERE "ip_address" = \''.$ip_address.'\' ORDER BY "authenticate_datetime" DESC');
-            
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $err) {
-            $this->print_error("認証試行ログの取得に失敗しました。".$err->getMessage());
-            return FALSE;
-        }
-    }
-    
-    
-    function check_client_auth_interval ($ip_address, $unsucceeded_only = FALSE) {
-        if ($unsucceeded_only) {
-            $succeeded_q = ' AND "succeeded" = FALSE';
-        } else {
-            $succeeded_q = '';
-        }
+    function check_auth_allowed ($ip_address, $user_id_or_email_address = NULL) {
+        $this->profile->begin_transaction();
         
-        try {
-            $stmt = $this->profile->db_obj->query('SELECT 1 FROM "wakarana_authenticate_logs" WHERE "ip_address" = \''.$ip_address.'\' AND "authenticate_datetime" >= \''.date("Y-m-d H:i:s", time() - $this->profile->get_config("minimum_authenticate_interval")).'\''.$succeeded_q." LIMIT 1");
-            
-            if (empty($stmt->fetchColumn())) {
-                return TRUE;
-            } else {
+        $this->delete_auth_logs();
+        $this->delete_expired_ip_address_auth_info();
+        
+        $this->profile->commit_transaction();
+        
+        if (!is_null($user_id_or_email_address)) {
+            try {
+                $stmt = $this->profile->db_obj->prepare('SELECT 1 FROM "wakarana_authentication_logs" WHERE "authentication_id" = :authentication_id AND "authentication_datetime" > \''.(new DateTime("-".$this->profile->get_config("auth_initial_lockout_seconds")." seconds")->format("Y-m-d H:i:s.u")).'\' LIMIT 1');
+                
+                $stmt->bindValue(":authentication_id", $user_id_or_email_address, PDO::PARAM_STR);
+                
+                $stmt->execute();
+            } catch (PDOException $err) {
+                $this->print_error("ユーザーIDのロックアウト状態の確認に失敗しました。".$err->getMessage());
                 return FALSE;
             }
-        } catch (PDOException $err) {
-            $this->print_error("認証試行間隔の確認に失敗しました。".$err->getMessage());
-            return FALSE;
-        }
-    }
-    
-    
-    function delete_auth_logs ($expire = -1) {
-        if ($expire === -1) {
-            $expire = $this->profile->get_config("minimum_authenticate_interval");
+            
+            if (!empty($stmt->fetchColumn())) {
+                return FALSE;
+            }
         }
         
         try {
-            $this->profile->db_obj->exec('DELETE FROM "wakarana_authenticate_logs" WHERE "authenticate_datetime" <= \''.(new DateTime())->modify("-".$expire." second")->format("Y-m-d H:i:s.u").'\'');
+            $stmt = $this->profile->db_obj->prepare('SELECT * FROM "wakarana_failed_authentication_per_ip_address" WHERE "ip_address" = :ip_address');
+            
+            $stmt->bindValue(":ip_address", $ip_address, PDO::PARAM_STR);
+            
+            $stmt->execute();
+        } catch (PDOException $err) {
+            $this->print_error("IPアドレスのロックアウト状態の確認に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        $auth_info = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!empty($auth_info)) {
+            $lockout_seconds = min(2 ** ($auth_info["failure_count"] - 1) * $this->profile->get_config("auth_initial_lockout_seconds"), $this->profile->get_config("auth_max_lockout_seconds"));
+            
+            if ($auth_info["last_authentication_datetime"] > new DateTime("-".$lockout_seconds." seconds")->format("Y-m-d H:i:s.u")) {
+                return FALSE;
+            }
+        }
+        
+        return TRUE;
+    }
+    
+    
+    function add_auth_log ($ip_address, $user_id_or_email_address, $authentication_type, $succeeded, $failure_reason = NULL) {
+        $dt = new DateTime();
+        $now_datetime = $dt->format("Y-m-d H:i:s.u");
+        $dt->modify("-".$this->profile->get_config("auth_failure_expiration_seconds")." seconds");
+        $threshold_datetime = $dt->format("Y-m-d H:i:s.u");
+        
+        $this->profile->begin_transaction();
+        
+        try {
+            $stmt = $this->profile->db_obj->prepare('INSERT INTO "wakarana_authentication_logs"("ip_address", "authentication_id", "authentication_type", "succeeded", "failure_reason", "authentication_datetime") VALUES (:ip_address, :authentication_id, :authentication_type, :succeeded, :failure_reason, \''.$now_datetime.'\')');
+            
+            $stmt->bindValue(":ip_address", $ip_address, PDO::PARAM_STR);
+            if (is_null($user_id_or_email_address)) {
+                $stmt->bindValue(":authentication_id", NULL, PDO::PARAM_NULL);
+            } else {
+                $stmt->bindValue(":authentication_id", $user_id_or_email_address, PDO::PARAM_STR);
+            }
+            $stmt->bindValue(":authentication_type", $authentication_type, PDO::PARAM_STR);
+            if (is_null($succeeded)) {
+                $stmt->bindValue(":succeeded", NULL, PDO::PARAM_NULL);
+            } else {
+                $stmt->bindValue(":succeeded", $succeeded, PDO::PARAM_INT);
+            }
+            if (is_null($failure_reason)) {
+                $stmt->bindValue(":failure_reason", NULL, PDO::PARAM_NULL);
+            } else {
+                $stmt->bindValue(":failure_reason", $failure_reason, PDO::PARAM_STR);
+            }
+            
+            $stmt->execute();
+            
+            if (!$succeeded && !is_null($succeeded)) {
+                $stmt = $this->profile->db_obj->prepare('
+                    INSERT INTO "wakarana_failed_authentication_per_ip_address" ("ip_address", "failure_count", "last_authentication_datetime")
+                    VALUES (:ip_address, 1, \''.$now_datetime.'\')
+                    ON CONFLICT ("ip_address") DO UPDATE SET
+                        "failure_count" = CASE
+                            WHEN "wakarana_failed_authentication_per_ip_address"."last_authentication_datetime" >= \''.$threshold_datetime.'\'
+                            THEN "wakarana_failed_authentication_per_ip_address"."failure_count" + 1
+                            ELSE 1
+                        END,
+                        "last_authentication_datetime" = \''.$now_datetime.'\'
+                ');
+                
+                $stmt->bindValue(":ip_address", $ip_address, PDO::PARAM_STR);
+                
+                $stmt->execute();
+            }
+        } catch (PDOException $err) {
+            $this->print_error("認証試行ログの登録に失敗しました。".$err->getMessage());
+            
+            $this->profile->rollback_transaction();
+            
+            return FALSE;
+        }
+        
+        $this->profile->commit_transaction();
+        
+        return TRUE;
+    }
+    
+    
+    function delete_auth_logs ($retention_seconds_or_datetime = -1) {
+        if (is_string($retention_seconds_or_datetime)) {
+            if (!preg_match("/\A[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01]) ([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]\z/u", $retention_seconds_or_datetime)) {
+                $this->print_error("日時の指定が異常です。");
+                return FALSE;
+            }
+            
+            $authentication_datetime = $retention_seconds_or_datetime.".999999";
+        } else {
+            if ($retention_seconds_or_datetime === -1) {
+                $retention_seconds_or_datetime = $this->profile->get_config("auth_log_retention_seconds");
+                
+                if (empty($retention_seconds_or_datetime)) {
+                    return NULL;
+                }
+            }
+            
+            $authentication_datetime = new DateTime("-".$retention_seconds_or_datetime." seconds")->format("Y-m-d H:i:s.u");
+        }
+        
+        try {
+            $this->profile->db_obj->exec('DELETE FROM "wakarana_authentication_logs" WHERE "authentication_datetime" <= \''.$authentication_datetime.'\'');
         } catch (PDOException $err) {
             $this->print_error("認証試行ログの削除に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        return TRUE;
+    }
+    
+    
+    function export_auth_logs ($file_path, $date_str, $compress = TRUE, $delete_exported_logs = FALSE) {
+        set_time_limit(0);
+        
+        $this->profile->db_obj->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $this->profile->db_obj->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+        
+        $fp = $compress ? gzopen($file_path, "wb9") : @fopen($file_path, "w");
+        if (empty($fp)) {
+            $this->print_error("ファイルの作成に失敗しました。");
+            
+            return FALSE;
+        }
+        
+        $datetime_start = $date_str." 00:00:00.000000";
+        $datetime_end = $date_str." 23:59:59.999999";
+        
+        if ($this->profile->get_config("use_sqlite")) {
+            try {
+                $stmt = $this->profile->db_obj->prepare('SELECT * FROM "wakarana_authentication_logs" WHERE "authentication_datetime" >= :datetime_start AND "authentication_datetime" <= :datetime_end ORDER BY "authentication_datetime" ASC');
+                $stmt->bindValue(":datetime_start", $datetime_start, PDO::PARAM_STR);
+                $stmt->bindValue(":datetime_end", $datetime_end, PDO::PARAM_STR);
+                $stmt->execute();
+                
+                while ($row = $stmt->fetch()) {
+                    if ($compress) {
+                        gzwrite($fp, json_encode($row, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR)."\n");
+                    } else {
+                        fwrite($fp, json_encode($row, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR)."\n");
+                    }
+                }
+            } catch (PDOException $err) {
+                $this->print_error("認証試行ログの抽出に失敗しました。".$err->getMessage());
+                return FALSE;
+            }
+        } else {
+            $this->profile->begin_transaction();
+            
+            try {
+                $stmt = $this->profile->db_obj->prepare('DECLARE "auth_log_cursor" CURSOR FOR SELECT * FROM "wakarana_authentication_logs" WHERE "authentication_datetime" >= :datetime_start AND "authentication_datetime" <= :datetime_end ORDER BY "authentication_datetime" ASC');
+                $stmt->bindValue(":datetime_start", $datetime_start, PDO::PARAM_STR);
+                $stmt->bindValue(":datetime_end", $datetime_end, PDO::PARAM_STR);
+                $stmt->execute();
+                
+                $fetch_stmt = $this->profile->db_obj->prepare('FETCH 10000 FROM "auth_log_cursor"');
+                
+                while (TRUE) {
+                    $fetch_stmt->execute();
+                    $rows = $fetch_stmt->fetchAll();
+                    
+                    if (empty($rows)) {
+                        break;
+                    }
+                    
+                    foreach ($rows as $row) {
+                        if ($compress) {
+                            gzwrite($fp, json_encode($row, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR)."\n");
+                        } else {
+                            fwrite($fp, json_encode($row, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR)."\n");
+                        }
+                    }
+                }
+            } catch (PDOException $err) {
+                $this->print_error("認証試行ログの抽出に失敗しました。".$err->getMessage());
+                
+                $this->profile->rollback_transaction();
+                
+                return FALSE;
+            }
+            
+            $this->profile->commit_transaction();
+        }
+        
+        if ($compress) {
+            gzclose($fp);
+        } else {
+            fclose($fp);
+        }
+        
+        if ($delete_exported_logs) {
+            try {
+                $stmt = $this->profile->db_obj->prepare('DELETE FROM "wakarana_authentication_logs" WHERE "authentication_datetime" >= :datetime_start AND "authentication_datetime" <= :datetime_end');
+                $stmt->bindValue(":datetime_start", $datetime_start, PDO::PARAM_STR);
+                $stmt->bindValue(":datetime_end", $datetime_end, PDO::PARAM_STR);
+                $stmt->execute();
+                
+                if ($this->profile->get_config("use_sqlite")) {
+                    exec('VACUUM');
+                } else {
+                    exec('VACUUM FULL "wakarana_authentication_logs"');
+                }
+            } catch (PDOException $err) {
+                $this->print_error("認証試行ログの削除に失敗しました。".$err->getMessage());
+                return FALSE;
+            }
+        }
+        
+        return TRUE;
+    }
+    
+    
+    function delete_expired_ip_address_auth_info () {
+        try {
+            $this->profile->db_obj->exec('DELETE FROM "wakarana_failed_authentication_per_ip_address" WHERE "last_authentication_datetime" < \''.(new DateTime("-".$this->profile->get_config("auth_failure_expiration_seconds")." seconds")->format("Y-m-d H:i:s.u")).'\'');
+        } catch (PDOException $err) {
+            $this->print_error("認証失敗情報の削除に失敗しました。".$err->getMessage());
             return FALSE;
         }
         
@@ -773,18 +995,35 @@ class wakarana {
     function authenticate ($user_id, $password, $ip_address = NULL) {
         $this->rejection_reason = NULL;
         
-        $user = $this->get_user($user_id);
+        if (is_null($ip_address)) {
+            $ip_address = $this->get_client_ip_address();
+        }
         
-        if (empty($user)) {
-            if (self::check_id_string($user_id) && !empty($this->profile->get_config("dummy_password_hash"))) {
-                self::verify_password($this->profile->get_config("dummy_password_hash"), $password, $user_id);
-            }
+        if (!$this->check_auth_allowed($ip_address, $user_id)) {
+            $this->rejection_reason = "currently_locked_out";
             
-            $this->rejection_reason = "parameters_not_matched";
             return FALSE;
         }
         
-        $result = $user->authenticate($password, $ip_address);
+        $user = $this->get_user($user_id);
+        
+        if (empty($user)) {
+            $this->rejection_reason = "parameters_not_matched";
+            
+            if (self::check_id_string($user_id)) {
+                if (!empty($this->profile->get_config("dummy_password_hash"))) {
+                    self::verify_password($this->profile->get_config("dummy_password_hash"), $password, $user_id);
+                }
+            } else {
+                $user_id = NULL;
+            }
+            
+            $this->add_auth_log($ip_address, $user_id, "authenticate", FALSE, $this->rejection_reason);
+            
+            return FALSE;
+        }
+        
+        $result = $user->authenticate($password, $ip_address, FALSE);
         
         if ($result === TRUE) {
             return $user;
@@ -812,6 +1051,16 @@ class wakarana {
     function authenticate_with_email_address ($email_address, $password, $ip_address = NULL) {
         $this->rejection_reason = NULL;
         
+        if (is_null($ip_address)) {
+            $ip_address = $this->get_client_ip_address();
+        }
+        
+        if (!$this->check_auth_allowed($ip_address, $email_address)) {
+            $this->rejection_reason = "currently_locked_out";
+            
+            return FALSE;
+        }
+        
         if ($this->profile->get_config("allow_nonunique_email_address")) {
             $this->print_error("同一メールアドレスの複数アカウントへの登録を容認する設定では、メールアドレスでのログインは利用できません。");
             return FALSE;
@@ -820,11 +1069,22 @@ class wakarana {
         $users = $this->search_users_with_email_address($email_address);
         
         if (empty($users)) {
+            if ($this->check_email_address($email_address, FALSE)) {
+                if (!empty($this->profile->get_config("dummy_password_hash"))) {
+                    self::verify_password($this->profile->get_config("dummy_password_hash"), $password, "");
+                }
+            } else {
+                $email_address = NULL;
+            }
+            
             $this->rejection_reason = "parameters_not_matched";
+            
+            $this->add_auth_log($ip_address, $email_address, "authenticate_with_email_address", FALSE, $this->rejection_reason);
+            
             return FALSE;
         }
         
-        $result = $users[0]->authenticate($password, $ip_address);
+        $result = $users[0]->authenticate($password, $ip_address, FALSE);
         
         if ($result === TRUE) {
             return $users[0];
@@ -888,11 +1148,11 @@ class wakarana {
     }
     
     
-    function check_email_address ($email_address) {
+    function check_email_address ($email_address, $check_blacklist = TRUE) {
         $this->rejection_reason = NULL;
         
         if (preg_match("/\A[A-Za-z0-9!#$%&'\*+\/=?^_`\{\|\}~\.\-]+@[A-Za-z0-9\-]+(\.[A-Za-z0-9\-]+)+\z/u", $email_address)) {
-            if ($this->check_email_domain(substr($email_address, strpos($email_address, "@") + 1))) {
+            if (!$check_blacklist || $this->check_email_domain(substr($email_address, strpos($email_address, "@") + 1))) {
                 return TRUE;
             }
             
@@ -977,12 +1237,27 @@ class wakarana {
     
     
     function email_address_verify ($email_address, $verification_code) {
+        $this->rejection_reason = NULL;
+        
+        $ip_address = $this->get_client_ip_address();
+        
+        if (!$this->check_auth_allowed($ip_address, $email_address)) {
+            $this->rejection_reason = "currently_locked_out";
+            
+            return FALSE;
+        }
+        
         if (!$this->check_email_address($email_address)) {
+            $this->add_auth_log($ip_address, NULL, "email_address_verify", FALSE, $this->rejection_reason);
+            
             return FALSE;
         }
         
         if (!$this->profile->get_config("allow_nonunique_email_address") && !empty($this->search_users_with_email_address($email_address))) {
             $this->rejection_reason = "email_address_already_exists";
+            
+            $this->add_auth_log($ip_address, $email_address, "email_address_verify", FALSE, $this->rejection_reason);
+            
             return FALSE;
         }
         
@@ -1015,15 +1290,30 @@ class wakarana {
                 return FALSE;
             }
             
+            $this->add_auth_log($ip_address, $email_address, "email_address_verify", TRUE);
+            
             return TRUE;
         } else {
             $this->rejection_reason = "parameters_not_matched";
+            
+            $this->add_auth_log($ip_address, $email_address, "email_address_verify", FALSE, $this->rejection_reason);
+            
             return FALSE;
         }
     }
     
     
     function get_email_address_verification_code_expire ($email_address, $verification_code) {
+        $this->rejection_reason = NULL;
+        
+        $ip_address = $this->get_client_ip_address();
+        
+        if (!$this->check_auth_allowed($ip_address, $email_address)) {
+            $this->rejection_reason = "currently_locked_out";
+            
+            return FALSE;
+        }
+        
         $this->delete_email_address_verification_codes();
         
         $verification_code = strtoupper($verification_code);
@@ -1043,8 +1333,18 @@ class wakarana {
         $data = $stmt->fetchColumn();
         
         if ($data !== FALSE) {
+            $this->add_auth_log($ip_address, $email_address, "get_email_address_verification_code_expire", NULL);
+            
             return date("Y-m-d H:i:s", strtotime($data) + $this->profile->get_config("verification_email_expire"));
         } else {
+            if (!$this->check_email_address($email_address, FALSE)) {
+                $email_address = NULL;
+            }
+            
+            $this->rejection_reason = "parameters_not_matched";
+            
+            $this->add_auth_log($ip_address, $email_address, "get_email_address_verification_code_expire", FALSE, $this->rejection_reason);
+            
             return FALSE;
         }
     }
@@ -1067,6 +1367,16 @@ class wakarana {
     
     
     function get_invite_code_expire ($invite_code) {
+        $this->rejection_reason = NULL;
+        
+        $ip_address = $this->get_client_ip_address();
+        
+        if (!$this->check_auth_allowed($ip_address)) {
+            $this->rejection_reason = "currently_locked_out";
+            
+            return FALSE;
+        }
+        
         $invite_code = strtoupper($invite_code);
         $ts = time();
         
@@ -1083,7 +1393,17 @@ class wakarana {
         
         $code_expire = $stmt->fetchColumn();
         
-        if (empty($code_expire)) {
+        if ($code_expire === FALSE) {
+            $this->rejection_reason = "invalid_invite_code";
+            
+            $this->add_auth_log($ip_address, NULL, "get_invite_code_expire", FALSE, $this->rejection_reason);
+            
+            return $code_expire;
+        }
+        
+        $this->add_auth_log($ip_address, NULL, "get_invite_code_expire", NULL);
+        
+        if (is_null($code_expire)) {
             return $code_expire;
         } else {
             return strtotime($code_expire) - $ts;
@@ -1503,24 +1823,30 @@ class wakarana {
             $ip_address = $this->get_client_ip_address();
         }
         
+        if (!$this->check_auth_allowed($ip_address)) {
+            $this->rejection_reason = "currently_locked_out";
+            
+            return FALSE;
+        }
+        
         $user = $this->get_2sv_token_holder($tmp_token);
         
         if (is_object($user)) {
-            if ($this->check_client_auth_interval($ip_address, TRUE) && $user->check_auth_interval(TRUE)) {
-                if ($user->totp_check($totp_pin)) {
-                    $user->delete_2sv_token();
-                    
-                    $user->add_auth_log(TRUE);
-                    
-                    return $user;
-                } else {
-                    $this->rejection_reason = "pin_not_matched";
-                }
+            if ($user->totp_check($totp_pin)) {
+                $user->delete_2sv_token();
+                
+                $this->add_auth_log($ip_address, $user->get_id(), "totp_authenticate", TRUE);
+                
+                return $user;
             } else {
-                $this->rejection_reason = "currently_locked_out";
+                $this->rejection_reason = "pin_not_matched";
+                
+                $this->add_auth_log($ip_address, $user->get_id(), "totp_authenticate", FALSE, $this->rejection_reason);
             }
+        } else {
+            $this->rejection_reason = "invalid_token";
             
-            $user->add_auth_log(FALSE);
+            $this->add_auth_log($ip_address, NULL, "totp_authenticate", FALSE, $this->rejection_reason);
         }
         
         return FALSE;
@@ -1545,24 +1871,30 @@ class wakarana {
             $ip_address = $this->get_client_ip_address();
         }
         
+        if (!$this->check_auth_allowed($ip_address)) {
+            $this->rejection_reason = "currently_locked_out";
+            
+            return FALSE;
+        }
+        
         $user = $this->get_2sv_token_holder($tmp_token);
         
         if (is_object($user)) {
-            if ($this->check_client_auth_interval($ip_address, TRUE) && $user->check_auth_interval(TRUE)) {
-                if ($user->check_recovery_code($recovery_code)) {
-                    $user->delete_2sv_token();
-                    
-                    $user->add_auth_log(TRUE);
-                    
-                    return $user;
-                } else {
-                    $this->rejection_reason = "code_not_matched";
-                }
+            if ($user->check_recovery_code($recovery_code)) {
+                $user->delete_2sv_token();
+                
+                $this->add_auth_log($ip_address, $user->get_id(), "authenticate_with_recovery_code", TRUE);
+                
+                return $user;
             } else {
-                $this->rejection_reason = "currently_locked_out";
+                $this->rejection_reason = "code_not_matched";
             }
             
-            $user->add_auth_log(FALSE);
+            $this->add_auth_log($ip_address, $user->get_id(), "authenticate_with_recovery_code", FALSE, $this->rejection_reason);
+        } else {
+            $this->rejection_reason = "invalid_token";
+            
+            $this->add_auth_log($ip_address, NULL, "authenticate_with_recovery_code", FALSE, $this->rejection_reason);
         }
         
         return FALSE;
