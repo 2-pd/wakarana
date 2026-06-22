@@ -294,6 +294,12 @@ wakarana_config.iniの設定値を取得する。
 **返り値** : ドメインがメールドメインブラックリストに含まれない場合はTRUE、含まれればFALSEを返す。
 
 
+#### wakarana_common::get_email_domain_blacklist()
+メールドメインブラックリストを配列で取得する。  
+  
+**返り値** : メールドメインブラックリストのドメインを配列で返す。メールドメインブラックリストの読み込みに失敗した場合はFALSEを返す。
+
+
 ## class wakarana
 Wakaranaの主要機能を提供し、wakarana_data_itemの子孫クラスのインスタンスは全てこのクラスのインスタンスにより生成される。
 
@@ -454,7 +460,7 @@ Base32方式でエンコードされた文字列をバイナリにデコード�
   
 **返り値** : 成功した場合は追加したユーザーのwakarana_userインスタンスを返す。失敗した場合はFALSEを返す。  
   
-**拒絶理由文字列** : "invalid_invite_code"(有効な招待コードではない)、"invalid_user_id"(ユーザーIDに使用できない文字が含まれる)、"user_already_exists"(ユーザーアカウントが既に存在している)、"weak_password"(弱いパスワードである)
+**拒絶理由文字列** : "invalid_invite_code"(有効な招待コードではない)、"invalid_user_id"(ユーザーIDに使用できない文字が含まれる)、"user_already_exists"(ユーザーアカウントが既に存在している)、"weak_password"(弱いパスワードである)、"currently_locked_out"(ロックアウト中のため招待コードを検証できない)
 
 
 #### wakarana::get_role($role_id)
@@ -584,34 +590,56 @@ Base32方式でエンコードされた文字列をバイナリにデコード�
 **返り値** : キー"operating_system"(OS名)と"browser_name"(ブラウザ名)が含まれる連想配列。
 
 
-#### wakarana::get_client_auth_logs($ip_address)
-クライアントのIPアドレスからログイン試行履歴を新しい順に配列で取得する。  
+#### wakarana::check_auth_allowed($ip_address, $user_id_or_email_address=NULL)
+指定されたIPアドレスとユーザーIDがともにロックアウト中でないことを確認する。  
   
-**$ip_address** : サニタイズ済みのIPアドレス  
+**$ip_address** : IPアドレス。  
+**$user_id_email_address** : ユーザーIDまたはメールアドレス。ユーザーアカウントに依存しない試行の場合はNULL。  
   
-**返り値** : 成功した場合はそのIPアドレスの各試行履歴が格納された連想配列("user_id"(ユーザーID)、"succeeded"(正しいパスワードを入力したか否か)、"authenticate_datetime"(試行日時))を、配列に入れて返す。失敗した場合はFALSEを返す。
+**返り値** : ロックアウト中でなければTRUE、IPアドレスとユーザーIDまたはメールアドレスのいずれか一方でもロックアウト中の場合はFALSEを返す。
 
 
-#### wakarana::check_client_auth_interval($ip_address, $unsucceeded_only=FALSE)
-クライアントのIPアドレスが前回のログイン試行から次に試行できるようになるまでの期間を経過しているかを調べる。  
+#### wakarana::add_auth_log($ip_address, $user_id, $authentication_type, $succeeded, $failure_reason=NULL)
+認証試行ログを登録する。  
+各種認証処理を行う関数は内部的にこの関数を実行する。  
   
-**$ip_address** : サニタイズ済みのIPアドレス  
-**$unsucceeded_only** : 失敗した試行のみを対象にする  
+**$ip_address** : IPアドレス  
+**$user_id** : ユーザーID。ユーザーアカウントに依存しない試行の場合はNULL。  
+**$authentication_type** : 試行の種類を表す文字列  
+**$succeeded** : 成功したか否か  
+**$failure_reason** : 失敗理由文。成功した場合はNULL。  
   
-**返り値** : wakarana_config.iniで指定した期間が経過していればTRUE、そうでない場合はFALSEを返す。
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
-#### wakarana::delete_auth_logs($expire=-1)
-指定した期間より前のログイン試行履歴を全て削除する。  
+#### wakarana::delete_auth_logs($retention_seconds_or_datetime=-1)
+指定した期間より前の認証試行ログを全て削除する。  
   
-**$expire** : 経過時間の秒数。-1を指定した場合はwakarana_config.iniで指定した履歴の保持秒数が代わりに使用される。  
+**$retention_seconds_or_datetime** : 経過時間の秒数。-1を指定した場合はwakarana_config.iniで指定した履歴の保持秒数(この値がnullの場合は削除処理を実行しない)が代わりに使用される。YYYY-MM-DD hh:mm:ss形式の日時文字列が指定された場合、当該日時以前の試行ログを削除する。  
+  
+**返り値** : 成功した場合はTRUE、削除処理を実行しなかった場合はNULL、失敗した場合はFALSEを返す。
+
+
+#### wakarana::export_auth_logs($file_path, $date_str, $compress=TRUE, $delete_exported_logs=FALSE)
+指定した日付の認証試行ログをJSONL形式でファイルに出力する。  
+  
+**$file_path** : 出力するファイルのパス。既に存在するファイルを指定した場合は上書きする。  
+**$date_str** : YYYY-MM-DD形式の日付文字列  
+**$compress** : TRUEが指定された場合、出力ファイルはgzip圧縮される。  
+**$delete_exported_logs** : TRUEが指定された場合、ファイルに出力されたログはデータベースから削除される。  
+  
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
+#### wakarana::delete_expired_ip_address_auth_info()
+IPアドレスごとの認証失敗情報のうち、保持期間を過ぎたものを削除する。  
   
 **返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
 #### wakarana::authenticate($user_id, $password, $ip_address=NULL)
 ユーザーIDとパスワードを照合するが、トークンの生成と送信は行わない。  
-内部的にログイン試行ログの参照と登録は実施する。  
+内部的に認証試行ログの参照と登録は実施する。  
   
 **$user_id** : ユーザーID  
 **$password** : パスワード  
@@ -637,7 +665,7 @@ Base32方式でエンコードされた文字列をバイナリにデコード�
 
 #### wakarana::authenticate_with_email_address($email_address, $password, $ip_address=NULL)
 ユーザーIDの代わりにメールアドレスを使用し、パスワードを照合する。トークンの生成と送信は行わない。  
-内部的にログイン試行ログの参照と登録は実施する。  
+内部的に認証試行ログの参照と登録は実施する。  
   
 wakarana_config.iniで同じメールアドレスを複数アカウントに使用できるよう設定している場合、この関数は使用できない。  
   
@@ -680,10 +708,11 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
 **返り値** : 指定したメールアドレスを登録しているユーザーがいれば、該当ユーザーらのwakarana_userインスタンスの配列、そうでない場合は空配列、エラーの場合は-1を返す。
 
 
-#### wakarana::check_email_address($email_address)
+#### wakarana::check_email_address($email_address, $check_blacklist=TRUE)
 指定した文字列がメールアドレスの規格に沿ったものであり、かつ、そのドメインがメールドメインブラックリストに含まれないドメインであることを確認する。  
   
 **$email_address** : メールアドレス  
+**$check_blacklist** : FALSEの場合、メールドメインブラックリストを確認しない。
   
 **返り値** : メールアドレスの規格に沿った文字列であり、かつ、メールドメインブラックリストに含まれないドメインの場合はTRUE、それ以外の場合はFALSEを返す。  
   
@@ -717,7 +746,7 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
   
 **返り値** : 認証された場合はTRUEを返し、それ以外の場合はFALSEを返す。  
   
-**拒絶理由文字列** : "invalid_email_address"(メールアドレスとして正しくない文字列である)、"blacklisted_email_domain"(メールドメインがブラックリストに登録されている)、"email_address_already_exists"(既に登録されているメールアドレスである)、"parameters_not_matched"(メールアドレスまたは確認コードが誤っている)
+**拒絶理由文字列** : "invalid_email_address"(メールアドレスとして正しくない文字列である)、"blacklisted_email_domain"(メールドメインがブラックリストに登録されている)、"email_address_already_exists"(既に登録されているメールアドレスである)、"parameters_not_matched"(メールアドレスまたは確認コードが誤っている)、"currently_locked_out"(ロックアウト中のため確認コードを照合できない)
 
 
 #### wakarana::get_email_address_verification_code_expire($email_address, $verification_code)
@@ -726,7 +755,9 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
 **$email_address** : コードが紐付けられたメールアドレス  
 **$verification_code** : メールアドレス確認コード。大文字小文字を区別しない。  
   
-**返り値** : 新規ユーザー登録用の有効な確認コードだった場合はYYYY-MM-DD hh:mm:ss形式の有効期限、それ以外の場合はFALSEを返す。
+**返り値** : 新規ユーザー登録用の有効な確認コードだった場合はYYYY-MM-DD hh:mm:ss形式の有効期限、それ以外の場合はFALSEを返す。  
+  
+**拒絶理由文字列** : "parameters_not_matched"(有効な確認コードではない)、"currently_locked_out"(ロックアウト中のため確認コードを照合できない)
 
 
 #### wakarana::delete_email_address_verification_codes($expire=-1)
@@ -742,7 +773,9 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
   
 **$invite_code** : 招待コード文字列。大文字小文字を区別しない。  
   
-**返り値** : 有効な招待コードだった場合はその有効期限までの残り秒数またはNULL(無期限で有効な場合)、それ以外の場合はFALSEを返す。
+**返り値** : 有効な招待コードだった場合はその有効期限までの残り秒数またはNULL(無期限で有効な場合)、それ以外の場合はFALSEを返す。  
+  
+**拒絶理由文字列** : "invalid_invite_code"(有効な招待コードではない)、"currently_locked_out"(ロックアウト中のため確認コードを照合できない)
 
 
 #### wakarana::get_invite_code_info($invite_code)
@@ -1382,38 +1415,18 @@ wakarana_userインスタンスで直前に行われた各種認証・登録処�
 **返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
-#### wakarana_user::get_auth_logs()
-ユーザーのログイン試行履歴を新しい順に配列で取得する。  
+#### wakarana_user::get_auth_logs($limit=NULL)
+ユーザーの認証試行ログを新しい順に配列で取得する。  
   
-**返り値** : 成功した場合はそのユーザーの各試行履歴が格納された連想配列("succeeded"(認証に成功したか否か)、"authenticate_datetime"(試行日時), "ip_address"(IPアドレス))を、配列に入れて返す。失敗した場合はFALSEを返す。
-
-
-#### wakarana_user::check_auth_interval($unsucceeded_only=FALSE)
-ユーザーが前回のログイン試行から次に試行できるようになるまでの期間を経過しているかを調べる。  
+**$limit** : 取得するログの上限件数  
   
-**$unsucceeded_only** : 失敗した試行のみを対象にする  
-  
-**返り値** : wakarana_config.iniで指定した期間が経過していればTRUE、そうでない場合はFALSEを返す。
-
-
-#### wakarana_user::add_auth_log($succeeded)
-ユーザーのログイン試行ログを登録する。  
-  
-**$succeeded** : ログインが成功した場合はTRUE、失敗した場合はFALSEを指定する。  
-  
-**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
-
-
-#### wakarana_user::delete_auth_logs()
-ユーザーのログイン試行履歴を全て削除する。  
-  
-**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
+**返り値** : 成功した場合はそのユーザーの各試行ログが格納された連想配列("ip_address"(IPアドレス)、"authentication_type"(認証の種類)、"succeeded"(認証に成功したか否か)、"failure_reason"(試行失敗時の失敗理由メッセージ)、"authentication_datetime"(試行日時))を、新しいものから順に配列へ入れて返す。失敗した場合はFALSEを返す。
 
 
 #### wakarana_user::update_last_access($session_id=NULL, ip_address=NULL)
 現在の時刻をユーザーの最終アクセス日時として記録する。  
 セッションIDを指定した場合、そのセッションの最終アクセス日時も更新し、さらに、IPアドレスが指定されていた場合はその値でセッションのIPアドレスを更新する。  
-なお、セッショントークン発行処理とログアウト処理ではこの関数が自動的に実行される。
+なお、セッショントークン発行処理とログアウト処理ではこの関数が自動的に実行される。  
   
 **$session_id** : セッションID  
 **$ip_address** : クライアント端末のIPアドレス  
@@ -1459,12 +1472,13 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
 **返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
-#### wakarana_user::authenticate($password, $ip_address=NULL)
+#### wakarana_user::authenticate($password, $ip_address=NULL, $check_auth_allowed=TRUE)
 ユーザーに対するパスワードの照合を行う。  
-セッショントークンの生成と送信は行わないが、内部的にログイン試行ログの参照と登録は実施する。  
+セッショントークンの生成と送信は行わないが、内部的に認証試行ログの参照と登録は実施する。  
   
 **$password** : パスワード  
 **$ip_address** : IPアドレス。NULLの場合はクライアント端末のIPアドレスを参照する。  
+**$check_auth_allowed** : FALSEの場合はユーザーのロックアウト状態を確認しない。  
   
 **返り値** : 認証された場合はTRUE、そうでない場合はFALSEを返す。  
   
@@ -1493,7 +1507,7 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
   
 **返り値** : 認証された場合はTRUEを返し、それ以外の場合はFALSEを返す。  
   
-**拒絶理由文字列** : "invalid_email_address"(メールアドレスとして正しくない文字列である)、"blacklisted_email_domain"(メールドメインがブラックリストに登録されている)、"email_address_already_exists"(既に登録されているメールアドレスである)、"registration_limit_over"(メールアドレス登録数の上限に達している)、"parameters_not_matched"(メールアドレスまたは確認コードが誤っている)
+**拒絶理由文字列** : "invalid_email_address"(メールアドレスとして正しくない文字列である)、"blacklisted_email_domain"(メールドメインがブラックリストに登録されている)、"email_address_already_exists"(既に登録されているメールアドレスである)、"registration_limit_over"(メールアドレス登録数の上限に達している)、"parameters_not_matched"(メールアドレスまたは確認コードが誤っている)、"currently_locked_out"(ロックアウト中のため確認コードを検証できない)
 
 
 #### wakarana_user::verify_and_replace_primary_email_address($email_address, $verification_code)
@@ -1505,7 +1519,7 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
   
 **返り値** : 認証された場合はTRUEを返し、それ以外の場合はFALSEを返す。  
   
-**拒絶理由文字列** : "invalid_email_address"(メールアドレスとして正しくない文字列である)、"blacklisted_email_domain"(メールドメインがブラックリストに登録されている)、"email_address_already_exists"(既に登録されているメールアドレスである)、"parameters_not_matched"(メールアドレスまたは確認コードが誤っている)
+**拒絶理由文字列** : "invalid_email_address"(メールアドレスとして正しくない文字列である)、"blacklisted_email_domain"(メールドメインがブラックリストに登録されている)、"email_address_already_exists"(既に登録されているメールアドレスである)、"parameters_not_matched"(メールアドレスまたは確認コードが誤っている)、"currently_locked_out"(ロックアウト中のため確認コードを検証できない)
 
 
 #### wakarana_user::get_email_address_verification_code_expire($email_address, $verification_code)
@@ -1514,7 +1528,9 @@ wakarana::loginとは別のトークン送信処理を実装する必要があ�
 **$email_address** : コードが紐付けられたメールアドレス  
 **$verification_code** : メールアドレス確認コード。大文字小文字を区別しない。  
   
-**返り値** : ユーザーに割り当てられた有効な確認コードだった場合はYYYY-MM-DD hh:mm:ss形式の有効期限、それ以外の場合はFALSEを返す。
+**返り値** : ユーザーに割り当てられた有効な確認コードだった場合はYYYY-MM-DD hh:mm:ss形式の有効期限、それ以外の場合はFALSEを返す。  
+  
+**拒絶理由文字列** : "parameters_not_matched"(有効な確認コードではない)、"currently_locked_out"(ロックアウト中のため確認コードを照合できない)
 
 
 #### wakarana_user::delete_email_address_verification_code()
