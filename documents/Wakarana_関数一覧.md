@@ -203,7 +203,7 @@ wakarana_common::print_errorにて直近に入力されたエラーメッセー�
 
 
 #### ☆ wakarana_common::check_id_string($id, $length=60)
-文字列に、ユーザーIDやロール名などの識別名として使用できない文字が含まれないかどうかを検査する。  
+文字列に、ユーザーIDやロール名などの識別名として使用できない文字が含まれないか否かを検査する。  
 ☆staticメソッド。  
   
 **$id** : 検査する文字列  
@@ -255,7 +255,7 @@ wakarana_config.iniの設定値を取得する。
 
 
 #### wakarana_common::get_custom_field_is_numeric($custom_field_name)
-指定したカスタムフィールドが数値型かどうかを取得する。  
+指定したカスタムフィールドが数値型か否かを取得する。  
   
 **$custom_field_name** : カスタムフィールド名  
   
@@ -490,7 +490,7 @@ Base32方式でエンコードされた文字列をバイナリにデコード�
 
 
 #### ☆ wakarana::check_resource_id_string($resource_id)
-文字列にリソースIDとして使用できない文字が含まれないかどうかを検査する。  
+文字列にリソースIDとして使用できない文字が含まれないか否かを検査する。  
 ☆staticメソッド。  
   
 **$resource_id** : 検査する文字列  
@@ -499,7 +499,7 @@ Base32方式でエンコードされた文字列をバイナリにデコード�
 
 
 #### ☆ wakarana::get_parent_resource_id($resource_id)
-権限のリソースIDから親権限のリソースIDを切り出す。このとき、実際にその権限が存在するかどうかはチェックしない。  
+権限のリソースIDから親権限のリソースIDを切り出す。このとき、実際にその権限が存在するか否かはチェックしない。  
 ☆staticメソッド。  
   
 **$resource_id** : リソースID  
@@ -961,7 +961,7 @@ wakarana_config.iniで同じメールアドレスを複数アカウントに使�
 
 
 #### wakarana::check($token=NULL, $update_last_access=TRUE, $ip_address=NULL)
-クライアント端末のcookieを参照し、正しくログインしているかどうかを照合する。  
+クライアント端末のcookieを参照し、正しくログインしているか否かを照合する。  
   
 **$token** : 文字列を指定した場合、クライアント端末のcookie情報に関係なくその文字列をセッショントークンとみなして照合処理を行う。  
 **$update_last_access** : FALSEの場合、最終アクセス日時の更新を行わない。  
@@ -1120,7 +1120,7 @@ wakarana_userインスタンスで直前に行われた各種認証・登録処�
 
 
 #### wakarana_user::check_password($password)
-入力したパスワードとそのユーザーのパスワードが一致するかどうかを確認する。  
+入力したパスワードとそのユーザーのパスワードが一致するか否かを確認する。  
 この関数は2段階認証を無視するため、ログイン認証に使用するべきではない。  
   
 **$password** : パスワード  
@@ -2085,26 +2085,29 @@ wakarana_config.iniの設定値を全て既定値に戻す。
 **返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
-#### wakarana_config::create_custom_field($custom_field_name, $maximum_length=500, $records_per_user=1, $allow_nonunique_value=TRUE, $save_now=TRUE)
+#### wakarana_config::create_custom_field($custom_field_name, $maximum_length=500, $records_per_user=1, $allow_nonunique_value=TRUE, $trigger_user_last_updated=TRUE, $save_now=TRUE)
 文字列型カスタムフィールドを追加する。  
 既に存在するカスタムフィールド名を指定した場合はその設定を上書きする。  
   
 **$custom_field_name** : カスタムフィールド名。半角英数字及びアンダーバーが使用可能。  
 **$maximum_length** : 保存可能な最大文字数(500以下)  
 **$records_per_user** : ユーザーあたりの上限件数(100以下)  
-**$allow_nonunique_value** : 異なるユーザーが同一の値を持つことを認めるか  
+**$allow_nonunique_value** : 異なるユーザーが同一の値を持つことを認めるか否か  
+**$trigger_user_last_updated** : 値の変更時にユーザー情報の更新日時も更新するか否か  
 **$save_now** : FALSEならwakarana_custom_fields.jsonへの上書きは保留する  
   
 **返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
-#### wakarana_config::create_custom_numerical_field($custom_field_name, $records_per_user=1, $allow_nonunique_value=TRUE, $save_now=TRUE)
+#### wakarana_config::create_custom_numerical_field($custom_field_name, $precision=0, $records_per_user=1, $allow_nonunique_value=TRUE, $trigger_user_last_updated=TRUE, $save_now=TRUE)
 数値型カスタムフィールドを追加する。  
 既に存在するカスタムフィールド名を指定した場合はその設定を上書きする。  
   
 **$custom_field_name** : カスタムフィールド名。半角英数字及びアンダーバーが使用可能。  
+**$precision** : 値の小数点以下の桁数(整数値とする場合は0)  
 **$records_per_user** : ユーザーあたりの上限件数(100以下)  
-**$allow_nonunique_value** : 異なるユーザーが同一の値を持つことを認めるか  
+**$allow_nonunique_value** : 異なるユーザーが同一の値を持つことを認めるか否か  
+**$trigger_user_last_updated** : 値の変更時にユーザー情報の更新日時も更新するか否か  
 **$save_now** : FALSEならwakarana_custom_fields.jsonへの上書きは保留する  
   
 **返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。

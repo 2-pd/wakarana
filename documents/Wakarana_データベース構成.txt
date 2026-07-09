@@ -29,7 +29,7 @@ _/_/_/_/ データベース _/_/_/_/
 テーブル `wakarana_user_email_addresses` ・・・ ユーザーのメールアドレスを記録するテーブル
   `user_id` varchar(60) [TEXT COLLATE NOCASE] (NOT NULL) ユーザーID
   `email_address` varchar(254) [TEXT] (NOT NULL) メールアドレス
-  `is_primary` boolean [INTEGER] (NOT NULL)
+  `is_primary` boolean [INTEGER] (NOT NULL) プライマリメールアドレスか否か
   
   PRIMARY KEY `user_id`, `email_address`
   INDEX `wakarana_idx_e1` `user_id`, `is_primary`
@@ -51,7 +51,7 @@ _/_/_/_/ データベース _/_/_/_/
   `user_id` varchar(60) [TEXT COLLATE NOCASE] (NOT NULL) ユーザーID
   `custom_field_name` varchar(60) [TEXT] (NOT NULL) カスタムフィールド名
   `value_number` smallint [INTEGER] (NOT NULL) カスタムフィールド値が複数ある場合の並び順番号(1から付番)
-  `custom_field_value` double precision [REAL] カスタムフィールド値
+  `custom_field_value` double precision [NUMERIC] カスタムフィールド値
   
   PRIMARY KEY `user_id`, `custom_field_name`, `value_number`
   UNIQUE INDEX `wakarana_idx_cn1` `user_id`, `custom_field_name`, `custom_field_value`
@@ -171,7 +171,7 @@ _/_/_/_/ データベース _/_/_/_/
   `ip_address` varchar(39) [TEXT] (NOT NULL) 利用者のIPアドレス
   `authentication_id` varchar(254) [TEXT COLLATE NOCASE] ユーザーIDまたはメールアドレス
   `authentication_type` varchar(60) [TEXT] (NOT NULL) 試行の種類
-  `succeeded` boolean [INTEGER] 試行に成功したかどうか(成功・失敗の概念が存在しない試行の場合はNULL)
+  `succeeded` boolean [INTEGER] 試行に成功したか否か(成功・失敗の概念が存在しない試行の場合はNULL)
   `failure_reason` text [TEXT] 試行失敗時等の失敗理由メッセージ(試行成功時はNULL)
   `authentication_datetime` timestamp [TEXT] (NOT NULL) 試行が行われた日時(マイクロ秒単位)
   
