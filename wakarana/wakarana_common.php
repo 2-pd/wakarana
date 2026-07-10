@@ -134,6 +134,17 @@ trait wakarana_common {
     }
     
     
+    function get_custom_field_trigger_user_last_updated ($custom_field_name) {
+        $custom_field_definition = $this->profile->get_custom_field_definition($custom_field_name);
+        
+        if (empty($custom_field_definition)) {
+            return NULL;
+        }
+        
+        return $custom_field_definition["trigger_user_last_updated"];
+    }
+    
+    
     function check_email_domain ($domain_name) {
         return !in_array(mb_strtolower(trim($domain_name)), $this->profile->get_email_domain_blacklist());
     }

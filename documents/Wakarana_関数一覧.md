@@ -267,7 +267,7 @@ wakarana_config.iniの設定値を取得する。
   
 **$custom_field_name** : カスタムフィールド名  
   
-**返り値** : カスタムフィールド名がwakarana_custom_fields.jsonに存在し、文字列型ならばその最大文字数、存在しないかカスタムフィールドが数値型ならばNULLを返す。
+**返り値** : カスタムフィールド名がwakarana_custom_fields.jsonに存在し、文字列型ならばその最大文字数を返す。カスタムフィールド名が存在しないか数値型ならばNULLを返す。
 
 
 #### wakarana_common::get_custom_field_precision($custom_field_name)
@@ -275,7 +275,7 @@ wakarana_config.iniの設定値を取得する。
   
 **$custom_field_name** : カスタムフィールド名  
   
-**返り値** : カスタムフィールド名がwakarana_custom_fields.jsonに存在、数値型ならばその小数点以下の桁数(整数値のみを許容する場合は0)、存在しないかカスタムフィールドが文字列型ならばNULLを返す。
+**返り値** : カスタムフィールド名がwakarana_custom_fields.jsonに存在し、数値型ならばその小数点以下の桁数(整数値のみを許容する場合は0)を返す。カスタムフィールド名が存在しないか文字列型ならばNULLを返す。
 
 
 #### wakarana_common::get_custom_field_records_per_user($custom_field_name)
@@ -287,11 +287,19 @@ wakarana_config.iniの設定値を取得する。
 
 
 #### wakarana_common::get_custom_field_allow_nonunique_value($custom_field_name)
-指定したカスタムフィールドで異なるユーザーが同一の値を持つことができるかを返す。  
+指定したカスタムフィールドで異なるユーザーが同一の値を持つことができるか否かを返す。  
   
 **$custom_field_name** : カスタムフィールド名  
   
 **返り値** : カスタムフィールド名がwakarana_custom_fields.jsonに存在する場合、一意でない値を持てるならTRUE、持てないならFALSEを返す。カスタムフィールド名が存在しなければNULLを返す。
+
+
+#### wakarana_common::get_custom_field_trigger_user_last_updated($custom_field_name)
+指定したカスタムフィールドの値が変更されたときにユーザー情報の最終更新日時が更新されるか否かを返す。  
+  
+**$custom_field_name** : カスタムフィールド名  
+  
+**返り値** : カスタムフィールド名がwakarana_custom_fields.jsonに存在する場合、そのカスタムフィールドの値が変更されたときにユーザー情報の最終更新日時も更新されるならTRUE、そうでないならFALSEを返す。カスタムフィールド名が存在しなければNULLを返す。
 
 
 #### wakarana_common::check_email_domain($domain_name)
