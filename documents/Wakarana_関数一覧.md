@@ -267,7 +267,15 @@ wakarana_config.iniの設定値を取得する。
   
 **$custom_field_name** : カスタムフィールド名  
   
-**返り値** : カスタムフィールド名がwakarana_custom_fields.jsonに存在すればその最大文字数、存在しないかカスタムフィールドが数値型ならばNULLを返す。
+**返り値** : カスタムフィールド名がwakarana_custom_fields.jsonに存在し、文字列型ならばその最大文字数、存在しないかカスタムフィールドが数値型ならばNULLを返す。
+
+
+#### wakarana_common::get_custom_field_precision($custom_field_name)
+指定したカスタムフィールドに数値を保存した際に四捨五入されない小数点以下の桁数を取得する。  
+  
+**$custom_field_name** : カスタムフィールド名  
+  
+**返り値** : カスタムフィールド名がwakarana_custom_fields.jsonに存在、数値型ならばその小数点以下の桁数(整数値のみを許容する場合は0)、存在しないかカスタムフィールドが文字列型ならばNULLを返す。
 
 
 #### wakarana_common::get_custom_field_records_per_user($custom_field_name)
