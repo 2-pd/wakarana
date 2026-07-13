@@ -260,6 +260,22 @@ class wakarana_user extends wakarana_data_item {
     }
     
     
+    function touch_last_updated () {
+        $last_updated = date("Y-m-d H:i:s");
+        
+        try {
+            $this->profile->db_obj->exec('UPDATE "wakarana_users" SET "last_updated" = \''.$last_updated.'\'  WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
+        } catch (PDOException $err) {
+            $this->print_error("ユーザー情報の最終更新日時の更新に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        $this->user_info["last_updated"] = $last_updated;
+        
+        return TRUE;
+    }
+    
+    
     function add_email_address ($email_address) {
         $this->rejection_reason = NULL;
         

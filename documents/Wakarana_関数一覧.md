@@ -1220,6 +1220,12 @@ wakarana_userインスタンスで直前に行われた各種認証・登録処�
 **返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
+#### wakarana_user::touch_last_updated()
+ユーザー情報の最終更新日時を現在の日時で上書きする。  
+  
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
 #### wakarana_user::add_email_address($email_address)
 ユーザーのメールアドレスを追加する。  
 ユーザーに対して最初に登録されたメールアドレスは自動的にメインメールアドレスとなる。  
@@ -1364,8 +1370,10 @@ wakarana_userインスタンスで直前に行われた各種認証・登録処�
 **返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
-#### wakarana_user::delete_all_values()
+#### wakarana_user::delete_all_values($touch_last_updated=TRUE)
 ユーザーの全てのカスタムフィールドの値を削除する。  
+  
+**$touch_last_updated** : ユーザー情報の更新日時を現在の日時で上書きするか否か(TRUEなら更新日時を現在の日時で上書きする)  
   
 **返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
