@@ -97,7 +97,18 @@ trait wakarana_common {
             return NULL;
         }
         
-        return $this->custom_field_definition["maximum_length"];
+        return $custom_field_definition["maximum_length"];
+    }
+    
+    
+    function get_custom_field_precision ($custom_field_name) {
+        $custom_field_definition = $this->profile->get_custom_field_definition($custom_field_name);
+        
+        if (empty($custom_field_definition) || !$custom_field_definition["is_numeric"]) {
+            return NULL;
+        }
+        
+        return $custom_field_definition["precision"];
     }
     
     
@@ -108,7 +119,7 @@ trait wakarana_common {
             return NULL;
         }
         
-        return $this->custom_fields[$custom_field_name]["records_per_user"];
+        return $custom_field_definition["records_per_user"];
     }
     
     
@@ -119,7 +130,18 @@ trait wakarana_common {
             return NULL;
         }
         
-        return $this->custom_fields[$custom_field_name]["allow_nonunique_value"];
+        return $custom_field_definition["allow_nonunique_value"];
+    }
+    
+    
+    function get_custom_field_trigger_user_last_updated ($custom_field_name) {
+        $custom_field_definition = $this->profile->get_custom_field_definition($custom_field_name);
+        
+        if (empty($custom_field_definition)) {
+            return NULL;
+        }
+        
+        return $custom_field_definition["trigger_user_last_updated"];
     }
     
     

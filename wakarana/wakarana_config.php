@@ -258,7 +258,7 @@ class wakarana_config {
     }
     
     
-    function create_custom_field ($custom_field_name, $maximum_length = 500, $records_per_user = 1, $allow_nonunique_value = TRUE, $save_now = TRUE) {
+    function create_custom_field ($custom_field_name, $maximum_length = 500, $records_per_user = 1, $allow_nonunique_value = TRUE, $trigger_user_last_updated = TRUE, $save_now = TRUE) {
         if (!self::check_id_string($custom_field_name)) {
             $this->print_error("指定されたカスタムフィールド名が異常です。");
             return FALSE;
@@ -283,7 +283,8 @@ class wakarana_config {
             "is_numeric" => FALSE,
             "maximum_length" => $maximum_length,
             "records_per_user" => $records_per_user,
-            "allow_nonunique_value" => $allow_nonunique_value
+            "allow_nonunique_value" => $allow_nonunique_value,
+            "trigger_user_last_updated" => $trigger_user_last_updated
         ));
         
         if ($save_now) {
@@ -294,7 +295,7 @@ class wakarana_config {
     }
     
     
-    function create_custom_numerical_field ($custom_field_name, $records_per_user = 1, $allow_nonunique_value = TRUE, $save_now = TRUE) {
+    function create_custom_numerical_field ($custom_field_name, $precision = 0, $records_per_user = 1, $allow_nonunique_value = TRUE, $trigger_user_last_updated = TRUE, $save_now = TRUE) {
         if (!self::check_id_string($custom_field_name)) {
             $this->print_error("指定されたカスタムフィールド名が異常です。");
             return FALSE;
@@ -312,8 +313,10 @@ class wakarana_config {
         
         $this->profile->set_custom_field_definition($custom_field_name, array(
             "is_numeric" => TRUE,
+            "precision" => $precision,
             "records_per_user" => $records_per_user,
-            "allow_nonunique_value" => $allow_nonunique_value
+            "allow_nonunique_value" => $allow_nonunique_value,
+            "trigger_user_last_updated" => $trigger_user_last_updated
         ));
         
         if ($save_now) {
@@ -491,7 +494,7 @@ class wakarana_config {
         
         try {
             if ($this->profile->get_config("use_sqlite")) {
-                $this->profile->db_obj->exec("CREATE TABLE IF NOT EXISTS `wakarana_user_custom_numerical_fields`(`user_id` TEXT COLLATE NOCASE NOT NULL, `custom_field_name` TEXT NOT NULL, `value_number` INTEGER NOT NULL, `custom_field_value` REAL, PRIMARY KEY(`user_id`, `custom_field_name`, `value_number`))");
+                $this->profile->db_obj->exec("CREATE TABLE IF NOT EXISTS `wakarana_user_custom_numerical_fields`(`user_id` TEXT COLLATE NOCASE NOT NULL, `custom_field_name` TEXT NOT NULL, `value_number` INTEGER NOT NULL, `custom_field_value` NUMERIC, PRIMARY KEY(`user_id`, `custom_field_name`, `value_number`))");
             } else {
                 $this->profile->db_obj->exec('CREATE TABLE IF NOT EXISTS "wakarana_user_custom_numerical_fields"("user_id" varchar(60) NOT NULL, "custom_field_name" varchar(60) NOT NULL, "value_number" smallint NOT NULL, "custom_field_value" double precision, PRIMARY KEY("user_id", "custom_field_name", "value_number"))');
             }
@@ -851,10 +854,10 @@ class wakarana_config {
     
     
     function add_custom_field ($custom_field_name, $maximum_length = 500, $records_per_user = 1, $allow_nonunique_value = TRUE, $save_now = TRUE) { //2027年6月以降のバージョンで削除
-        return $this->create_custom_field($custom_field_name, $maximum_length, $records_per_user, $allow_nonunique_value, $save_now);
+        return $this->create_custom_field($custom_field_name, $maximum_length, $records_per_user, $allow_nonunique_value, TRUE, $save_now);
     }
     
     function add_custom_numerical_field ($custom_field_name, $records_per_user = 1, $allow_nonunique_value = TRUE, $save_now = TRUE) { //2027年6月以降のバージョンで削除
-        return $this->create_custom_numerical_field($custom_field_name, $records_per_user, $allow_nonunique_value, $save_now);
+        return $this->create_custom_numerical_field($custom_field_name, 0, $records_per_user, $allow_nonunique_value, TRUE, $save_now);
     }
 }

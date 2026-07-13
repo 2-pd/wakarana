@@ -151,14 +151,20 @@ class wakarana_user extends wakarana_data_item {
             return FALSE;
         }
         
+        $column_cast_q = "";
+        
         if ($custom_field_definition["is_numeric"]) {
             $table_name = "wakarana_user_custom_numerical_fields";
+            
+            if (!$this->profile->get_config("use_sqlite") && $custom_field_definition["precision"] <= 0) {
+                $column_cast_q = 'CAST(FLOOR("custom_field_value") AS INTEGER) AS ';
+            }
         } else {
             $table_name = "wakarana_user_custom_fields";
         }
         
         try {
-            $stmt = $this->profile->db_obj->query('SELECT "custom_field_value" FROM "'.$table_name.'" WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "custom_field_name" = \''.$custom_field_name.'\'');
+            $stmt = $this->profile->db_obj->query('SELECT '.$column_cast_q.'"custom_field_value" FROM "'.$table_name.'" WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "custom_field_name" = \''.$custom_field_name.'\'');
         } catch (PDOException $err) {
             $this->print_error("カスタムフィールド値の取得に失敗しました。".$err->getMessage());
             return FALSE;
@@ -186,14 +192,20 @@ class wakarana_user extends wakarana_data_item {
             return FALSE;
         }
         
+        $column_cast_q = "";
+        
         if ($custom_field_definition["is_numeric"]) {
             $table_name = "wakarana_user_custom_numerical_fields";
+            
+            if (!$this->profile->get_config("use_sqlite") && $custom_field_definition["precision"] <= 0) {
+                $column_cast_q = 'CAST(FLOOR("custom_field_value") AS INTEGER) AS ';
+            }
         } else {
             $table_name = "wakarana_user_custom_fields";
         }
         
         try {
-            $stmt = $this->profile->db_obj->query('SELECT "custom_field_value" FROM "'.$table_name.'" WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "custom_field_name" = \''.$custom_field_name.'\' ORDER BY "value_number" ASC');
+            $stmt = $this->profile->db_obj->query('SELECT '.$column_cast_q.'"custom_field_value" FROM "'.$table_name.'" WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "custom_field_name" = \''.$custom_field_name.'\' ORDER BY "value_number" ASC');
         } catch (PDOException $err) {
             $this->print_error("カスタムフィールド値の取得に失敗しました。".$err->getMessage());
             return FALSE;
@@ -248,6 +260,22 @@ class wakarana_user extends wakarana_data_item {
     }
     
     
+    function touch_last_updated () {
+        $last_updated = date("Y-m-d H:i:s");
+        
+        try {
+            $this->profile->db_obj->exec('UPDATE "wakarana_users" SET "last_updated" = \''.$last_updated.'\'  WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
+        } catch (PDOException $err) {
+            $this->print_error("ユーザー情報の最終更新日時の更新に失敗しました。".$err->getMessage());
+            return FALSE;
+        }
+        
+        $this->user_info["last_updated"] = $last_updated;
+        
+        return TRUE;
+    }
+    
+    
     function add_email_address ($email_address) {
         $this->rejection_reason = NULL;
         
@@ -274,6 +302,8 @@ class wakarana_user extends wakarana_data_item {
             $is_primary_q = "FALSE";
         }
         
+        $this->profile->begin_transaction();
+        
         try {
             $stmt = $this->profile->db_obj->prepare('INSERT INTO "wakarana_user_email_addresses"("user_id", "email_address", "is_primary") VALUES (\''.$this->user_info["user_id"].'\', :email_address, '.$is_primary_q.')');
             
@@ -282,8 +312,19 @@ class wakarana_user extends wakarana_data_item {
             $stmt->execute();
         } catch (PDOException $err) {
             $this->print_error("メールアドレスの変更に失敗しました。".$err->getMessage());
+            
+            $this->profile->rollback_transaction();
+            
             return FALSE;
         }
+        
+        if (!$this->touch_last_updated()) {
+            $this->profile->rollback_transaction();
+            
+            return FALSE;
+        }
+        
+        $this->profile->commit_transaction();
         
         return TRUE;
     }
@@ -308,6 +349,12 @@ class wakarana_user extends wakarana_data_item {
         } catch (PDOException $err) {
             $this->print_error("プライマリメールアドレスの変更に失敗しました。".$err->getMessage());
             
+            $this->profile->rollback_transaction();
+            
+            return FALSE;
+        }
+        
+        if (!$this->touch_last_updated()) {
             $this->profile->rollback_transaction();
             
             return FALSE;
@@ -345,6 +392,8 @@ class wakarana_user extends wakarana_data_item {
             return FALSE;
         }
         
+        $this->profile->begin_transaction();
+        
         try {
             $stmt = $this->profile->db_obj->prepare('DELETE FROM "wakarana_user_email_addresses" WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "email_address" = :email_address');
             
@@ -353,6 +402,9 @@ class wakarana_user extends wakarana_data_item {
             $stmt->execute();
         } catch (PDOException $err) {
             $this->print_error("メールアドレスの削除に失敗しました。".$err->getMessage());
+            
+            $this->profile->rollback_transaction();
+            
             return FALSE;
         }
         
@@ -360,17 +412,38 @@ class wakarana_user extends wakarana_data_item {
             return FALSE;
         }
         
+        if (!$this->touch_last_updated()) {
+            $this->profile->rollback_transaction();
+            
+            return FALSE;
+        }
+        
+        $this->profile->commit_transaction();
+        
         return TRUE;
     }
     
     
     function remove_all_email_addresses () {
+        $this->profile->begin_transaction();
+        
         try {
             $this->profile->db_obj->exec('DELETE FROM "wakarana_user_email_addresses" WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
         } catch (PDOException $err) {
             $this->print_error("ユーザーの全メールアドレスの削除に失敗しました。".$err->getMessage());
+            
+            $this->profile->rollback_transaction();
+            
             return FALSE;
         }
+        
+        if (!$this->touch_last_updated()) {
+            $this->profile->rollback_transaction();
+            
+            return FALSE;
+        }
+        
+        $this->profile->commit_transaction();
         
         return TRUE;
     }
@@ -412,7 +485,7 @@ class wakarana_user extends wakarana_data_item {
         }
         
         try {
-            $stmt = $this->profile->db_obj->prepare('UPDATE "wakarana_users" SET "totp_key" = :totp_key WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
+            $stmt = $this->profile->db_obj->prepare('UPDATE "wakarana_users" SET "totp_key" = :totp_key, "last_updated" = \''.date("Y-m-d H:i:s").'\' WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
             
             $stmt->bindValue(":totp_key", $totp_key, PDO::PARAM_STR);
             
@@ -430,7 +503,7 @@ class wakarana_user extends wakarana_data_item {
     
     function disable_2_factor_auth () {
         try {
-            $this->profile->db_obj->exec('UPDATE "wakarana_users" SET "totp_key" = NULL WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
+            $this->profile->db_obj->exec('UPDATE "wakarana_users" SET "totp_key" = NULL, "last_updated" = \''.date("Y-m-d H:i:s").'\' WHERE "user_id" = \''.$this->user_info["user_id"].'\'');
         } catch (PDOException $err) {
             $this->print_error("2要素認証の無効化に失敗しました。".$err->getMessage());
             return FALSE;
@@ -510,6 +583,8 @@ class wakarana_user extends wakarana_data_item {
                 $this->print_error("数値型のカスタムフィールドに格納できない値が指定されました。");
                 return FALSE;
             }
+            
+            $custom_field_value = round($custom_field_value, $custom_field_definition["precision"]);
         } else {
             $table_name = "wakarana_user_custom_fields";
             
@@ -525,6 +600,8 @@ class wakarana_user extends wakarana_data_item {
             }
         }
         
+        $this->profile->begin_transaction();
+        
         try {
             $stmt = $this->profile->db_obj->prepare('INSERT INTO "'.$table_name.'"("user_id", "custom_field_name", "value_number", "custom_field_value") VALUES (\''.$this->user_info["user_id"].'\', \''.$custom_field_name.'\', 1, :custom_field_value) ON CONFLICT("user_id", "custom_field_name", "value_number") DO UPDATE SET "custom_field_value" = :custom_field_value_2');
             
@@ -534,8 +611,21 @@ class wakarana_user extends wakarana_data_item {
             $stmt->execute();
         } catch (PDOException $err) {
             $this->print_error("カスタムフィールド値の設定に失敗しました。".$err->getMessage());
+            
+            $this->profile->rollback_transaction();
+            
             return FALSE;
         }
+        
+        if ($custom_field_definition["trigger_user_last_updated"]) {
+            if (!$this->touch_last_updated()) {
+                $this->profile->rollback_transaction();
+                
+                return FALSE;
+            }
+        }
+        
+        $this->profile->commit_transaction();
         
         return TRUE;
     }
@@ -577,6 +667,8 @@ class wakarana_user extends wakarana_data_item {
                 $this->print_error("数値型のカスタムフィールドに格納できない値が指定されました。");
                 return FALSE;
             }
+            
+            $custom_field_value = round($custom_field_value, $custom_field_definition["precision"]);
         } else {
             $table_name = "wakarana_user_custom_fields";
             
@@ -609,6 +701,14 @@ class wakarana_user extends wakarana_data_item {
             return FALSE;
         }
         
+        if ($custom_field_definition["trigger_user_last_updated"]) {
+            if (!$this->touch_last_updated()) {
+                $this->profile->rollback_transaction();
+                
+                return FALSE;
+            }
+        }
+        
         $this->profile->commit_transaction();
         
         return TRUE;
@@ -630,6 +730,13 @@ class wakarana_user extends wakarana_data_item {
         
         if ($custom_field_definition["is_numeric"]) {
             $table_name = "wakarana_user_custom_numerical_fields";
+            
+            if (!is_numeric($custom_field_value)) {
+                $this->print_error("数値型のカスタムフィールドに格納できない値が指定されました。");
+                return FALSE;
+            }
+            
+            $custom_field_value = round($custom_field_value, $custom_field_definition["precision"]);
         } else {
             $table_name = "wakarana_user_custom_fields";
             
@@ -645,6 +752,8 @@ class wakarana_user extends wakarana_data_item {
             }
         }
         
+        $this->profile->begin_transaction();
+        
         try {
             $stmt = $this->profile->db_obj->prepare('UPDATE "'.$table_name.'" SET "custom_field_value" = :custom_field_value WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "custom_field_name" = \''.$custom_field_name.'\' AND "value_number" = '.intval($value_number));
             
@@ -653,8 +762,21 @@ class wakarana_user extends wakarana_data_item {
             $stmt->execute();
         } catch (PDOException $err) {
             $this->print_error("カスタムフィールド値の変更に失敗しました。".$err->getMessage());
+            
+            $this->profile->rollback_transaction();
+            
             return FALSE;
         }
+        
+        if ($custom_field_definition["trigger_user_last_updated"]) {
+            if (!$this->touch_last_updated()) {
+                $this->profile->rollback_transaction();
+                
+                return FALSE;
+            }
+        }
+        
+        $this->profile->commit_transaction();
         
         return TRUE;
     }
@@ -690,12 +812,29 @@ class wakarana_user extends wakarana_data_item {
         
         $increments = intval($increments);
         
+        $this->profile->begin_transaction();
+        
         try {
             $this->profile->db_obj->exec('INSERT INTO "wakarana_user_custom_numerical_fields"("user_id", "custom_field_name", "value_number", "custom_field_value") VALUES (\''.$this->user_info["user_id"].'\', \''.$custom_field_name.'\', 1, \''.$increments.'\') ON CONFLICT("user_id", "custom_field_name", "value_number") DO UPDATE SET "custom_field_value" = "custom_field_value" + '.$increments.'');
         } catch (PDOException $err) {
             $this->print_error("カスタムフィールド値の変更に失敗しました。".$err->getMessage());
+            
+            $this->profile->rollback_transaction();
+            
             return FALSE;
         }
+        
+        if ($custom_field_definition["trigger_user_last_updated"]) {
+            if (!$this->touch_last_updated()) {
+                $this->profile->rollback_transaction();
+                
+                return FALSE;
+            }
+        }
+        
+        $this->profile->commit_transaction();
+        
+        return TRUE;
     }
     
     
@@ -743,6 +882,14 @@ class wakarana_user extends wakarana_data_item {
             return FALSE;
         }
         
+        if ($custom_field_definition["trigger_user_last_updated"]) {
+            if (!$this->touch_last_updated()) {
+                $this->profile->rollback_transaction();
+                
+                return FALSE;
+            }
+        }
+        
         $this->profile->commit_transaction();
         
         return TRUE;
@@ -773,7 +920,7 @@ class wakarana_user extends wakarana_data_item {
     }
     
     
-    function delete_all_values () {
+    function delete_all_values ($touch_last_updated = TRUE) {
         $this->profile->begin_transaction();
         
         try {
@@ -785,6 +932,14 @@ class wakarana_user extends wakarana_data_item {
             $this->profile->rollback_transaction();
             
             return FALSE;
+        }
+        
+        if ($touch_last_updated) {
+            if (!$this->touch_last_updated()) {
+                $this->profile->rollback_transaction();
+                
+                return FALSE;
+            }
         }
         
         $this->profile->commit_transaction();
@@ -1635,7 +1790,7 @@ class wakarana_user extends wakarana_data_item {
     function delete_user () {
         $this->profile->begin_transaction();
         
-        if (!$this->delete_all_tokens() || !$this->remove_all_email_addresses() || !$this->delete_all_values() || !$this->delete_recovery_codes()) {
+        if (!$this->delete_all_tokens() || !$this->remove_all_email_addresses() || !$this->delete_all_values(FALSE) || !$this->delete_recovery_codes()) {
             $this->profile->rollback_transaction();
             
             return FALSE;
