@@ -151,14 +151,20 @@ class wakarana_user extends wakarana_data_item {
             return FALSE;
         }
         
+        $column_cast_q = "";
+        
         if ($custom_field_definition["is_numeric"]) {
             $table_name = "wakarana_user_custom_numerical_fields";
+            
+            if (!$this->profile->get_config("use_sqlite") && $custom_field_definition["precision"] <= 0) {
+                $column_cast_q = 'CAST(FLOOR("custom_field_value") AS INTEGER) AS ';
+            }
         } else {
             $table_name = "wakarana_user_custom_fields";
         }
         
         try {
-            $stmt = $this->profile->db_obj->query('SELECT "custom_field_value" FROM "'.$table_name.'" WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "custom_field_name" = \''.$custom_field_name.'\'');
+            $stmt = $this->profile->db_obj->query('SELECT '.$column_cast_q.'"custom_field_value" FROM "'.$table_name.'" WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "custom_field_name" = \''.$custom_field_name.'\'');
         } catch (PDOException $err) {
             $this->print_error("カスタムフィールド値の取得に失敗しました。".$err->getMessage());
             return FALSE;
@@ -186,14 +192,20 @@ class wakarana_user extends wakarana_data_item {
             return FALSE;
         }
         
+        $column_cast_q = "";
+        
         if ($custom_field_definition["is_numeric"]) {
             $table_name = "wakarana_user_custom_numerical_fields";
+            
+            if (!$this->profile->get_config("use_sqlite") && $custom_field_definition["precision"] <= 0) {
+                $column_cast_q = 'CAST(FLOOR("custom_field_value") AS INTEGER) AS ';
+            }
         } else {
             $table_name = "wakarana_user_custom_fields";
         }
         
         try {
-            $stmt = $this->profile->db_obj->query('SELECT "custom_field_value" FROM "'.$table_name.'" WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "custom_field_name" = \''.$custom_field_name.'\' ORDER BY "value_number" ASC');
+            $stmt = $this->profile->db_obj->query('SELECT '.$column_cast_q.'"custom_field_value" FROM "'.$table_name.'" WHERE "user_id" = \''.$this->user_info["user_id"].'\' AND "custom_field_name" = \''.$custom_field_name.'\' ORDER BY "value_number" ASC');
         } catch (PDOException $err) {
             $this->print_error("カスタムフィールド値の取得に失敗しました。".$err->getMessage());
             return FALSE;
@@ -510,6 +522,8 @@ class wakarana_user extends wakarana_data_item {
                 $this->print_error("数値型のカスタムフィールドに格納できない値が指定されました。");
                 return FALSE;
             }
+            
+            $custom_field_value = round($custom_field_value, $custom_field_definition["precision"]);
         } else {
             $table_name = "wakarana_user_custom_fields";
             
@@ -577,6 +591,8 @@ class wakarana_user extends wakarana_data_item {
                 $this->print_error("数値型のカスタムフィールドに格納できない値が指定されました。");
                 return FALSE;
             }
+            
+            $custom_field_value = round($custom_field_value, $custom_field_definition["precision"]);
         } else {
             $table_name = "wakarana_user_custom_fields";
             
@@ -630,6 +646,13 @@ class wakarana_user extends wakarana_data_item {
         
         if ($custom_field_definition["is_numeric"]) {
             $table_name = "wakarana_user_custom_numerical_fields";
+            
+            if (!is_numeric($custom_field_value)) {
+                $this->print_error("数値型のカスタムフィールドに格納できない値が指定されました。");
+                return FALSE;
+            }
+            
+            $custom_field_value = round($custom_field_value, $custom_field_definition["precision"]);
         } else {
             $table_name = "wakarana_user_custom_fields";
             
