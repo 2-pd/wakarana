@@ -197,6 +197,15 @@ class wakarana_profile {
     }
     
     
+    function generate_config_cache () {
+        $php_code = "<?php\n";
+        $php_code .= "\$this->config = ".var_export($this->config, TRUE).";\n\n";
+        $php_code .= "\$this->custom_fields = ".var_export($this->custom_fields, TRUE).";\n";
+
+        return file_put_contents($this->base_path."/wakarana_integrated_config_cache.php", $php_code) !== FALSE ? TRUE : FALSE;
+    }
+    
+    
     function get_email_domain_blacklist () {
         if (is_null($this->email_domain_blacklist)) {
             $this->email_domain_blacklist = @file($this->base_path."/wakarana_email_domain_blacklist.conf", FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
