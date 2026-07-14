@@ -23,7 +23,7 @@ Wakaranaのバージョン番号文字列
 ### 関数
 
 #### ◆ wakarana_profile::__construct($base_path)
-指定したフォルダにある設定ファイル類をロードし、wakarana_profileインスタンスを生成する。  
+指定したフォルダにある設定ファイル(wakarana_integrated_config_cache.phpが存在すればそのファイル、そうでなければwakarana_config.iniとwakarana_custom_fields.json)をロードし、wakarana_profileインスタンスを生成する。  
 設定ファイルがロードできなかった場合は例外が発生する。  
 ◆クラス内呼び出し専用。  
   
@@ -142,6 +142,13 @@ wakarana_custom_fields.jsonを読み込み、その内容をインスタンス�
 **$custom_field_definition** : カスタムフィールドの情報を格納した連想配列(キーは、"is_numeric"、"maximum_length"、"records_per_user"、"allow_nonunique_value")。NULLを指定した場合は当該のカスタムフィールドを削除する。  
   
 **返り値** : 成功した場合はTRUEを返す。存在しないカスタムフィールドを削除しようとしたときはNULLを返す。
+
+
+#### wakarana_profile::generate_config_cache()
+インスタンス変数に保持されている基本設定とカスタムフィールド設定をベースフォルダ内にキャッシュPHPファイル(wakarana_integrated_config_cache.php)として書き出す。  
+既に同名のPHPファイルが存在する場合は上書きする。  
+  
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
 #### wakarana_profile::get_email_domain_blacklist()
