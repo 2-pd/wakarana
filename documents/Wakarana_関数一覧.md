@@ -2071,19 +2071,23 @@ wakarana_config.iniの既定値一覧。
 **$base_dir** : wakarana_config.iniのある(または作成する)フォルダの相対パスまたは絶対パス。省略時はwakarana_config.phpのあるフォルダを使用する。
 
 
-#### ◆ wakarana_config::save()
+#### ◆ wakarana_config::save($update_config_cache=FALSE)
 現在の設定値でwakarana_config.iniを上書きする。  
 ◆クラス内呼び出し専用。  
+  
+**$update_config_cache** : 設定キャッシュファイルの上書き保存を行うか否か  
   
 **返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
 
 #### wakarana_config::set_config_value($key, $value, $save_now=TRUE)
 wakarana_config.iniの設定値を変更する。  
+設定キャッシュファイルを使用する設定となっている場合、設定キャッシュファイルの更新も行う。  
+設定キャッシュファイルを使用する設定から使用しない設定に切り替えた場合は設定キャッシュファイルが削除される。  
   
 **$key** : wakarana_config.iniの項目名  
 **$value** : 設定する値  
-**$save_now** : FALSEならwakarana_config.iniへの上書きは保留する。  
+**$save_now** : FALSEならwakarana_config.iniへの上書きと設定キャッシュファイルの更新は保留する。  
   
 **返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
@@ -2099,6 +2103,7 @@ wakarana_config.iniの設定値を変更する。
 
 #### wakarana_config::reset_config()
 wakarana_config.iniの設定値を全て既定値に戻す。  
+ベースフォルダ内に設定キャッシュファイルが存在する場合、そのファイルは削除される。  
   
 **返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
@@ -2109,9 +2114,11 @@ wakarana_config.iniの設定値を全て既定値に戻す。
 **返り値** : ダミーパスワードをハッシュ化した文字列を返す。
 
 
-#### ◆ wakarana_config::save_custom_fields()
+#### ◆ wakarana_config::save_custom_fields($update_config_cache=FALSE)
 現在の設定値でwakarana_custom_fields.jsonを上書きする。  
 ◆クラス内呼び出し専用。  
+  
+**$update_config_cache** : 設定キャッシュファイルの上書き保存を行うか否か  
   
 **返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
@@ -2119,13 +2126,14 @@ wakarana_config.iniの設定値を全て既定値に戻す。
 #### wakarana_config::create_custom_field($custom_field_name, $maximum_length=500, $records_per_user=1, $allow_nonunique_value=TRUE, $trigger_user_last_updated=TRUE, $save_now=TRUE)
 文字列型カスタムフィールドを追加する。  
 既に存在するカスタムフィールド名を指定した場合はその設定を上書きする。  
+設定キャッシュファイルを使用する設定となっている場合、設定キャッシュファイルの更新も行う。  
   
 **$custom_field_name** : カスタムフィールド名。半角英数字及びアンダーバーが使用可能。  
 **$maximum_length** : 保存可能な最大文字数(500以下)  
 **$records_per_user** : ユーザーあたりの上限件数(100以下)  
 **$allow_nonunique_value** : 異なるユーザーが同一の値を持つことを認めるか否か  
 **$trigger_user_last_updated** : 値の変更時にユーザー情報の更新日時も更新するか否か  
-**$save_now** : FALSEならwakarana_custom_fields.jsonへの上書きは保留する  
+**$save_now** : FALSEならwakarana_custom_fields.jsonへの上書きと設定キャッシュファイルの更新は保留する  
   
 **返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
@@ -2133,13 +2141,14 @@ wakarana_config.iniの設定値を全て既定値に戻す。
 #### wakarana_config::create_custom_numerical_field($custom_field_name, $precision=0, $records_per_user=1, $allow_nonunique_value=TRUE, $trigger_user_last_updated=TRUE, $save_now=TRUE)
 数値型カスタムフィールドを追加する。  
 既に存在するカスタムフィールド名を指定した場合はその設定を上書きする。  
+設定キャッシュファイルを使用する設定となっている場合、設定キャッシュファイルの更新も行う。  
   
 **$custom_field_name** : カスタムフィールド名。半角英数字及びアンダーバーが使用可能。  
 **$precision** : 値の小数点以下の桁数(整数値とする場合は0)  
 **$records_per_user** : ユーザーあたりの上限件数(100以下)  
 **$allow_nonunique_value** : 異なるユーザーが同一の値を持つことを認めるか否か  
 **$trigger_user_last_updated** : 値の変更時にユーザー情報の更新日時も更新するか否か  
-**$save_now** : FALSEならwakarana_custom_fields.jsonへの上書きは保留する  
+**$save_now** : FALSEならwakarana_custom_fields.jsonへの上書きと設定キャッシュファイルの更新は保留する  
   
 **返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
 
@@ -2147,11 +2156,18 @@ wakarana_config.iniの設定値を全て既定値に戻す。
 #### wakarana_config::delete_custom_field($custom_field_name, $save_now=TRUE)
 カスタムフィールドを削除する。  
 この関数により既にデータベースに保存されている当該カスタムフィールドのデータが削除されるわけではない。  
+設定キャッシュファイルを使用する設定となっている場合、設定キャッシュファイルの更新も行う。  
   
 **$custom_field_name** : カスタムフィールド名  
-**$save_now** : FALSEならwakarana_custom_fields.jsonへの上書きは保留する。  
+**$save_now** : FALSEならwakarana_custom_fields.jsonへの上書きと設定キャッシュファイルの更新は保留する。  
   
 **返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
+#### wakarana_config::delete_config_cache()
+ベースフォルダ内に存在する設定キャッシュファイル(wakarana_integrated_config_cache.php)を削除する。  
+  
+**返り値** : 成功した場合はTRUEを返す。削除対象のファイルが存在しない場合はNULLを返し、削除に失敗した場合はFALSEを返す。
 
 
 #### ◆ wakarana_config::save_email_domain_blacklist()

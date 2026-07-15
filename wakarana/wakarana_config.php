@@ -343,6 +343,17 @@ class wakarana_config {
     }
     
     
+    function delete_config_cache () {
+        $config_cache_path = $this->profile->get_base_path()."/wakarana_integrated_config_cache.php";
+        
+        if (file_exists($config_cache_path)) {
+            return unlink($config_cache_path);
+        } else {
+            return NULL;
+        }
+    }
+    
+    
     protected function save_email_domain_blacklist () {
         $email_domain_blacklist = implode("\n", $this->profile->get_email_domain_blacklist());
         
