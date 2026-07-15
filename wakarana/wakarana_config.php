@@ -6,6 +6,8 @@ class wakarana_config {
     
     
     const ORIGINAL_CONFIG = array(
+            "use_config_cache" => FALSE,
+            
             "display_errors" => TRUE,
             
             "use_sqlite" => TRUE,
@@ -80,13 +82,16 @@ class wakarana_config {
     }
     
     
-    protected function save () {
+    protected function save ($update_config_cache = FALSE) {
         $file_h = @fopen($this->profile->get_base_path()."/wakarana_config.ini", "w");
         
         if (empty($file_h)) {
             $this->print_error("設定ファイルを書き込みモードで開くことができませんでした。");
             return FALSE;
         }
+        
+        fwrite($file_h, "use_config_cache = ".($this->profile->get_config("use_config_cache") ? "true" : "false")."\n");
+        fwrite($file_h, "\n");
         
         fwrite($file_h, "display_errors = ".($this->profile->get_config("display_errors") ? "true" : "false")."\n");
         fwrite($file_h, "\n");
@@ -146,6 +151,10 @@ class wakarana_config {
         
         fclose($file_h);
         
+        if ($update_config_cache) {
+            return $this->profile->generate_config_cache();
+        }
+        
         return TRUE;
     }
     
@@ -158,8 +167,14 @@ class wakarana_config {
         
         $this->profile->set_config($key, $value);
         
+        if ($key === "use_config_cache" && !$value) {
+            if ($this->delete_config_cache() === FALSE) {
+                return FALSE;
+            }
+        }
+        
         if ($save_now) {
-            return $this->save();
+            return $this->save($this->profile->get_config("use_config_cache"));
         } else {
             return TRUE;
         }
@@ -173,6 +188,9 @@ class wakarana_config {
             $this->print_error("設定ファイルを書き込みモードで開くことができませんでした。");
             return FALSE;
         }
+        
+        fwrite($file_h, "use_config_cache = ".(self::ORIGINAL_CONFIG["use_config_cache"] ? "true" : "false")."\n");
+        fwrite($file_h, "\n");
         
         fwrite($file_h, "display_errors = ".(self::ORIGINAL_CONFIG["display_errors"] ? "true" : "false")."\n");
         fwrite($file_h, "\n");
@@ -239,6 +257,10 @@ class wakarana_config {
     function reset_config () {
         $config_path = $this->profile->get_base_path()."/wakarana_config.ini";
         
+        if ($this->delete_config_cache() === FALSE) {
+            return FALSE;
+        }
+        
         return $this->initialize_config($config_path) && $this->profile->load_config($config_path);
     }
     
@@ -248,8 +270,12 @@ class wakarana_config {
     }
     
     
-    protected function save_custom_fields () {
+    protected function save_custom_fields ($update_config_cache = FALSE) {
         if (@file_put_contents($this->profile->get_base_path()."/wakarana_custom_fields.json", json_encode($this->profile->get_custom_field_definition())) !== FALSE) {
+            if ($update_config_cache) {
+                return $this->profile->generate_config_cache();
+            }
+            
             return TRUE;
         } else {
             $this->print_error("カスタムフィールド設定ファイルへの書き込みに失敗しました。");
@@ -288,7 +314,7 @@ class wakarana_config {
         ));
         
         if ($save_now) {
-            return $this->save_custom_fields();
+            return $this->save_custom_fields($this->profile->get_config("use_config_cache"));
         } else {
             return TRUE;
         }
@@ -320,7 +346,7 @@ class wakarana_config {
         ));
         
         if ($save_now) {
-            return $this->save_custom_fields();
+            return $this->save_custom_fields($this->profile->get_config("use_config_cache"));
         } else {
             return TRUE;
         }
@@ -336,7 +362,7 @@ class wakarana_config {
         $this->profile->set_custom_field_definition($custom_field_name, NULL);
         
         if ($save_now) {
-            return $this->save_custom_fields();
+            return $this->save_custom_fields($this->profile->get_config("use_config_cache"));
         } else {
             return TRUE;
         }
