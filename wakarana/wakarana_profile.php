@@ -17,8 +17,21 @@ class wakarana_profile {
     private function __construct ($base_path) {
         $this->base_path = $base_path;
         
-        $this->load_config($base_path."/wakarana_config.ini");
-        $this->load_custom_field_definitions($base_path."/wakarana_custom_fields.json");
+        $config_cache_path = $base_path."/wakarana_integrated_config_cache.php";
+        if (file_exists($config_cache_path)) {
+            try {
+                require $config_cache_path;
+            } catch (Error $err) {
+                throw new Exception("指定されたベースフォルダの設定キャッシュファイルは破損しています。");
+            }
+        } else {
+            $this->load_config($base_path."/wakarana_config.ini");
+            $this->load_custom_field_definitions($base_path."/wakarana_custom_fields.json");
+            
+            if ($this->config["use_config_cache"]) {
+                $this->generate_config_cache();
+            }
+        }
         
         $this->email_domain_blacklist = NULL;
         $this->transaction_cnt = 0;
@@ -194,6 +207,15 @@ class wakarana_profile {
         }
         
         return TRUE;
+    }
+    
+    
+    function generate_config_cache () {
+        $php_code = "<?php\n";
+        $php_code .= "\$this->config = ".var_export($this->config, TRUE).";\n\n";
+        $php_code .= "\$this->custom_fields = ".var_export($this->custom_fields, TRUE).";\n";
+
+        return file_put_contents($this->base_path."/wakarana_integrated_config_cache.php", $php_code) !== FALSE ? TRUE : FALSE;
     }
     
     

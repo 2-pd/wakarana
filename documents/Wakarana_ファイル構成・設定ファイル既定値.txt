@@ -31,59 +31,64 @@ _/_/_/_/ ファイル構成 _/_/_/_/
 └ wakarana_config.php ・・・wakarana_configクラスが記載されたファイル
 └ wakarana_config.ini ・・・Wakaranaの基本設定ファイル(別ディレクトリに設置する場合はwakaranaクラスのコンストラクタに引数を指定)
 └ wakarana_custom_fields.json ・・・カスタムフィールド設定ファイル(別ディレクトリに設置する場合はwakaranaクラスのコンストラクタに引数を指定)
+└ wakarana_integrated_config_cache.php ・・・基本設定とカスタムフィールド設定のキャッシュファイル(基本設定に従い、基本設定ファイルと同じディレクトリに自動生成される)
 └ wakarana_email_domain_blacklist.conf ・・・メールドメインブラックリスト(各行に1つのドメインを記載したテキストファイル)
-└ wakarana.db ・・・メインデータベースファイル(SQLite使用時のみ生成。wakarana_config.iniの設定で設置ディレクトリ及びファイル名は変更可能)
+└ wakarana.db ・・・メインデータベースファイル(SQLite使用時のみ生成。基本設定で設置ディレクトリ及びファイル名を変更可能)
 
 
 _/_/_/_/ 基本設定ファイル wakarana_config.ini _/_/_/_/
 
-  display_errors　エラー文を出力するか否か(真偽値)
+  use_config_cache  基本設定とカスタムフィールド設定をPHPファイルにキャッシュするか否か(真偽値、trueからfalseへの手動変更時はキャッシュファイルも手動で削除する必要がある)
   
-  use_sqlite データベースにSQLiteを使用するか否か(真偽値、trueの場合はsqlite、falseの場合はPostgreSQLを使用する)
-  sqlite_db_file SQLiteのデータベースファイルのパス(この設定ファルからの相対パス)
+  display_errors  エラー文を出力するか否か(真偽値)
   
-  db_host PostgreSQLのホスト名
-  db_user PostgreSQLのユーザー名
-  db_pass PostgreSQLのパスワード
-  db_db PostgreSQLのデータベース名
-  db_port PostgreSQLのポート番号
+  use_sqlite  データベースにSQLiteを使用するか否か(真偽値、trueの場合はsqlite、falseの場合はPostgreSQLを使用する)
+  sqlite_db_file  SQLiteのデータベースファイルのパス(この設定ファルからの相対パス)
   
-  allow_weak_password 弱いパスワード(空または10文字未満、大文字・小文字・数字のどれかを含んでいない)を許すか否か(真偽値、trueの場合は弱いパスワードが使用可能となる)
+  db_host  PostgreSQLのホスト名
+  db_user  PostgreSQLのユーザー名
+  db_pass  PostgreSQLのパスワード
+  db_db  PostgreSQLのデータベース名
+  db_port  PostgreSQLのポート番号
   
-  use_argon2_for_password_hashing パスワードのハッシュ化にアルゴリズムとしてArgon2(Argon2id)を使用するか否か(真偽値、trueの場合はArgon2id、falseの場合はSHA-512を使用する)
-  argon2_memory_cost Argon2を使用したハッシュ値の算出1件で消費されるメモリ量(キロバイト単位)
-  argon2_time_cost Argon2を使用したハッシュ値の算出1件での計算処理反復回数
-  argon2_parallelism Argon2を使用したハッシュ値の算出を実行するスレッド数
-  dummy_password_hash 存在しないユーザーIDでログインが試行された場合の照合処理に使用するダミーのパスワードハッシュ(nullの場合は照合処理そのものを実施しない)
+  allow_weak_password  弱いパスワード(空または10文字未満、大文字・小文字・数字のどれかを含んでいない)を許すか否か(真偽値、trueの場合は弱いパスワードが使用可能となる)
   
-  allow_nonunique_email_address 同じメールアドレスでの複数のアカウント作成を許すか否か(真偽値、trueの場合はメールアドレスなし(NULL)を許可しない)
-  email_addresses_per_user ユーザーごとに登録可能なメールアドレスの数
-  verification_email_expire メールアドレス確認トークンの有効時間(秒数で指定)
-  verification_email_sendable_interval 同一メールアドレスへの確認トークン発行可能間隔(秒数で指定)
+  use_argon2_for_password_hashing  パスワードのハッシュ化にアルゴリズムとしてArgon2(Argon2id)を使用するか否か(真偽値、trueの場合はArgon2id、falseの場合はSHA-512を使用する)
+  argon2_memory_cost  Argon2を使用したハッシュ値の算出1件で消費されるメモリ量(キロバイト単位)
+  argon2_time_cost  Argon2を使用したハッシュ値の算出1件での計算処理反復回数
+  argon2_parallelism  Argon2を使用したハッシュ値の算出を実行するスレッド数
+  dummy_password_hash  存在しないユーザーIDでログインが試行された場合の照合処理に使用するダミーのパスワードハッシュ(nullの場合は照合処理そのものを実施しない)
   
-  session_token_cookie_name セッショントークンのCookie保存名
-  cookie_domain サブドメインと主ドメインでログインを共通化する場合、主ドメインを指定する(例: "example.jp"と"hoge.example.jp"でログインを共通化する場合は"example.jp"を指定する)
-  delete_session_on_ip_address_change クライアント端末のIPアドレスが変わった場合にセッショントークンを破棄するか否か(真偽値、trueの場合はクライアント端末のIPアドレスが変わるとログアウト状態になる)
+  allow_nonunique_email_address  同じメールアドレスでの複数のアカウント作成を許すか否か(真偽値、trueの場合はメールアドレスなし(NULL)を許可しない)
+  email_addresses_per_user  ユーザーごとに登録可能なメールアドレスの数
+  verification_email_expire  メールアドレス確認トークンの有効時間(秒数で指定)
+  verification_email_sendable_interval  同一メールアドレスへの確認トークン発行可能間隔(秒数で指定)
   
-  sessions_per_user ユーザーごとのトークン保持可能数(超過した場合は、生成日時の古いトークンから順に削除される)
-  session_expire セッショントークンの有効時間(秒数で指定)
-  one_time_tokens_per_user ユーザーごとのワンタイムトークンの保持可能数(上記に同じ)
-  one_time_token_expire ワンタイムトークンの有効時間(秒数で指定)
+  session_token_cookie_name  セッショントークンのCookie保存名
+  cookie_domain  サブドメインと主ドメインでログインを共通化する場合、主ドメインを指定する(例: "example.jp"と"hoge.example.jp"でログインを共通化する場合は"example.jp"を指定する)
+  delete_session_on_ip_address_change  クライアント端末のIPアドレスが変わった場合にセッショントークンを破棄するか否か(真偽値、trueの場合はクライアント端末のIPアドレスが変わるとログアウト状態になる)
   
-  auth_initial_lockout_seconds ログイン試行後、次に試行できるようになるまでのロックアウト時間(秒)
-  auth_max_lockout_seconds 連続でログインに失敗した場合のロックアウト時間の上限(秒)
-  auth_log_retention_seconds ログイン試行ログの保持期間(秒数で指定、nullまたは0の場合はログイン試行ログを削除しない)
-  auth_failure_expiration_seconds 連続ログイン失敗回数の保持期間(秒)
+  sessions_per_user  ユーザーごとのトークン保持可能数(超過した場合は、生成日時の古いトークンから順に削除される)
+  session_expire  セッショントークンの有効時間(秒数で指定)
+  one_time_tokens_per_user  ユーザーごとのワンタイムトークンの保持可能数(上記に同じ)
+  one_time_token_expire  ワンタイムトークンの有効時間(秒数で指定)
   
-  password_reset_token_expire パスワードリセット用トークンの有効時間(秒数で指定)
+  auth_initial_lockout_seconds  ログイン試行後、次に試行できるようになるまでのロックアウト時間(秒)
+  auth_max_lockout_seconds  連続でログインに失敗した場合のロックアウト時間の上限(秒)
+  auth_log_retention_seconds  ログイン試行ログの保持期間(秒数で指定、nullまたは0の場合はログイン試行ログを削除しない)
+  auth_failure_expiration_seconds  連続ログイン失敗回数の保持期間(秒)
   
-  totp_pin_expire TOTPワンタイムパスワードの有効時間(分)
-  two_step_verification_token_expire 2段階認証用一時トークンの有効期間(秒)
+  password_reset_token_expire  パスワードリセット用トークンの有効時間(秒数で指定)
   
-  proxy_count リバースプロキシを使用している環境ではその個数を指定する。
+  totp_pin_expire  TOTPワンタイムパスワードの有効時間(分)
+  two_step_verification_token_expire  2段階認証用一時トークンの有効期間(秒)
+  
+  proxy_count  リバースプロキシを使用している環境ではその個数を指定する。
 
 
 ◆ 各変数のデフォルト値
+
+use_config_cache = false
 
 display_errors = true
 
