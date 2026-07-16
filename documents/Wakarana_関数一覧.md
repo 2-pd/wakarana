@@ -348,10 +348,10 @@ Wakaranaの主要機能を提供し、wakarana_data_itemの子孫クラスのイ
 「**user_created**」。ユーザー一覧の並び替え基準「ユーザー作成日」。
 
 #### wakarana::BASE_ROLE
-「**\_\_base\_\_**」。ベースロールの識別名。
+「**\_\_base\_\_**」。ベースロールの識別名。ベースロールは全てのユーザーが最初から保有しているものとみなされる。
 
 #### wakarana::ADMIN_ROLE
-「**\_\_admin\_\_**」。特権管理者ロールの識別名。
+「**\_\_admin\_\_**」。特権管理者ロールの識別名。特権管理者ロールには全ての権限が自動的に設定される。
 
 #### ◆ wakarana::BASE32_TABLE
 Base32エンコード用の変換対応表。  
@@ -457,7 +457,7 @@ Base32方式でエンコードされた文字列をバイナリにデコード�
 
 #### wakarana::create_user($user_id, $password, $user_name="", $status=wakarana::STATUS_NORMAL, $used_invite_code=NULL)
 新しいユーザーを追加する。  
-追加したユーザーには自動的にベースロールが割り当てられる。既に存在するユーザーIDを指定した場合はエラーとなる。  
+既に存在するユーザーIDを指定した場合はエラーとなる。  
 招待コードを使用してのユーザー追加にはこの関数でなく wakarana::create_user_with_invite_code を使用すべきである。  
   
 **$user_id** : 追加するユーザーのID。半角英数字及びアンダーバーが使用可能。  
@@ -473,7 +473,7 @@ Base32方式でエンコードされた文字列をバイナリにデコード�
 
 #### wakarana::create_user_with_invite_code($invite_code, $user_id, $password, $user_name="", $status=wakarana::STATUS_NORMAL)
 招待コードを検証し、有効であれば新しいユーザーを追加する。  
-追加したユーザーには自動的にベースロールが割り当てられる。既に存在するユーザーIDを指定した場合はエラーとなる。  
+既に存在するユーザーIDを指定した場合はエラーとなる。  
   
 **$invite_code** : 招待コード文字列。大文字小文字を区別しない。  
 **$user_id** : 追加するユーザーのID。半角英数字及びアンダーバーが使用可能。  
