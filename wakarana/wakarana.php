@@ -229,19 +229,25 @@ class wakarana {
         $password_hash = $this->generate_password_hash($password, $user_id);
         $date_time = date("Y-m-d H:i:s");
         
+        $this->profile->begin_transaction();
+        
         try {
             $stmt = $this->profile->db_obj->query('SELECT 1 FROM "wakarana_users" WHERE "user_id" = \''.$user_id.'\' LIMIT 1');
         } catch (PDOException $err) {
             $this->print_error("ユーザー作成の可否を確認できませんでした。".$err->getMessage());
+            
+            $this->profile->rollback_transaction();
+            
             return FALSE;
         }
         
         if (!empty($stmt->fetchColumn())) {
             $this->rejection_reason = "user_already_exists";
+            
+            $this->profile->rollback_transaction();
+            
             return FALSE;
         }
-        
-        $this->profile->begin_transaction();
         
         try {
             $stmt = $this->profile->db_obj->prepare('INSERT INTO "wakarana_users"("user_id", "password_hash", "user_name", "user_created", "last_updated", "last_access", "status", "totp_key", "used_invite_code") VALUES (\''.$user_id.'\', \''.$password_hash.'\', :user_name, \''.$date_time.'\', \''.$date_time.'\', \''.$date_time.'\', '.intval($status).', NULL, :used_invite_code)');
@@ -267,15 +273,9 @@ class wakarana {
             return FALSE;
         }
         
-        $user = $this->get_user($user_id);
-        
-        if (!$user->add_role(self::BASE_ROLE)) {
-            $this->profile->rollback_transaction();
-            
-            return FALSE;
-        }
-        
         $this->profile->commit_transaction();
+        
+        $user = $this->get_user($user_id);
         
         return $user;
     }
