@@ -444,11 +444,11 @@ Base32方式でエンコードされた文字列をバイナリにデコード�
 **返り値** : 登録されているユーザーの総数を返す。
 
 
-#### wakarana::get_all_users($start=0, $limit=100, $order_by=wakarana::ORDER_USER_CREATED, $asc=TRUE)
+#### wakarana::get_all_users($start=0, $limit=-1, $order_by=wakarana::ORDER_USER_CREATED, $asc=TRUE)
 全ユーザーの一覧を順に返す。  
   
 **$start** : 何番目のユーザーから取得するか(1番目なら「0」)  
-**$limit** : 何件まで取得するか  
+**$limit** : 何件まで取得するか。-1が指定された場合は上限を設けない。  
 **$order_by** : 並び替え基準。wakarana::ORDER_USER_CREATEDまたはwakarana::ORDER_USER_IDまたはwakarana::ORDER_USER_NAMEのいずれか。  
 **$asc** : 昇順で取得する場合はTRUE、降順ならFALSE。  
   

@@ -165,9 +165,13 @@ class wakarana {
     }
     
     
-    function get_all_users ($start = 0, $limit = 100, $order_by = self::ORDER_USER_CREATED, $asc = TRUE) {
+    function get_all_users ($start = 0, $limit = -1, $order_by = self::ORDER_USER_CREATED, $asc = TRUE) {
         $start = intval($start);
         $limit = intval($limit);
+        
+        if (!$this->profile->get_config("use_sqlite") && $limit < 0) {
+            $limit = "ALL";
+        }
         
         switch ($order_by) {
             case self::ORDER_USER_ID:
