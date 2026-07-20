@@ -96,6 +96,8 @@ _/_/_/_/ データベース _/_/_/_/
   PRIMARY KEY `user_id`, `role_id`
   INDEX `wakarana_idx_ur1` `role_id`, `user_id`
 
+ ※ベースロールのレコードは読み出し後のデータへ動的に付加するほうが効率的であるため、このテーブルからは除外される。
+
 
 テーブル `wakarana_permissions` ・・・ 権限の対象となるリソースの基本情報を記録するテーブル
   `resource_id` varchar(120) [TEXT] (NOT NULL PRIMARY KEY) 権限の対象となる概念のID

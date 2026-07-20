@@ -348,10 +348,10 @@ Wakaranaの主要機能を提供し、wakarana_data_itemの子孫クラスのイ
 「**user_created**」。ユーザー一覧の並び替え基準「ユーザー作成日」。
 
 #### wakarana::BASE_ROLE
-「**\_\_base\_\_**」。ベースロールの識別名。
+「**\_\_base\_\_**」。ベースロールの識別名。ベースロールは全てのユーザーが最初から保有しているものとみなされる。
 
 #### wakarana::ADMIN_ROLE
-「**\_\_admin\_\_**」。特権管理者ロールの識別名。
+「**\_\_admin\_\_**」。特権管理者ロールの識別名。特権管理者ロールには全ての権限が自動的に設定される。
 
 #### ◆ wakarana::BASE32_TABLE
 Base32エンコード用の変換対応表。  
@@ -444,11 +444,11 @@ Base32方式でエンコードされた文字列をバイナリにデコード�
 **返り値** : 登録されているユーザーの総数を返す。
 
 
-#### wakarana::get_all_users($start=0, $limit=100, $order_by=wakarana::ORDER_USER_CREATED, $asc=TRUE)
+#### wakarana::get_all_users($start=0, $limit=-1, $order_by=wakarana::ORDER_USER_CREATED, $asc=TRUE)
 全ユーザーの一覧を順に返す。  
   
 **$start** : 何番目のユーザーから取得するか(1番目なら「0」)  
-**$limit** : 何件まで取得するか  
+**$limit** : 何件まで取得するか。-1が指定された場合は上限を設けない。  
 **$order_by** : 並び替え基準。wakarana::ORDER_USER_CREATEDまたはwakarana::ORDER_USER_IDまたはwakarana::ORDER_USER_NAMEのいずれか。  
 **$asc** : 昇順で取得する場合はTRUE、降順ならFALSE。  
   
@@ -457,7 +457,7 @@ Base32方式でエンコードされた文字列をバイナリにデコード�
 
 #### wakarana::create_user($user_id, $password, $user_name="", $status=wakarana::STATUS_NORMAL, $used_invite_code=NULL)
 新しいユーザーを追加する。  
-追加したユーザーには自動的にベースロールが割り当てられる。既に存在するユーザーIDを指定した場合はエラーとなる。  
+既に存在するユーザーIDを指定した場合はエラーとなる。  
 招待コードを使用してのユーザー追加にはこの関数でなく wakarana::create_user_with_invite_code を使用すべきである。  
   
 **$user_id** : 追加するユーザーのID。半角英数字及びアンダーバーが使用可能。  
@@ -473,7 +473,7 @@ Base32方式でエンコードされた文字列をバイナリにデコード�
 
 #### wakarana::create_user_with_invite_code($invite_code, $user_id, $password, $user_name="", $status=wakarana::STATUS_NORMAL)
 招待コードを検証し、有効であれば新しいユーザーを追加する。  
-追加したユーザーには自動的にベースロールが割り当てられる。既に存在するユーザーIDを指定した場合はエラーとなる。  
+既に存在するユーザーIDを指定した場合はエラーとなる。  
   
 **$invite_code** : 招待コード文字列。大文字小文字を区別しない。  
 **$user_id** : 追加するユーザーのID。半角英数字及びアンダーバーが使用可能。  
@@ -1388,7 +1388,7 @@ wakarana_userインスタンスで直前に行われた各種認証・登録処�
 #### wakarana_user::get_roles()
 ユーザーに割り当てられたロールの一覧を取得する。  
   
-**返り値** : ユーザーに割り当てられたベースロールを含む全ロールのwakarana_roleインスタンスをロール名のアルファベット順に格納した配列を返す。失敗した場合はFALSEを返す。
+**返り値** : ユーザーに割り当てられた全ロールのwakarana_roleインスタンスをロール名のアルファベット順(ただし、ベースロールは常に最後)に格納した配列を返す。失敗した場合はFALSEを返す。
 
 
 #### wakarana_user::add_role($role_id)
