@@ -2218,6 +2218,12 @@ wakarana_config.iniの設定値を全て既定値に戻す。
 **返り値** : 成功した場合は新しいブラックリストに登録されたドメインの数を返し、失敗した場合はFALSEを返す。
 
 
+#### wakarana_config::rebuild_user_permission_caches()
+全ユーザーが保有する全ての権限のキャッシュを一度削除してから再生成する。  
+  
+**返り値** : 成功した場合はTRUE、失敗した場合はFALSEを返す。
+
+
 #### wakarana_config::setup_db()
 データベースにテーブルを作成する。  
 SQLiteを使用する設定の場合、データベースファイルの作成も行われる。  

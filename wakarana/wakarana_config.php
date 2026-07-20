@@ -462,6 +462,28 @@ class wakarana_config {
     }
     
     
+    function rebuild_user_permission_caches () {
+        $this->profile->connect_db();
+        
+        $this->profile->begin_transaction();
+        
+        try {
+            $this->profile->db_obj->exec('DELETE FROM "wakarana_user_permission_caches"');
+            $this->profile->db_obj->exec('INSERT INTO "wakarana_user_permission_caches"("user_id", "resource_id", "action") WITH "ur" AS (SELECT "user_id", "role_id" FROM "wakarana_user_roles" UNION ALL SELECT "user_id", \''.wakarana::BASE_ROLE.'\' AS "role_id" FROM "wakarana_users") SELECT DISTINCT "ur"."user_id", "wakarana_role_permissions"."resource_id", "wakarana_role_permissions"."action" FROM "ur", "wakarana_role_permissions" WHERE "wakarana_role_permissions"."role_id" = "ur"."role_id"');
+        } catch (PDOException $err) {
+            $this->print_error("権限キャッシュの再構築に失敗しました。".$err->getMessage());
+            
+            $this->profile->rollback_transaction();
+            
+            return FALSE;
+        }
+        
+        $this->profile->commit_transaction();
+        
+        return TRUE;
+    }
+    
+    
     function setup_db () {
         $this->profile->connect_db();
         
